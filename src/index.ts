@@ -14,7 +14,7 @@ app.get('/', (req, res) => {
     <html>
       <head>
         <meta charset="utf-8"/>
-        <title>Express on Vercel</title>
+        <title>FOSS Club CE Vadakara</title>
         <link rel="stylesheet" href="/style.css" />
       </head>
       <body>
@@ -24,9 +24,9 @@ app.get('/', (req, res) => {
           <a href="/api-data">API Data</a>
           <a href="/healthz">Health</a>
         </nav>
-        <h1>Welcome to Express on Vercel 🚀</h1>
-        <p>This is a minimal example without a database or forms.</p>
-        <img src="/logo.png" alt="Logo" width="120" />
+        <h1>Welcome to FOSS Club CEV</h1>
+        <p>FOSS United </p>
+        
       </body>
     </html>
   `)
