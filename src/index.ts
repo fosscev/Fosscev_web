@@ -154,7 +154,7 @@ app.get('/', (req, res) => {
           }
           /* Fix for text contrast on bright green in dark mode if needed */
           @media (prefers-color-scheme: dark) {
-             .btn-primary { color: #000; }
+            .btn-primary { color: #000; }
           }
           
           .btn-secondary {
@@ -261,7 +261,7 @@ app.get('/about', function (req, res) {
 app.get('/api-data', (req, res) => {
   res.json({
     club: "FOSS Club CEV",
-    founded: 2024,
+    founded: 2025,
     status: "Active",
     stack: ['Express', 'Vercel', 'Node.js'],
     theme_colors: ['#000000', '#ffffff', '#16a34a']
