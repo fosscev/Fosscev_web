@@ -206,7 +206,7 @@ app.get('/', (req, res) => {
             <a href="/" class="logo">FOSS Club CEV</a>
             <div class="nav-links">
               <a href="/about">About</a>
-              <a href="/api-data">API</a>
+              // <a href="/api-data">API</a>
               <a href="https://fossunited.org" target="_blank">FOSS United</a>
             </div>
           </div>
@@ -222,7 +222,6 @@ app.get('/', (req, res) => {
           </p>
           <div class="cta-group">
             <a href="/about" class="btn btn-primary">Meet the Club</a>
-            <a href="https://github.com/fosscev" target="_blank" class="btn btn-secondary">GitHub</a>
           </div>
         </header>
 
