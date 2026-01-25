@@ -1,0 +1,215 @@
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+:root {
+  --background: #ffffff;
+  --surface: #f5f5f5;
+  --surface-highlight: #e5e5e5;
+  --primary: #00e676;
+  --primary-dark: #00a854;
+
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.1);
+
+  /* Grays for Light Mode */
+  --gray-100: #171717;
+  /* Inverted for text (darkest) */
+  --gray-200: #262626;
+  --gray-300: #404040;
+  --gray-400: #525252;
+  --gray-500: #737373;
+  --gray-600: #a3a3a3;
+  --gray-700: #d4d4d4;
+  --gray-800: #e5e5e5;
+  --gray-900: #fafafa;
+}
+
+.dark {
+  --background: #050505;
+  --surface: #0a0a0a;
+  --surface-highlight: #121212;
+  --primary: #00e676;
+  --primary-dark: #00a854;
+
+  --glass-bg: rgba(5, 5, 5, 0.8);
+  --glass-border: rgba(0, 255, 65, 0.1);
+
+  /* Grays for Dark Mode (Original) */
+  --gray-100: #e5e5e5;
+  --gray-200: #a3a3a3;
+  --gray-300: #737373;
+  --gray-400: #525252;
+  --gray-500: #404040;
+  --gray-600: #262626;
+  --gray-700: #171717;
+  --gray-800: #0a0a0a;
+  --gray-900: #050505;
+}
+
+@theme {
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-highlight: var(--surface-highlight);
+  --color-white: #ffffff;
+
+  --color-gray-100: var(--gray-100);
+  --color-gray-200: var(--gray-200);
+  --color-gray-300: var(--gray-300);
+  --color-gray-400: var(--gray-400);
+  --color-gray-500: var(--gray-500);
+  --color-gray-600: var(--gray-600);
+  --color-gray-700: var(--gray-700);
+  --color-gray-800: var(--gray-800);
+  --color-gray-900: var(--gray-900);
+
+  --font-display: "JetBrains Mono", monospace;
+  --font-body: "Inter", sans-serif;
+
+  --animate-blink: blink 1s step-end infinite;
+  --animate-spin-slow: spin 12s linear infinite;
+  --animate-spin-slow-reverse: spin 15s linear infinite reverse;
+
+  @keyframes blink {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes marquee-vertical {
+    from {
+      transform: translateY(0);
+    }
+
+    to {
+      transform: translateY(-50%);
+    }
+  }
+
+  --animate-marquee-vertical: marquee-vertical 20s linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(-33.333%);
+    }
+  }
+
+  @keyframes marquee-reverse {
+    from {
+      transform: translateX(-33.333%);
+    }
+
+    to {
+      transform: translateX(0);
+    }
+  }
+
+  --animate-marquee: marquee 25s linear infinite;
+  --animate-marquee-reverse: marquee-reverse 25s linear infinite;
+}
+
+.glass-nav {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.terminal-window {
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.8);
+}
+
+.hacker-grid {
+  background-image:
+    linear-gradient(rgba(0, 255, 65, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Light mode override for hacker grid - make it subtler or different color? */
+:root:not(.dark) .hacker-grid {
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-400);
+  /* Use variable */
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-500);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes scanline-swipe {
+  0% {
+    top: -20%;
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  100% {
+    top: 120%;
+    opacity: 0;
+  }
+}
+
+.scan-overlay {
+  background: linear-gradient(to bottom,
+      transparent 0%,
+      rgba(0, 230, 118, 0.2) 50%,
+      rgba(0, 230, 118, 0.6) 50%,
+      rgba(0, 230, 118, 0.2) 51%,
+      transparent 100%);
+  height: 10px;
+  width: 100%;
+  position: absolute;
+  top: -20%;
+  left: 0;
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  filter: drop-shadow(0 0 5px #00e676);
+}
+
+.group:hover .scan-overlay {
+  animation: scanline-swipe 1.5s linear infinite;
+}
+
+.reverse {
+  animation-direction: reverse;
+}
