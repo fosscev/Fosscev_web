@@ -2,98 +2,143 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useTheme } from "next-themes";
-import { Moon, Sun } from "lucide-react";
+import { Menu, X, Home, Info, Calendar, Users as UsersIcon } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { SOCIAL_LINKS } from "@/lib/constants";
+import { Logo } from "@/components/Logo";
 
 export function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
-    const { theme, setTheme } = useTheme();
-    const [mounted, setMounted] = useState(false);
+    const [scrolled, setScrolled] = useState(false);
     const pathname = usePathname();
 
+    // Track scroll - show navbar after scrolling past landing page
     useEffect(() => {
-        setMounted(true);
+        const handleScroll = () => {
+            // Show navbar after scrolling 80vh (most of landing page)
+            setScrolled(window.scrollY > window.innerHeight * 0.8);
+        };
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    const isActive = (path: string) => pathname === path ? "text-primary" : "text-gray-400";
+    const isActive = (path: string) => pathname === path;
+
+    const menuItems = [
+        { path: "/", label: "Home", icon: Home },
+        { path: "/about", label: "About", icon: Info },
+        { path: "/events", label: "Events", icon: Calendar },
+        { path: "/team", label: "Team", icon: UsersIcon },
+    ];
 
     return (
-        <nav className="fixed top-0 z-50 w-full glass-nav px-4">
-            <div className="max-w-7xl mx-auto">
-                <div className="flex items-center justify-between h-16">
-                    <Link href="/" className="flex items-center gap-3 group">
-                        <Image
-                            src="/logo.png"
-                            alt="FOSS Club CEV"
-                            width={180}
-                            height={50}
-                            className="h-12 w-auto object-contain"
-                            priority
-                        />
-                    </Link>
+        <>
+            {/* Fixed Logo - Always visible */}
+            <Logo />
 
-                    <div className="hidden md:flex gap-8 font-display items-center whitespace-nowrap">
-                        <Link href="/" className={`${isActive('/')} hover:text-primary transition-colors duration-200`}>./Home</Link>
-                        <Link href="/about" className={`${isActive('/about')} hover:text-primary transition-colors duration-200`}>./About</Link>
-                        <Link href="/events" className={`${isActive('/events')} hover:text-primary transition-colors duration-200`}>./Events</Link>
-                        <Link href="/team" className={`${isActive('/team')} hover:text-primary transition-colors duration-200`}>./Team</Link>
-
-                        <button
-                            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                            className="p-2 rounded-full hover:bg-gray-800 dark:hover:bg-white/10 transition-colors text-gray-900 dark:text-white"
-                            aria-label="Toggle theme"
-                        >
-                            {mounted && (theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />)}
-                        </button>
-
-                        <button className="bg-primary hover:bg-primary-dark text-black px-4 py-2 rounded-md font-bold transition-all duration-200 hover:shadow-[0_0_10px_rgba(0,230,118,0.4)]">
-                            Join Now
-                        </button>
-                    </div>
-
-                    {/* Mobile Menu Button */}
-                    <div className="md:hidden flex items-center gap-4">
-                        <button
-                            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                            className="p-2 rounded-full hover:bg-gray-800 dark:hover:bg-white/10 transition-colors text-gray-900 dark:text-white"
-                        >
-                            {mounted && (theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />)}
-                        </button>
+            {/* Compact Hamburger Button - Only shows when scrolled */}
+            <AnimatePresence>
+                {scrolled && (
+                    <motion.div
+                        initial={{ opacity: 0, x: 100 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 100 }}
+                        transition={{ duration: 0.3 }}
+                        className="fixed top-6 right-6 z-50"
+                    >
                         <button
                             onClick={() => setIsOpen(!isOpen)}
-                            className="text-white hover:text-primary transition-colors p-2"
+                            className="w-14 h-14 bg-surface/90 backdrop-blur-md border border-white/20 rounded-full flex items-center justify-center hover:bg-primary hover:border-primary transition-all duration-300 shadow-lg hover:shadow-primary/50 group"
                             aria-label="Toggle menu"
                         >
-                            <span className="material-symbols-outlined">
-                                {isOpen ? 'close' : 'menu'}
-                            </span>
+                            {isOpen ? (
+                                <X className="w-6 h-6 text-white group-hover:text-black transition-colors" />
+                            ) : (
+                                <Menu className="w-6 h-6 text-white group-hover:text-black transition-colors" />
+                            )}
                         </button>
-                    </div>
-                </div>
-            </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            {/* Mobile Menu Dropdown */}
-            <div
-                className={`md:hidden absolute left-0 w-full bg-surface/95 backdrop-blur-md border-b border-white/10 overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
-                    }`}
-            >
-                <div className="flex flex-col p-4 space-y-4 font-display">
-                    <Link href="/" className="text-gray-400 hover:text-primary block py-2" onClick={() => setIsOpen(false)}>./Home</Link>
-                    <Link href="/about" className="text-gray-400 hover:text-primary block py-2" onClick={() => setIsOpen(false)}>./About</Link>
-                    <Link href="/events" className="text-gray-400 hover:text-primary block py-2" onClick={() => setIsOpen(false)}>./Events</Link>
-                    <Link href="/team" className="text-gray-400 hover:text-primary block py-2" onClick={() => setIsOpen(false)}>./Team</Link>
-                    <Link
-                        href="https://fossunited.org/c/college-of-engineering-vadakara"
-                        target="_blank"
-                        className="bg-primary text-black px-4 py-3 rounded-md font-bold w-full text-center hover:bg-primary-dark transition-colors block"
+            {/* Full Screen Menu Overlay */}
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="fixed inset-0 z-40 bg-background/95 backdrop-blur-xl"
                         onClick={() => setIsOpen(false)}
                     >
-                        Join Now_
-                    </Link>
-                </div>
-            </div>
-        </nav>
+                        <div className="h-full flex flex-col items-center justify-center p-8">
+                            {/* Menu Items */}
+                            <nav className="space-y-6">
+                                {menuItems.map((item, index) => (
+                                    <motion.div
+                                        key={item.path}
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: index * 0.1 }}
+                                    >
+                                        <Link
+                                            href={item.path}
+                                            onClick={() => setIsOpen(false)}
+                                            className={`group flex items-center gap-4 text-4xl md:text-6xl font-display font-bold transition-all duration-300 ${isActive(item.path)
+                                                ? "text-primary"
+                                                : "text-gray-400 hover:text-white"
+                                                }`}
+                                        >
+                                            <item.icon className={`w-10 h-10 md:w-14 md:h-14 transition-all duration-300 ${isActive(item.path)
+                                                ? "text-primary"
+                                                : "text-gray-600 group-hover:text-primary"
+                                                }`} />
+                                            <span className="relative">
+                                                {item.label}
+                                                <span className="absolute -bottom-2 left-0 w-0 h-1 bg-primary group-hover:w-full transition-all duration-300"></span>
+                                            </span>
+                                        </Link>
+                                    </motion.div>
+                                ))}
+                            </nav>
+
+                            {/* Join Button */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.4 }}
+                                className="mt-12"
+                            >
+                                <Link
+                                    href={SOCIAL_LINKS.whatsapp}
+                                    target="_blank"
+                                    className="inline-block bg-primary hover:bg-primary-dark text-black px-8 py-4 rounded-lg font-bold text-xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,230,118,0.5)] hover:scale-105"
+                                    onClick={() => setIsOpen(false)}
+                                >
+                                    Join Community →
+                                </Link>
+                            </motion.div>
+
+                            {/* Footer Info */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.5 }}
+                                className="absolute bottom-8 text-center"
+                            >
+                                <p className="text-gray-500 font-mono text-sm">
+                                    FOSS Community CEV
+                                </p>
+                                <p className="text-gray-600 font-mono text-xs mt-1">
+                                    Building the future, one commit at a time
+                                </p>
+                            </motion.div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </>
     );
 }
