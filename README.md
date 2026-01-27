@@ -98,7 +98,7 @@ We welcome contributions from everyone! Here's how you can get involved:
 
 - **Club**: FOSS Club CE Vadakara
 - **Institution**: College of Engineering Vadakara
-- **Email**: foss@cevadakara.ac.in (placeholder)
+- **Email**: fossclubcev@cev.ac.in 
 
 ## 📝 License
 
