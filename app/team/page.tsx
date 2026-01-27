@@ -6,6 +6,8 @@ import { team } from "@/data/team";
 import Image from "next/image";
 import { Github, Linkedin, Instagram } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import Link from "next/link";
+import { SOCIAL_LINKS } from "@/lib/constants";
 
 interface CardPosition {
     x: number;
@@ -344,10 +346,14 @@ export default function TeamPage() {
                             We are looking for passionate contributors who believe in the power of FOSS.<br />
                             <span className="text-primary">// Initialize your journey with us</span>
                         </p>
-                        <button className="group relative bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-black px-8 py-4 font-bold transition-all duration-300 uppercase font-display overflow-hidden">
-                            <span className="relative z-10">Initialize_Application</span>
+                        <Link
+                            href={SOCIAL_LINKS.whatsapp}
+                            target="_blank"
+                            className="group relative inline-block bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-black px-8 py-4 font-bold transition-all duration-300 uppercase font-display overflow-hidden"
+                        >
+                            <span className="relative z-10">Join_With_Us</span>
                             <div className="absolute inset-0 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left -z-0" />
-                        </button>
+                        </Link>
                     </div>
                 </div>
             </section>
