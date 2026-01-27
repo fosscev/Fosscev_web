@@ -10,7 +10,7 @@ export const SOCIAL_LINKS = {
     github: "https://github.com/foss-cev",
     linkedin: "https://www.linkedin.com/company/fosscev",
     instagram: "https://www.instagram.com/fosscev/",
-    email: "mailto:fossclubcev@gmail.com",
+    email: "mailto:fossclubcev@cev.ac.in",
 
     // FOSS United Chapter
     fossUnited: "https://fossunited.org/c/college-of-engineering-vadakara"

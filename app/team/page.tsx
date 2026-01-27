@@ -2,7 +2,7 @@
 
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { team } from "@/data/team";
+import { team, subteam } from "@/data/team";
 import Image from "next/image";
 import { Github, Linkedin, Instagram } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
@@ -286,7 +286,9 @@ const TeamMemberCard = ({
 
 export default function TeamPage() {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+    const [hoveredSubteamIndex, setHoveredSubteamIndex] = useState<number | null>(null);
     const cardPositions = useRef<Map<number, DOMRect>>(new Map());
+    const subteamCardPositions = useRef<Map<number, DOMRect>>(new Map());
 
     return (
         <main className="min-h-screen bg-background text-white selection:bg-primary selection:text-black">
@@ -323,6 +325,41 @@ export default function TeamPage() {
                             cardPositions={cardPositions}
                         />
                     ))}
+                </div>
+
+                {/* Subteam Section */}
+                <div className="mb-20">
+                    {/* Subteam Header */}
+                    <div className="mb-12 text-center">
+                        <h2 className="text-4xl md:text-6xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-4 animate-gradient">
+                            SUB_TEAM
+                        </h2>
+                        <div className="flex items-center justify-center gap-4 mb-4">
+                            <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary" />
+                            <p className="text-lg text-primary font-mono">
+                                // THE SUPPORTING FORCE
+                            </p>
+                            <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary" />
+                        </div>
+                        <p className="text-gray-400 font-mono max-w-2xl mx-auto">
+                            Dedicated contributors powering our community initiatives.
+                        </p>
+                    </div>
+
+                    {/* Subteam Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                        {subteam.map((member, i) => (
+                            <TeamMemberCard
+                                key={`subteam-${i}`}
+                                member={member}
+                                index={i}
+                                hoveredIndex={hoveredSubteamIndex}
+                                onHover={setHoveredSubteamIndex}
+                                onLeave={() => setHoveredSubteamIndex(null)}
+                                cardPositions={subteamCardPositions}
+                            />
+                        ))}
+                    </div>
                 </div>
 
                 {/* Call to Action */}

@@ -1,31 +1,57 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
+import Image from "next/image";
 
-const items = [
-    { id: 1, text: "Hackathon 2023", color: "bg-purple-500" },
-    { id: 2, text: "Linux Workshop", color: "bg-blue-500" },
-    { id: 3, text: "FOSS Meetup", color: "bg-green-500" },
-    { id: 4, text: "Git Training", color: "bg-red-500" },
-    { id: 5, text: "Web Dev Sprint", color: "bg-yellow-500" },
-    { id: 6, text: "AI Summit", color: "bg-pink-500" },
-    { id: 7, text: "Cyber Security", color: "bg-indigo-500" },
-    { id: 8, text: "Cloud Native", color: "bg-orange-500" },
+const galleryImages = [
+    { id: 1, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
+    { id: 2, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
+    { id: 3, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
+    { id: 4, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
+    { id: 5, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
+    { id: 6, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
 ];
+
 
 const Row = ({ speed = 20, reverse = false, className = "" }: { speed?: number, reverse?: boolean, className?: string }) => {
     return (
         <div className={`w-full overflow-hidden ${className}`}>
             <div className={`flex gap-6 min-w-max ${reverse ? 'animate-marquee-reverse' : 'animate-marquee'}`} style={{ animationDuration: `${speed}s` }}>
-                {items.concat(items).concat(items).map((item, i) => (
-                    <div key={i} className="w-[300px] h-[200px] bg-surface border border-white/10 rounded-xl overflow-hidden relative group transition-all duration-300 hover:border-primary flex-shrink-0">
-                        <div className={`absolute inset-0 opacity-20 group-hover:opacity-40 transition-opacity ${item.color}`} />
-                        <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
-                            <h3 className="text-xl font-display font-bold text-white uppercase">{item.text}</h3>
+                {galleryImages.concat(galleryImages).concat(galleryImages).map((item, i) => (
+                    <div key={i} className="w-[300px] h-[200px] bg-surface border border-white/10 rounded-xl overflow-hidden relative group transition-all duration-300 hover:border-primary flex-shrink-0 hover:scale-105">
+                        {/* Image */}
+                        <div className="absolute inset-0">
+                            <Image
+                                src={item.image}
+                                alt={item.title}
+                                fill
+                                className="object-cover grayscale group-hover:grayscale-0 transition-all duration-500"
+                                sizes="300px"
+                                onError={(e) => {
+                                    // Fallback to gradient if image doesn't exist
+                                    const target = e.target as HTMLElement;
+                                    target.style.display = 'none';
+                                }}
+                            />
+                            {/* Fallback gradient */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-purple-600/20 to-pink-600/20 opacity-50 group-hover:opacity-30 transition-opacity"></div>
                         </div>
-                        <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black to-transparent">
-                            <p className="text-primary font-mono text-sm">EVENT_0{item.id}</p>
+
+                        {/* Overlay on hover */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                                <h3 className="text-lg font-display font-bold text-white uppercase mb-2">{item.title}</h3>
+                                <p className="text-primary font-mono text-sm">{item.event}</p>
+                            </div>
                         </div>
+
+                        {/* Bottom label always visible */}
+                        <div className="absolute bottom-0 left-0 w-full p-3 bg-gradient-to-t from-black/80 to-transparent">
+                            <p className="text-primary font-mono text-xs">EVENT_0{item.id}</p>
+                        </div>
+
+                        {/* Glowing border on hover */}
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none rounded-xl shadow-[0_0_20px_rgba(0,230,118,0.4)]"></div>
                     </div>
                 ))}
             </div>

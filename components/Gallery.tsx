@@ -5,13 +5,14 @@ import { useRef } from "react";
 import Image from "next/image";
 
 const galleryImages = [
-    { id: 1, title: "Linux Installation Party", event: "Workshop 2024", image: "/gallery/event1.jpg" },
-    { id: 2, title: "HackDay CEV", event: "Hackathon 2024", image: "/gallery/event2.jpg" },
-    { id: 3, title: "Git Workshop", event: "Learning Session", image: "/gallery/event3.jpg" },
-    { id: 4, title: "Community Meetup", event: "Networking", image: "/gallery/event4.jpg" },
-    { id: 5, title: "FOSS Talk", event: "Guest Speaker", image: "/gallery/event5.jpg" },
-    { id: 6, title: "Code Sprint", event: "Contribution Day", image: "/gallery/event6.jpg" },
+    { id: 1, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
+    { id: 2, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
+    { id: 3, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
+    { id: 4, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
+    { id: 5, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
+    { id: 6, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
 ];
+
 
 export function Gallery() {
     const targetRef = useRef(null);
