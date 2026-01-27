@@ -1,75 +1,109 @@
-# FOSS Cell CEV - Official Website
+# FOSS Club CE Vadakara
 
-Welcome to the official repository for the Free and Open Source Software (FOSS) Cell of CEV. This website serves as the central hub for our community events, workshops, resources, and team details.
+Welcome to the official website of FOSS Club at College of Engineering Vadakara! This is a vibrant community dedicated to promoting Free and Open Source Software (FOSS) among students and enthusiasts.
 
-##  About The Project
-This project aims to promote open-source culture within the campus. The website features:
-- Upcoming and past events/workshops.
-- Resources for learning FOSS technologies.
-- Team details and contact information.
-- Blog or news updates regarding open source.
+## 🌟 About
+
+FOSS Club CE Vadakara is a student-led initiative that fosters collaboration, innovation, and learning in the world of open source software. Our mission is to build a strong FOSS culture in our college and contribute to the global open source community.
+
+## 🚀 Features
+
+- **Modern Design**: Built with Next.js and Tailwind CSS for a sleek, responsive experience
+- **Interactive Components**: Smooth animations powered by Framer Motion
+- **Dark Theme**: Beautiful dark theme with hacker-inspired aesthetics
+- **Community Showcase**: Highlighting events, team members, and FOSS tracks
+- **Responsive Layout**: Optimized for all devices
 
 ## 🛠️ Tech Stack
-*(Update these based on what you are actually using)*
-- **Frontend:** HTML5, CSS3, JavaScript / React / Next.js
-- **Styling:** Tailwind CSS / Bootstrap / Custom CSS
-- **Version Control:** Git & GitHub
 
-## ⚙️ Getting Started
+- **Framework**: Next.js 16
+- **Styling**: Tailwind CSS with custom animations
+- **Animations**: Framer Motion
+- **Icons**: Lucide React
+- **Theme**: Next Themes for dark/light mode support
+- **Language**: TypeScript
 
-### Prerequisites
-Make sure you have the following installed:
-- [Git](https://git-scm.com/)
-- [Node.js](https://nodejs.org/) (if using React/Next.js)
-- A Code Editor (VS Code recommended)
+## 📦 Installation
 
-### Installation
-1. **Clone the repository**
-   ```bash
-   git clone [https://github.com/husainsaifee53/fosscev.git](https://github.com/husainsaifee53/fosscev.git)
-
-2.  **Navigate to the project directory**
-
-    ```bash
-    cd fosscev
-
-3. **Open in your Code Editor (e.g., VS Code)**
-    ```bash
-    code .
-
-🤝 Contribution Guidelines (Must Read)
-To keep the main codebase stable, we follow a strict workflow. Collaborators cannot push directly to the main branch.
-
-How to Contribute:
-# Step 1: Get the latest code Always start by ensuring you have the latest version of the project.
-    ```bash
-    git checkout main
-    git pull origin main
+1. Clone the repository:
+```bash
+git clone https://github.com/your-username/foss-community-site.git
+cd foss-community-site
 ```
 
-# Step 2: Create a New Branch Create a branch for your specific task (e.g., fix-navbar, add-footer, update-events).
-    ```bash
-    git checkout -b your-branch-name
-    ```
-
-# Step 3: Make Changes & Commit Write your code, save it, and commit it.
-
-    ```bash
-    git add .
-git commit -m "Briefly describe what you changed" 
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+# or
+pnpm install
 ```
 
-# Step 4: Push to GitHub Push your specific branch to the repository.
+3. Run the development server:
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+```
 
-    ```bash
-    git push -u origin your-branch-name
-    ```
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-# Step 5: Open a Pull Request (PR)
-Go to the Fosscev Repository.
+## 📁 Project Structure
 
-You will see a banner saying your branch had recent pushes. Click "Compare & pull request".
+```
+foss-community-site/
+├── app/                    # Next.js app directory
+│   ├── about/             # About page
+│   ├── events/            # Events page
+│   ├── team/              # Team page
+│   └── page.tsx           # Home page
+├── components/            # Reusable React components
+│   ├── Hero.tsx          # Landing section
+│   ├── Navbar.tsx        # Navigation
+│   ├── CoreTeam.tsx      # Team showcase
+│   ├── Tracks.tsx        # FOSS tracks
+│   └── ...
+├── public/               # Static assets
+└── package.json          # Dependencies and scripts
+```
 
-Describe your changes and submit.
+## 🤝 Contributing
 
-Wait for the maintainer to review and merge your code.
+We welcome contributions from everyone! Here's how you can get involved:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Follow the existing code style
+- Use TypeScript for type safety
+- Test your changes thoroughly
+- Update documentation as needed
+
+## 📄 Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+
+## 📞 Contact
+
+- **Club**: FOSS Club CE Vadakara
+- **Institution**: College of Engineering Vadakara
+- **Email**: fossclubcev@cev.ac.in 
+
+## 📝 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+---
+
+Built with ❤️ by FOSS Club CE Vadakara
