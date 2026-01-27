@@ -4,7 +4,7 @@ export interface TeamMember {
     image: string;
     github?: string;
     linkedin?: string;
-    twitter?: string;
+    instagram?: string;
 }
 
 export const team: TeamMember[] = [
@@ -14,7 +14,7 @@ export const team: TeamMember[] = [
         image: "/rish.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
     {
         name: "Hussain Huzefa",
@@ -22,7 +22,7 @@ export const team: TeamMember[] = [
         image: "/huss.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
     {
         name: "Devapriya k",
@@ -30,7 +30,7 @@ export const team: TeamMember[] = [
         image: "/DEVA.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
     {
         name: "Roshith Krishna",
@@ -38,7 +38,7 @@ export const team: TeamMember[] = [
         image: "/ROSH.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
     {
         name: "Anvar Sadath",
@@ -46,7 +46,7 @@ export const team: TeamMember[] = [
         image: "/anv.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
     {
         name: "Lakshmi Reji Suresh",
@@ -54,7 +54,7 @@ export const team: TeamMember[] = [
         image: "/LAKSHMII.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
     {
         name: "Rida Waseem",
@@ -62,7 +62,7 @@ export const team: TeamMember[] = [
         image: "/RIDA.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
     {
         name: "Sayanth P",
@@ -70,7 +70,7 @@ export const team: TeamMember[] = [
         image: "/say.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
     {
         name: "Ashwandha",
@@ -78,7 +78,7 @@ export const team: TeamMember[] = [
         image: "/ASHWANDHA.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
     {
         name: "Muhammad Aswlah",
@@ -86,7 +86,7 @@ export const team: TeamMember[] = [
         image: "/ASWLAH.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
     {
         name: "Fathima P",
@@ -94,7 +94,7 @@ export const team: TeamMember[] = [
         image: "/FATHIMA.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
     {
         name: "Sandra Sunil T",
@@ -102,7 +102,7 @@ export const team: TeamMember[] = [
         image: "/SANDRA.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
     {
         name: "Muhammed Sinan A P",
@@ -110,6 +110,6 @@ export const team: TeamMember[] = [
         image: "/SINAN.jpg",
         github: "https://github.com/",
         linkedin: "https://linkedin.com/in/",
-        twitter: "https://twitter.com/",
+        instagram: "https://instagram.com/",
     },
 ];
