@@ -3,7 +3,7 @@
 import { motion, useMotionValue, useAnimationFrame } from "framer-motion";
 import Image from "next/image";
 import { team } from "@/data/team";
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 // Triple the array to ensure seamless looping
 const marqueeTeam = [...team, ...team, ...team];
@@ -11,16 +11,21 @@ const marqueeTeam = [...team, ...team, ...team];
 export function CoreTeam() {
     const [isPaused, setIsPaused] = useState(false);
     const x = useMotionValue(0);
-    const animationRef = useRef(0);
 
-    useAnimationFrame((t) => {
+    useAnimationFrame(() => {
         if (!isPaused) {
             // Move at constant speed
             const speed = -0.5; // pixels per frame
             const newX = x.get() + speed;
 
-            // Reset position for seamless loop (when moved 33.33% of total width)
-            if (newX <= -33.33 * window.innerWidth / 100) {
+            // Calculate reset point based on card width and gap
+            // Each card is ~280px (w-64 md:w-72) + 32px gap = ~312px
+            // One third of tripled array = team.length * 312
+            const cardWidth = 312;
+            const resetPoint = -(team.length * cardWidth);
+
+            // Reset position for seamless loop
+            if (newX <= resetPoint) {
                 x.set(0);
             } else {
                 x.set(newX);
@@ -38,8 +43,8 @@ export function CoreTeam() {
 
             <div className="relative w-full">
                 {/* Gradient Masks */}
-                <div className="absolute left-0 top-0 bottom-0 w-12 md:w-32 z-10 bg-linear-to-r from-background to-transparent pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-0 w-12 md:w-32 z-10 bg-linear-to-l from-background to-transparent pointer-events-none" />
+                <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 z-10 bg-gradient-to-r from-background to-transparent pointer-events-none" />
+                <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 z-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
 
                 <div className="flex overflow-hidden">
                     <motion.div

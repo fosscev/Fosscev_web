@@ -7,8 +7,11 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-body" });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-display" });
 
 export const metadata: Metadata = {
-  title: "FOSS Community",
+  title: "FOSS CEV",
   description: "Code. Collaborate. Create. The official Open Source Community.",
+  icons: {
+    icon: "/logo2.png",
+  },
 };
 
 export default function RootLayout({
@@ -19,6 +22,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning>
       <head>
+        <link rel="icon" href="/logo2.png" type="image/png" />
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
           rel="stylesheet"
