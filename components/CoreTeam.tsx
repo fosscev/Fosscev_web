@@ -15,7 +15,7 @@ export function CoreTeam() {
     useAnimationFrame(() => {
         if (!isPaused) {
             // Move at constant speed
-            const speed = -0.5; // pixels per frame
+            const speed = -1.2; // pixels per frame (increased for faster movement)
             const newX = x.get() + speed;
 
             // Calculate reset point based on card width and gap

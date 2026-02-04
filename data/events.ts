@@ -17,6 +17,19 @@ export interface Event {
 export const events: Event[] = [
     {
         id: 1,
+        title: "Data Analytics Workshop",
+        date: "10 Feb 2026",
+        dateObj: new Date("2026-02-10"),
+        time: "9:00 AM - 4:00 PM",
+        location: "Seminar Hall, ECE Department, College of Engineering Vadakara",
+        description: "Join us for a comprehensive hands-on Data Analytics Workshop organized by Quasso Liberum XII, FOSS Club CEV, and CSI SB CEV in collaboration with TransEduverse. This workshop will cover data handling, visualization, insights, and real-world analytical techniques. Part of the Quasso Liberum 12th Edition inter-college techno-cultural fest.",
+        type: "Workshop",
+        attendees: "60+",
+        status: "Upcoming",
+        link: "https://fossunited.org/c/college-of-engineering-vadakara/data-analytics-workshop"
+    },
+    {
+        id: 2,
         title: "HackDay2026",
         date: "20 Jan 2026",
         dateObj: new Date("2026-01-20"),
@@ -29,7 +42,7 @@ export const events: Event[] = [
         link: "https://fossunited.org/c/college-of-engineering-vadakara/hackday"
     },
     {
-        id: 2,
+        id: 3,
         title: "HALLOWS OF HACKING",
         date: "11 Jan 2026",
         dateObj: new Date("2026-01-11"),
@@ -42,7 +55,7 @@ export const events: Event[] = [
         link: "https://fossunited.org/c/college-of-engineering-vadakara/hallowsofhacking"
     },
     {
-        id: 3,
+        id: 4,
         title: "AI & HER",
         date: "20 Dec 2025",
         dateObj: new Date("2025-12-20"),
@@ -55,7 +68,7 @@ export const events: Event[] = [
         link: "https://fossunited.org/c/college-of-engineering-vadakara/aiandher"
     },
     {
-        id: 4,
+        id: 5,
         title: "code FORWARD: AI . Developer . Productivity",
         date: "2 Nov 2025",
         dateObj: new Date("2025-11-02"),
@@ -68,7 +81,7 @@ export const events: Event[] = [
         link: "https://fossunited.org/c/college-of-engineering-vadakara/code-forward"
     },
     {
-        id: 5,
+        id: 6,
         title: "FOSS CORNER - Evolvia",
         date: "8 Oct 2025",
         dateObj: new Date("2025-10-08"),
@@ -81,7 +94,7 @@ export const events: Event[] = [
         link: "https://fossunited.org/c/college-of-engineering-vadakara/fosscorner-evolvia"
     },
     {
-        id: 6,
+        id: 7,
         title: "Linux Installation Party",
         date: "6 Oct 2025",
         dateObj: new Date("2025-10-06"),
@@ -94,7 +107,7 @@ export const events: Event[] = [
         link: "https://fossunited.org/c/college-of-engineering-vadakara/linux-party"
     },
     {
-        id: 7,
+        id: 8,
         title: "The Human Firewall: Your First and Last Line of Defense",
         date: "28 Sep 2025",
         dateObj: new Date("2025-09-28"),
@@ -107,7 +120,7 @@ export const events: Event[] = [
         link: "https://fossunited.org/c/college-of-engineering-vadakara/cyber-awareness"
     },
     {
-        id: 8,
+        id: 9,
         title: "Sit & Git",
         date: "19 Sep 2025",
         dateObj: new Date("2025-09-19"),
@@ -120,7 +133,7 @@ export const events: Event[] = [
         link: "https://fossunited.org/c/college-of-engineering-vadakara/Sit&Git"
     },
     {
-        id: 9,
+        id: 10,
         title: "Introducing FOSS - Open Doors to Open Source",
         date: "11 Sep 2025",
         dateObj: new Date("2025-09-11"),
