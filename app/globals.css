@@ -3,29 +3,6 @@
 @plugin "tailwindcss-animate";
 
 :root {
-  --background: #ffffff;
-  --surface: #f5f5f5;
-  --surface-highlight: #e5e5e5;
-  --primary: #00e676;
-  --primary-dark: #00a854;
-
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(0, 0, 0, 0.1);
-
-  /* Grays for Light Mode */
-  --gray-100: #171717;
-  /* Inverted for text (darkest) */
-  --gray-200: #262626;
-  --gray-300: #404040;
-  --gray-400: #525252;
-  --gray-500: #737373;
-  --gray-600: #a3a3a3;
-  --gray-700: #d4d4d4;
-  --gray-800: #e5e5e5;
-  --gray-900: #fafafa;
-}
-
-.dark {
   --background: #050505;
   --surface: #0a0a0a;
   --surface-highlight: #121212;
@@ -35,7 +12,7 @@
   --glass-bg: rgba(5, 5, 5, 0.8);
   --glass-border: rgba(0, 255, 65, 0.1);
 
-  /* Grays for Dark Mode (Original) */
+  /* Grays for Dark Mode */
   --gray-100: #e5e5e5;
   --gray-200: #a3a3a3;
   --gray-300: #737373;
@@ -138,12 +115,7 @@
   background-size: 40px 40px;
 }
 
-/* Light mode override for hacker grid - make it subtler or different color? */
-:root:not(.dark) .hacker-grid {
-  background-image:
-    linear-gradient(rgba(0, 0, 0, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px);
-}
+
 
 ::-webkit-scrollbar {
   width: 8px;
@@ -212,4 +184,28 @@
 
 .reverse {
   animation-direction: reverse;
+}
+
+@keyframes scan-vertical {
+  0% {
+    top: -10%;
+    opacity: 0;
+  }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
+  100% {
+    top: 110%;
+    opacity: 0;
+  }
+}
+
+.animate-scan-vertical {
+  animation: scan-vertical 8s linear infinite;
 }

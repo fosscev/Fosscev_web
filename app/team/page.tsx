@@ -195,6 +195,8 @@ const TeamMemberCard = ({
                         alt={member.name}
                         fill
                         className="object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                        priority={index < 4}
                     />
 
                     {/* Overlay with binary code */}
@@ -291,113 +293,135 @@ export default function TeamPage() {
     const subteamCardPositions = useRef<Map<number, DOMRect>>(new Map());
 
     return (
-        <main className="min-h-screen bg-background text-white selection:bg-primary selection:text-black">
-            <Navbar />
+        <main className="relative min-h-screen bg-background text-white selection:bg-primary selection:text-black overflow-hidden">
+            {/* Animated Grid Background */}
+            <div className="fixed inset-0 pointer-events-none z-0">
+                {/* Main grid pattern */}
+                <div className="absolute inset-0 hacker-grid opacity-20"></div>
 
-            <section className="pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="mb-16 text-center">
-                    <h1 className="text-6xl md:text-8xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-6 animate-gradient">
-                        CORE_TEAM
-                    </h1>
-                    <div className="flex items-center justify-center gap-4 mb-6">
-                        <div className="h-px w-16 bg-gradient-to-r from-transparent to-primary" />
-                        <p className="text-xl text-primary font-mono">
+                {/* Animated gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background"></div>
+
+                {/* Glowing dots at grid intersections */}
+                <div className="absolute inset-0" style={{
+                    backgroundImage: 'radial-gradient(circle at center, rgba(0, 230, 118, 0.15) 1px, transparent 1px)',
+                    backgroundSize: '40px 40px',
+                    backgroundPosition: '0 0, 20px 20px'
+                }}></div>
+
+                {/* Animated scan lines */}
+                <div className="absolute inset-0 opacity-5">
+                    <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-vertical"></div>
+                </div>
+            </div>
+
+            <div className="relative z-10">
+                <Navbar />
+
+                <section className="pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto overflow-visible">
+                    {/* Header */}
+                    <div className="mb-16 text-center">
+                        <h1 className="text-6xl md:text-8xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-6 animate-gradient">
+                            CORE_TEAM
+                        </h1>
+                        <div className="flex items-center justify-center gap-4 mb-6">
+                            <div className="h-px w-16 bg-gradient-to-r from-transparent to-primary" />
+                            <p className="text-xl text-primary font-mono">
                             // MEET THE ARCHITECTS
-                        </p>
-                        <div className="h-px w-16 bg-gradient-to-l from-transparent to-primary" />
-                    </div>
-                    <p className="text-gray-400 font-mono max-w-2xl mx-auto">
-                        The minds behind the code. The visionaries executing the mission.
-                    </p>
-                </div>
-
-                {/* Team Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-20">
-                    {team.map((member, i) => (
-                        <TeamMemberCard
-                            key={i}
-                            member={member}
-                            index={i}
-                            hoveredIndex={hoveredIndex}
-                            onHover={setHoveredIndex}
-                            onLeave={() => setHoveredIndex(null)}
-                            cardPositions={cardPositions}
-                        />
-                    ))}
-                </div>
-
-                {/* Subteam Section */}
-                <div className="mb-20">
-                    {/* Subteam Header */}
-                    <div className="mb-12 text-center">
-                        <h2 className="text-4xl md:text-6xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-4 animate-gradient">
-                            SUB_TEAM
-                        </h2>
-                        <div className="flex items-center justify-center gap-4 mb-4">
-                            <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary" />
-                            <p className="text-lg text-primary font-mono">
-                                // THE SUPPORTING FORCE
                             </p>
-                            <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary" />
+                            <div className="h-px w-16 bg-gradient-to-l from-transparent to-primary" />
                         </div>
                         <p className="text-gray-400 font-mono max-w-2xl mx-auto">
-                            Dedicated contributors powering our community initiatives.
+                            The minds behind the code. The visionaries executing the mission.
                         </p>
                     </div>
 
-                    {/* Subteam Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                        {subteam.map((member, i) => (
+                    {/* Team Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-20 overflow-visible min-h-fit">
+                        {team.map((member, i) => (
                             <TeamMemberCard
-                                key={`subteam-${i}`}
+                                key={i}
                                 member={member}
                                 index={i}
-                                hoveredIndex={hoveredSubteamIndex}
-                                onHover={setHoveredSubteamIndex}
-                                onLeave={() => setHoveredSubteamIndex(null)}
-                                cardPositions={subteamCardPositions}
+                                hoveredIndex={hoveredIndex}
+                                onHover={setHoveredIndex}
+                                onLeave={() => setHoveredIndex(null)}
+                                cardPositions={cardPositions}
                             />
                         ))}
                     </div>
-                </div>
 
-                {/* Call to Action */}
-                <div className="relative p-8 md:p-12 border border-white/10 bg-surface/50 rounded-xl overflow-hidden backdrop-blur-sm">
-                    {/* Background pattern */}
-                    <div className="absolute inset-0 opacity-5">
-                        <div className="absolute inset-0" style={{
-                            backgroundImage: `repeating-linear-gradient(0deg, #00E676 0px, #00E676 1px, transparent 1px, transparent 20px),
+                    {/* Subteam Section */}
+                    <div className="mb-20">
+                        {/* Subteam Header */}
+                        <div className="mb-12 text-center">
+                            <h2 className="text-4xl md:text-6xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-4 animate-gradient">
+                                SUB_TEAM
+                            </h2>
+                            <div className="flex items-center justify-center gap-4 mb-4">
+                                <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary" />
+                                <p className="text-lg text-primary font-mono">
+                                // THE SUPPORTING FORCE
+                                </p>
+                                <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary" />
+                            </div>
+                            <p className="text-gray-400 font-mono max-w-2xl mx-auto">
+                                Dedicated contributors powering our community initiatives.
+                            </p>
+                        </div>
+
+                        {/* Subteam Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                            {subteam.map((member, i) => (
+                                <TeamMemberCard
+                                    key={`subteam-${i}`}
+                                    member={member}
+                                    index={i}
+                                    hoveredIndex={hoveredSubteamIndex}
+                                    onHover={setHoveredSubteamIndex}
+                                    onLeave={() => setHoveredSubteamIndex(null)}
+                                    cardPositions={subteamCardPositions}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Call to Action */}
+                    <div className="relative p-8 md:p-12 border border-white/10 bg-surface/50 rounded-xl overflow-hidden backdrop-blur-sm">
+                        {/* Background pattern */}
+                        <div className="absolute inset-0 opacity-5">
+                            <div className="absolute inset-0" style={{
+                                backgroundImage: `repeating-linear-gradient(0deg, #00E676 0px, #00E676 1px, transparent 1px, transparent 20px),
                                             repeating-linear-gradient(90deg, #00E676 0px, #00E676 1px, transparent 1px, transparent 20px)`
-                        }} />
+                            }} />
+                        </div>
+
+                        {/* Glowing corner accent */}
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl" />
+
+                        <div className="relative z-10 text-center">
+                            <h3 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">
+                                Join the <span className="text-primary">Collective</span>
+                            </h3>
+                            <p className="text-gray-400 mb-8 font-mono max-w-2xl mx-auto">
+                                We are looking for passionate contributors who believe in the power of FOSS.<br />
+                                <span className="text-primary">// Initialize your journey with us</span>
+                            </p>
+                            <Link
+                                href={SOCIAL_LINKS.whatsapp}
+                                target="_blank"
+                                className="group relative inline-block bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-black px-8 py-4 font-bold transition-all duration-300 uppercase font-display overflow-hidden"
+                            >
+                                <span className="relative z-10">Join_With_Us</span>
+                                <div className="absolute inset-0 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left -z-0" />
+                            </Link>
+                        </div>
                     </div>
+                </section>
 
-                    {/* Glowing corner accent */}
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-3xl" />
+                <Footer />
 
-                    <div className="relative z-10 text-center">
-                        <h3 className="text-3xl md:text-4xl font-display font-bold text-white mb-4">
-                            Join the <span className="text-primary">Collective</span>
-                        </h3>
-                        <p className="text-gray-400 mb-8 font-mono max-w-2xl mx-auto">
-                            We are looking for passionate contributors who believe in the power of FOSS.<br />
-                            <span className="text-primary">// Initialize your journey with us</span>
-                        </p>
-                        <Link
-                            href={SOCIAL_LINKS.whatsapp}
-                            target="_blank"
-                            className="group relative inline-block bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-black px-8 py-4 font-bold transition-all duration-300 uppercase font-display overflow-hidden"
-                        >
-                            <span className="relative z-10">Join_With_Us</span>
-                            <div className="absolute inset-0 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left -z-0" />
-                        </Link>
-                    </div>
-                </div>
-            </section>
-
-            <Footer />
-
-            <style jsx>{`
+                <style jsx>{`
                 @keyframes scan {
                     0% {
                         top: 0%;
@@ -422,6 +446,7 @@ export default function TeamPage() {
                     animation: gradient 3s ease infinite;
                 }
             `}</style>
+            </div>
         </main>
     );
 }

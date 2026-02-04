@@ -8,202 +8,170 @@ import { SOCIAL_LINKS } from "@/lib/constants";
 
 export default function AboutPage() {
     return (
-        <div className="min-h-screen bg-background text-white selection:bg-primary selection:text-black">
-            <Navbar />
+        <div className="relative min-h-screen bg-background text-white selection:bg-primary selection:text-black overflow-hidden">
+            {/* Animated Grid Background */}
+            <div className="fixed inset-0 pointer-events-none z-0">
+                {/* Main grid pattern */}
+                <div className="absolute inset-0 hacker-grid opacity-20"></div>
 
-            <main className="max-w-7xl mx-auto px-4 py-20 pt-32">
-                {/* Hero Section */}
-                <motion.section
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-32 text-center"
-                >
-                    <h1 className="text-5xl md:text-7xl font-display font-black mb-6 bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent">
-                        About FOSS Community
-                    </h1>
-                    <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
-                        Building a culture of <span className="text-primary font-bold">open collaboration</span>,
-                        <span className="text-primary font-bold"> innovation</span>, and
-                        <span className="text-primary font-bold"> knowledge sharing</span> at CEV
-                    </p>
-                </motion.section>
+                {/* Animated gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background"></div>
 
-                {/* Mission & Vision Grid */}
-                <section className="grid md:grid-cols-2 gap-8 mb-32">
-                    {/* Vision Card */}
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.2 }}
-                        className="relative group"
+                {/* Glowing dots at grid intersections */}
+                <div className="absolute inset-0" style={{
+                    backgroundImage: 'radial-gradient(circle at center, rgba(0, 230, 118, 0.15) 1px, transparent 1px)',
+                    backgroundSize: '40px 40px',
+                    backgroundPosition: '0 0, 20px 20px'
+                }}></div>
+
+                {/* Animated scan lines */}
+                <div className="absolute inset-0 opacity-5">
+                    <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-vertical"></div>
+                </div>
+            </div>
+
+            <div className="relative z-10">
+                <Navbar />
+
+                <main className="max-w-7xl mx-auto px-4 py-20 pt-32">
+                    {/* Hero Section */}
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mb-32 text-center"
                     >
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-purple-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="relative bg-surface border border-white/10 rounded-2xl p-8 hover:border-primary transition-all duration-300">
-                            <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
-                                <Target className="w-8 h-8 text-primary" />
-                            </div>
-                            <h2 className="text-3xl font-display font-bold mb-4">Our Vision</h2>
-                            <p className="text-gray-300 leading-relaxed text-lg">
-                                We envision a world where technology is <strong className="text-primary">open</strong>,
-                                <strong className="text-primary"> inclusive</strong>, and
-                                <strong className="text-primary"> accessible</strong> to everyone.
-                                A community where knowledge flows freely and innovation thrives through collaboration.
-                            </p>
-                        </div>
-                    </motion.div>
-
-                    {/* Mission Card */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="relative group"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-blue-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="relative bg-surface border border-white/10 rounded-2xl p-8 hover:border-primary transition-all duration-300">
-                            <div className="w-16 h-16 bg-primary/10 rounded-xl flex items-center justify-center mb-6">
-                                <Lightbulb className="w-8 h-8 text-primary" />
-                            </div>
-                            <h2 className="text-3xl font-display font-bold mb-4">Our Mission</h2>
-                            <p className="text-gray-300 leading-relaxed text-lg">
-                                To empower students with open-source skills, foster a culture of contribution,
-                                and create a vibrant community of developers, designers, and innovators who
-                                believe in the power of collaborative development.
-                            </p>
-                        </div>
-                    </motion.div>
-                </section>
-
-                {/* Core Values */}
-                <motion.section
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="mb-32"
-                >
-                    <h2 className="text-4xl md:text-5xl font-display font-bold text-center mb-16">
-                        Core <span className="text-primary">Values</span>
-                    </h2>
-                    <div className="grid md:grid-cols-3 gap-8">
-                        {[
-                            {
-                                icon: Users,
-                                title: "Community First",
-                                description: "Collaboration over competition. We believe in lifting each other up and growing together.",
-                                color: "from-yellow-500/20 to-orange-500/20"
-                            },
-                            {
-                                icon: Heart,
-                                title: "Knowledge Sharing",
-                                description: "Free education for all. We're committed to making learning accessible to everyone.",
-                                color: "from-pink-500/20 to-red-500/20"
-                            },
-                            {
-                                icon: Lightbulb,
-                                title: "Innovation",
-                                description: "Pushing boundaries with open code. We encourage experimentation and creative problem-solving.",
-                                color: "from-blue-500/20 to-cyan-500/20"
-                            }
-                        ].map((value, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.5 + i * 0.1 }}
-                                className="relative group"
-                            >
-                                <div className={`absolute inset-0 bg-gradient-to-br ${value.color} rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`}></div>
-                                <div className="relative bg-surface border border-white/10 rounded-2xl p-6 hover:border-primary transition-all duration-300 h-full">
-                                    <div className="w-14 h-14 bg-primary/10 rounded-xl flex items-center justify-center mb-4">
-                                        <value.icon className="w-7 h-7 text-primary" />
-                                    </div>
-                                    <h3 className="text-2xl font-display font-bold mb-3 text-yellow-400">{value.title}</h3>
-                                    <p className="text-gray-300 leading-relaxed">{value.description}</p>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
-                </motion.section>
-
-                {/* Goals Section */}
-                <motion.section
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6 }}
-                    className="mb-32"
-                >
-                    <div className="bg-surface border border-white/10 rounded-2xl p-8 md:p-12">
-                        <h2 className="text-4xl font-display font-bold mb-8">
-                            <span className="text-primary">./</span>Goals for 2024-25
-                        </h2>
-                        <div className="grid md:grid-cols-2 gap-6">
-                            {[
-                                "Host 10+ Workshops yearly",
-                                "Contribute to 50+ Upstream Repos",
-                                "Build a Campus Mesh Network",
-                                "Mentor 200+ Students"
-                            ].map((goal, i) => (
-                                <div key={i} className="flex items-center gap-4 group cursor-default p-4 rounded-lg hover:bg-white/5 transition-colors">
-                                    <span className="text-primary font-bold text-2xl font-display">[ ]</span>
-                                    <span className="text-xl group-hover:text-primary transition-colors">{goal}</span>
-                                </div>
-                            ))}
-                            <div className="flex items-center gap-4 group cursor-default p-4 rounded-lg bg-primary/5">
-                                <span className="text-primary font-bold text-2xl font-display">[✓]</span>
-                                <span className="text-xl text-primary font-bold">Launch Community Website</span>
-                            </div>
-                        </div>
-                    </div>
-                </motion.section>
-
-                {/* Quote Section */}
-                <motion.section
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.7 }}
-                    className="mb-32"
-                >
-                    <div className="relative bg-gradient-to-r from-primary/10 to-purple-600/10 border border-primary/20 rounded-2xl p-8 md:p-12 overflow-hidden">
-                        <div className="absolute top-0 right-0 text-[200px] text-primary/5 font-display leading-none">"</div>
-                        <p className="text-2xl md:text-3xl font-display italic text-gray-300 relative z-10 max-w-3xl">
-                            In a world of proprietary walls, be the <span className="text-primary font-bold">open door</span>.
+                        <h1 className="text-5xl md:text-7xl font-display font-black mb-6 bg-gradient-to-r from-white via-primary to-white bg-clip-text text-transparent">
+                            About FOSS Community
+                        </h1>
+                        <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
+                            Building a culture of <span className="text-primary font-bold">open collaboration</span>,
+                            <span className="text-primary font-bold"> innovation</span>, and
+                            <span className="text-primary font-bold"> knowledge sharing</span> at CEV
                         </p>
-                        <p className="text-gray-500 mt-4 font-mono">— FOSS Community CEV</p>
-                    </div>
-                </motion.section>
+                    </motion.section>
 
-                {/* Connect Section */}
-                <section>
-                    <h2 className="text-center text-4xl font-display font-bold mb-12">
-                        Connect with <span className="text-primary">Us</span>
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {[
-                            { name: "GitHub", icon: Github, link: SOCIAL_LINKS.github, color: "hover:border-white hover:shadow-[0_0_20px_rgba(255,255,255,0.2)]" },
-                            { name: "LinkedIn", icon: Linkedin, link: SOCIAL_LINKS.linkedin, color: "hover:border-[#0077b5] hover:shadow-[0_0_20px_rgba(0,119,181,0.3)]" },
-                            { name: "Instagram", icon: Instagram, link: SOCIAL_LINKS.instagram, color: "hover:border-[#E1306C] hover:shadow-[0_0_20px_rgba(225,48,108,0.3)]" },
-                            { name: "Email", icon: Mail, link: SOCIAL_LINKS.email, color: "hover:border-primary hover:shadow-[0_0_20px_rgba(0,230,118,0.3)]" },
-                        ].map((social, i) => (
-                            <motion.a
-                                key={i}
-                                href={social.link}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: 0.8 + i * 0.1 }}
-                                className={`group p-8 bg-surface border border-white/10 rounded-xl flex flex-col items-center justify-center gap-4 hover:bg-surface-highlight transition-all duration-300 ${social.color}`}
-                            >
-                                <social.icon strokeWidth={1.5} className="w-12 h-12 text-gray-400 group-hover:text-white transition-colors duration-300" />
-                                <div className="flex items-center gap-2">
-                                    <span className="font-display font-bold text-lg text-gray-300 group-hover:text-white">{social.name}</span>
-                                    <ArrowUpRight className="w-4 h-4 opacity-0 -translate-y-1 translate-x-1 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all" />
-                                </div>
-                            </motion.a>
-                        ))}
-                    </div>
-                </section>
-            </main>
+                    {/* Mission & Vision */}
+                    <div className="grid md:grid-cols-2 gap-12 mb-32">
+                        <motion.div
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                            className="relative group"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-2xl blur-xl group-hover:blur-2xl transition-all"></div>
+                            <div className="relative bg-surface/50 backdrop-blur-sm border border-primary/20 rounded-2xl p-8 hover:border-primary/40 transition-all">
+                                <Target className="w-12 h-12 text-primary mb-6" />
+                                <h2 className="text-3xl font-display font-bold mb-4">Our Mission</h2>
+                                <p className="text-gray-400 leading-relaxed">
+                                    To foster a vibrant community of developers, designers, and tech enthusiasts who believe in the power of Free and Open Source Software. We aim to democratize technology education and create opportunities for everyone to contribute to the global open-source ecosystem.
+                                </p>
+                            </div>
+                        </motion.div>
 
-            <Footer />
+                        <motion.div
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.3 }}
+                            className="relative group"
+                        >
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-transparent rounded-2xl blur-xl group-hover:blur-2xl transition-all"></div>
+                            <div className="relative bg-surface/50 backdrop-blur-sm border border-primary/20 rounded-2xl p-8 hover:border-primary/40 transition-all">
+                                <Lightbulb className="w-12 h-12 text-primary mb-6" />
+                                <h2 className="text-3xl font-display font-bold mb-4">Our Vision</h2>
+                                <p className="text-gray-400 leading-relaxed">
+                                    To become the leading FOSS community in Kerala, inspiring the next generation of open-source contributors. We envision a future where every student has the skills, confidence, and platform to build impactful solutions using open-source technologies.
+                                </p>
+                            </div>
+                        </motion.div>
+                    </div>
+
+                    {/* What We Do */}
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.4 }}
+                        className="mb-32"
+                    >
+                        <h2 className="text-4xl md:text-5xl font-display font-black mb-12 text-center">
+                            What We <span className="text-primary">Do</span>
+                        </h2>
+                        <div className="grid md:grid-cols-3 gap-8">
+                            {[
+                                {
+                                    icon: Users,
+                                    title: "Workshops & Events",
+                                    description: "Regular hands-on workshops, hackathons, and tech talks featuring industry experts and open-source maintainers."
+                                },
+                                {
+                                    icon: Target,
+                                    title: "Skill Development",
+                                    description: "Structured learning paths covering Git, Linux, web development, and contributing to open-source projects."
+                                },
+                                {
+                                    icon: Heart,
+                                    title: "Community Building",
+                                    description: "Creating a supportive environment where members collaborate, share knowledge, and grow together."
+                                }
+                            ].map((item, index) => (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.5 + index * 0.1 }}
+                                    className="relative group"
+                                >
+                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent rounded-xl blur-lg group-hover:blur-xl transition-all"></div>
+                                    <div className="relative bg-surface/30 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:border-primary/30 transition-all">
+                                        <item.icon className="w-10 h-10 text-primary mb-4" />
+                                        <h3 className="text-xl font-display font-bold mb-3">{item.title}</h3>
+                                        <p className="text-gray-400 text-sm leading-relaxed">{item.description}</p>
+                                    </div>
+                                </motion.div>
+                            ))}
+                        </div>
+                    </motion.section>
+
+                    {/* Connect Section */}
+                    <motion.section
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.7 }}
+                        className="text-center"
+                    >
+                        <h2 className="text-4xl md:text-5xl font-display font-black mb-8">
+                            Connect With <span className="text-primary">Us</span>
+                        </h2>
+                        <p className="text-gray-400 mb-12 max-w-2xl mx-auto">
+                            Join our community on social media and stay updated with the latest events, workshops, and opportunities.
+                        </p>
+                        <div className="flex justify-center gap-6 flex-wrap">
+                            {[
+                                { icon: Github, href: SOCIAL_LINKS.github, label: "GitHub" },
+                                { icon: Linkedin, href: SOCIAL_LINKS.linkedin, label: "LinkedIn" },
+                                { icon: Instagram, href: SOCIAL_LINKS.instagram, label: "Instagram" },
+                                { icon: Mail, href: `mailto:${SOCIAL_LINKS.email}`, label: "Email" }
+                            ].map((social, index) => (
+                                <motion.a
+                                    key={index}
+                                    href={social.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.8 + index * 0.1 }}
+                                    className="group relative bg-surface/50 backdrop-blur-sm border border-white/10 hover:border-primary/50 rounded-xl p-6 transition-all hover:scale-105"
+                                >
+                                    <social.icon className="w-8 h-8 text-gray-400 group-hover:text-primary transition-colors mb-3" />
+                                    <p className="text-sm font-mono text-gray-400 group-hover:text-primary transition-colors">{social.label}</p>
+                                    <ArrowUpRight className="absolute top-4 right-4 w-4 h-4 text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                                </motion.a>
+                            ))}
+                        </div>
+                    </motion.section>
+                </main>
+
+                <Footer />
+            </div>
         </div>
     );
 }
