@@ -35,7 +35,7 @@ export function Tracks() {
     const [hoveredId, setHoveredId] = useState<number | null>(null);
 
     return (
-        <section className="bg-background py-20 relative border-t border-white/10">
+        <section className="py-20 relative border-t border-white/10">
             <div className="max-w-7xl mx-auto px-4">
                 <h2 className="text-4xl md:text-6xl font-display font-bold text-white mb-16 tracking-tighter uppercase">
                     Focus Areas_
