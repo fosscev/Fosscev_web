@@ -1,28 +1,56 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
 
 export function Hero() {
+    const targetRef = useRef<HTMLDivElement>(null);
+    const { scrollYProgress } = useScroll({
+        target: targetRef,
+        offset: ["start start", "end start"]
+    });
+
+    // Transform scroll progress to X position (horizontal)
+    // First line moves left, second line moves right
+    const x1 = useTransform(scrollYProgress, [0, 1], [0, -200]);
+    const x2 = useTransform(scrollYProgress, [0, 1], [0, 200]);
+    const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
     return (
-        <section className="relative min-h-screen flex flex-col justify-center bg-background overflow-hidden pt-20">
-            {/* Massive Headline */}
+        <section ref={targetRef} className="relative min-h-screen flex flex-col justify-center overflow-hidden pt-20">
+            {/* Massive Headline with Parallax */}
             <div className="flex-1 flex flex-col justify-center items-center z-10 px-4">
-                <motion.h1
-                    initial={{ opacity: 0, y: 100 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, ease: "easeOut" }}
-                    className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-bold font-display leading-[0.9] tracking-tighter text-white text-center uppercase"
-                >
-                    FOSS CLUB
-                    <br />
-                    <span className="text-transparent bg-clip-text bg-linear-to-b from-white to-gray-400">
-                        CE Vadakara
-                    </span>
-                </motion.h1>
+                <div className="relative">
+                    {/* First line - moves left on scroll */}
+                    <motion.div
+                        style={{ x: x1, opacity }}
+                        initial={{ opacity: 0, y: 100 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                    >
+                        <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-bold font-display leading-[0.9] tracking-tighter text-white text-center uppercase">
+                            FOSS CLUB
+                        </h1>
+                    </motion.div>
+
+                    {/* Second line - moves right on scroll */}
+                    <motion.div
+                        style={{ x: x2, opacity }}
+                        initial={{ opacity: 0, y: 100 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+                    >
+                        <h1 className="text-5xl sm:text-7xl md:text-8xl lg:text-9xl font-bold font-display leading-[0.9] tracking-tighter text-center uppercase">
+                            <span className="text-transparent bg-clip-text bg-linear-to-b from-white to-gray-400">
+                                CE Vadakara
+                            </span>
+                        </h1>
+                    </motion.div>
+                </div>
             </div>
 
             {/* Infinite Marquee */}
-            <div className="w-full bg-background border-y border-primary/30 py-4 overflow-hidden relative z-20">
+            <div className="w-full bg-background/80 backdrop-blur-sm border-y border-primary/30 py-4 overflow-hidden relative z-20">
                 <div className="absolute inset-0 bg-primary/5"></div>
                 <div className="flex animate-marquee whitespace-nowrap">
                     {[...Array(10)].map((_, i) => (
