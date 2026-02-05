@@ -83,7 +83,7 @@ export const team: TeamMember[] = [
     {//comple
         name: "Muhammad Aswlah",
         role: "Designer",
-        image: "/Aswlah.jpg",
+        image: "/ASWLAH.jpg",
         github: "https://github.com/Aswlah01",
         linkedin: "https://www.linkedin.com/in/muhammed-aswlah",
         instagram: "https://www.instagram.com/",
@@ -91,7 +91,7 @@ export const team: TeamMember[] = [
     {
         name: "Fathima P",
         role: "Designer",
-        image: "/Fathima.jpg",
+        image: "/FATHIMA.jpg",
         github: "https://github.com/",
         linkedin: "https://www.linkedin.com/in/fathima-mahamood-90b650342",
         instagram: "https://www.instagram.com/_faathimaahh__",
@@ -99,7 +99,7 @@ export const team: TeamMember[] = [
     {
         name: "Sandra Sunil T",
         role: "Co social Lead",
-        image: "/sandra.jpg",
+        image: "/SANDRA.jpg",
         github: "https://github.com/sandravtk06-jpg",
         linkedin: "https://www.linkedin.com/in/sandra-sunil-600321336",
         instagram: "https://instagram.com/",
