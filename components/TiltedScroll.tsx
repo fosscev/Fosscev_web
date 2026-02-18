@@ -2,21 +2,24 @@
 
 import { useRef, useEffect, useState } from "react";
 import Image from "next/image";
+import { supabase } from "@/lib/supabase";
 
-const galleryImages = [
-    { id: 1, title: "SIT & GIT", event: "FOSS CEV 2025", image: "/WhatsApp Image 2026-01-28 at 5.47.34 PM.jpeg" },
-    { id: 2, title: "HackDay 2026", event: "FOSS CEV 2026", image: "/WhatsApp Image 2026-01-28 at 6.53.47 PM.jpeg" },
-    { id: 3, title: "HackDay 2026", event: "FOSS CEV 2026", image: "/WhatsApp Image 2026-01-28 at 6.57.34 PM.jpeg" },
-    { id: 4, title: "HackDay 2026", event: "FOSS CEV 2026", image: "/WhatsApp Image 2026-01-28 at 6.57.54 PM.jpeg" },
-    { id: 5, title: "Linux Installation", event: "FOSS CEV 2025", image: "/WhatsApp Image 2026-01-28 at 7.00.34 PM.jpeg" },
-    { id: 6, title: "SIT & GIT", event: "FOSS CEV 2025", image: "/WhatsApp Image 2026-01-28 at 7.06.03 PM.jpeg" },
-    { id: 7, title: "HackDay CEV", event: "Hackathon 2023", image: "/hackday-cev-2023.jpg" },
-];
+interface GalleryItem {
+    id: string;
+    title: string;
+    event: string;
+    image: string;
+}
 
-
-const Row = ({ speed = 20, reverse = false, offset = 0, className = "" }: { speed?: number, reverse?: boolean, offset?: number, className?: string }) => {
+const Row = ({ items, speed = 20, reverse = false, offset = 0, className = "" }: { items: GalleryItem[], speed?: number, reverse?: boolean, offset?: number, className?: string }) => {
     // Create a rotated array based on offset to show different images in each row
-    const rotatedImages = [...galleryImages.slice(offset), ...galleryImages.slice(0, offset)];
+    // Ensure we handle cases where offset > items.length
+    const effectiveOffset = items.length > 0 ? offset % items.length : 0;
+    const rotatedImages = items.length > 0
+        ? [...items.slice(effectiveOffset), ...items.slice(0, effectiveOffset)]
+        : [];
+
+    if (rotatedImages.length === 0) return null;
 
     return (
         <div className={`w-full overflow-hidden ${className}`}>
@@ -58,15 +61,83 @@ const Row = ({ speed = 20, reverse = false, offset = 0, className = "" }: { spee
     );
 };
 
+// Hardcoded list of specific highlight photos from the original design
+// These should be in the 'event-photos' bucket if setup script ran
+const highlightPhotos = [
+    { id: '1', title: "SIT & GIT", event: "FOSS CEV 2025", image: "Sit&git_1.jpeg" },
+    { id: '2', title: "HackDay 2026", event: "FOSS CEV 2026", image: "Hackday_1.jpeg" },
+    { id: '3', title: "HackDay 2026", event: "FOSS CEV 2026", image: "hackday_2.jpeg" },
+    { id: '4', title: "HackDay 2026", event: "FOSS CEV 2026", image: "hackday_3.jpeg" },
+    { id: '5', title: "Linux Installation", event: "FOSS CEV 2025", image: "Linuxinstall.jpeg" },
+    { id: '6', title: "SIT & GIT", event: "FOSS CEV 2025", image: "Sit&git_2.jpeg" },
+    // hackday-cev-2026.jpg is a poster but was in original gallery, keeping it if desired or omitting
+];
+
 export function TiltedScroll() {
+    const [items, setItems] = useState<GalleryItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        // Construct public URLs for the highlight photos
+        const loadHighlightPhotos = () => {
+            const formattedItems = highlightPhotos.map(photo => {
+                const { data } = supabase.storage
+                    .from('event-photos')
+                    .getPublicUrl(photo.image);
+
+                return {
+                    id: photo.id,
+                    title: photo.title,
+                    event: photo.event,
+                    image: data.publicUrl
+                };
+            });
+            setItems(formattedItems);
+            setIsLoading(false);
+        };
+
+        loadHighlightPhotos();
+    }, []);
+
+    if (isLoading) {
+        return (
+            <section className="relative overflow-hidden py-20 flex flex-col justify-center items-center min-h-screen">
+                <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background z-10 pointer-events-none" />
+
+                <div className="w-full max-w-none opacity-20">
+                    <div className="flex gap-6 mb-8 overflow-hidden">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="w-[300px] h-[200px] bg-gray-800/50 border border-white/10 rounded-xl shrink-0 animate-pulse"></div>
+                        ))}
+                    </div>
+                    <div className="flex gap-6 mb-8 overflow-hidden">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="w-[300px] h-[200px] bg-gray-800/50 border border-white/10 rounded-xl shrink-0 animate-pulse"></div>
+                        ))}
+                    </div>
+                    <div className="flex gap-6 mb-8 overflow-hidden">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="w-[300px] h-[200px] bg-gray-800/50 border border-white/10 rounded-xl shrink-0 animate-pulse"></div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none">
+                    <div className="h-24 w-3/4 max-w-2xl bg-gray-800/50 rounded-lg animate-pulse border border-white/5"></div>
+                </div>
+            </section>
+        );
+    }
+    if (items.length === 0) return null;
+
     return (
         <section className="relative overflow-hidden py-20 flex flex-col justify-center items-center min-h-screen">
             <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background z-10 pointer-events-none" />
 
             <div className="w-full max-w-none">
-                <Row speed={15} offset={0} className="mb-8" />
-                <Row speed={15} offset={2} reverse className="mb-8" />
-                <Row speed={15} offset={4} className="mb-8" />
+                <Row items={items} speed={30} offset={0} className="mb-8" />
+                <Row items={items} speed={35} offset={2} reverse className="mb-8" />
+                <Row items={items} speed={40} offset={4} className="mb-8" />
             </div>
 
             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none">

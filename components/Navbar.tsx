@@ -2,11 +2,46 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X, Home, Info, Calendar, Users as UsersIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { SOCIAL_LINKS } from "@/lib/constants";
-import { Logo } from "@/components/Logo";
+import { supabase } from "@/lib/supabase";
+
+export function Logo() {
+    const [logoUrl, setLogoUrl] = useState("/logo.png"); // Fallback
+
+    useEffect(() => {
+        const { data } = supabase.storage
+            .from('foss-images')
+            .getPublicUrl('logos/logo.png');
+
+        if (data.publicUrl) {
+            setLogoUrl(data.publicUrl);
+        }
+    }, []);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed top-6 left-6 z-40"
+        >
+            <Link href="/" className="block group">
+                <Image
+                    src={logoUrl}
+                    alt="FOSS Club CEV"
+                    width={160}
+                    height={45}
+                    className="h-10 sm:h-12 w-auto object-contain transition-transform duration-300 group-hover:scale-105"
+                    priority
+                />
+            </Link>
+        </motion.div>
+    );
+}
 
 export function Navbar() {
     const [isOpen, setIsOpen] = useState(false);
