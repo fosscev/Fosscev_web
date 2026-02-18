@@ -9,6 +9,7 @@ export interface Event {
     attendees: string;
     status: "Upcoming" | "Registration Open" | "Completed";
     image?: string;
+    poster?: string;
     link?: string;
     dateObj: Date; // For proper date comparison
 }
@@ -26,6 +27,7 @@ export const events: Event[] = [
         type: "Workshop",
         attendees: "60+",
         status: "Upcoming",
+        poster: "/data_event.jpg",
         link: "https://fossunited.org/c/college-of-engineering-vadakara/data-analytics-workshop"
     },
     {
@@ -39,6 +41,8 @@ export const events: Event[] = [
         type: "Hackathon",
         attendees: "100+",
         status: "Completed",
+        image: "/Hackday_1.jpeg",
+        poster: "/hackday-cev-2026.jpg",
         link: "https://fossunited.org/c/college-of-engineering-vadakara/hackday"
     },
     {
@@ -52,6 +56,7 @@ export const events: Event[] = [
         type: "Workshop",
         attendees: "150+",
         status: "Completed",
+        poster: "/hallow_event.jpg",
         link: "https://fossunited.org/c/college-of-engineering-vadakara/hallowsofhacking"
     },
     {
@@ -65,6 +70,7 @@ export const events: Event[] = [
         type: "Talk",
         attendees: "80+",
         status: "Completed",
+        poster: "/ai&her_event.jpg",
         link: "https://fossunited.org/c/college-of-engineering-vadakara/aiandher"
     },
     {
@@ -78,6 +84,7 @@ export const events: Event[] = [
         type: "Workshop",
         attendees: "120+",
         status: "Completed",
+        poster: "/codefwd_event.jpg",
         link: "https://fossunited.org/c/college-of-engineering-vadakara/code-forward"
     },
     {
@@ -91,6 +98,7 @@ export const events: Event[] = [
         type: "Meetup",
         attendees: "50+",
         status: "Completed",
+        poster: "/fosscorner_event.jpg",
         link: "https://fossunited.org/c/college-of-engineering-vadakara/fosscorner-evolvia"
     },
     {
@@ -104,6 +112,8 @@ export const events: Event[] = [
         type: "Workshop",
         attendees: "75+",
         status: "Completed",
+        image: "/Linuxinstall.jpeg",
+        poster: "/linux_event.jpg",
         link: "https://fossunited.org/c/college-of-engineering-vadakara/linux-party"
     },
     {
@@ -117,6 +127,7 @@ export const events: Event[] = [
         type: "Talk",
         attendees: "100+",
         status: "Completed",
+        poster: "/firewall_event.jpg",
         link: "https://fossunited.org/c/college-of-engineering-vadakara/cyber-awareness"
     },
     {
@@ -130,6 +141,8 @@ export const events: Event[] = [
         type: "Workshop",
         attendees: "60+",
         status: "Completed",
+        image: "/Sit&git_1.jpeg",
+        poster: "/sit&git_event.jpg",
         link: "https://fossunited.org/c/college-of-engineering-vadakara/Sit&Git"
     },
     {
@@ -143,6 +156,7 @@ export const events: Event[] = [
         type: "Talk",
         attendees: "200+",
         status: "Completed",
+        poster: "/intro_event.jpg",
         link: "https://fossunited.org/c/college-of-engineering-vadakara/IntroducingFOSS-OpenDoorstoOpenSource"
     }
 ];

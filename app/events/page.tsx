@@ -1,25 +1,106 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Calendar, ArrowRight, Clock, Users, ExternalLink } from "lucide-react";
+import Image from "next/image";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
-import { events, getUpcomingEvents, getPastEvents, Event } from "@/data/events";
+import { events as localEvents, Event } from "@/data/events";
+import { getUpcomingEvents, getPastEvents } from "@/lib/api/events";
+import EventsSkeleton from "./loading";
+
+// Helper to format date string like "10 Feb 2026"
+const formatDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+};
+
+// Map DB event to frontend Event interface
+const mapEvent = (dbEvent: any): Event => ({
+    id: dbEvent.id, // allow string or number
+    title: dbEvent.title,
+    date: formatDate(dbEvent.date),
+    dateObj: new Date(dbEvent.date),
+    time: dbEvent.time,
+    location: dbEvent.location,
+    description: dbEvent.description,
+    type: dbEvent.type,
+    attendees: dbEvent.attendees,
+    status: dbEvent.status,
+    image: dbEvent.image_url,
+    poster: dbEvent.image_url, // Use image_url as poster (posters are stored as image_url in DB)
+    link: dbEvent.link
+});
 
 export default function EventsPage() {
-    const upcomingEvents = getUpcomingEvents();
-    const pastEvents = getPastEvents();
+    // Initial state (empty until fetched from DB)
+    const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
+    const [pastEvents, setPastEvents] = useState<Event[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Fetch from Supabase
+    useEffect(() => {
+        async function fetchEvents() {
+            setIsLoading(true);
+            try {
+                const [upcomingResponse, pastResponse] = await Promise.all([
+                    getUpcomingEvents(),
+                    getPastEvents()
+                ]);
+
+                if (upcomingResponse.data) {
+                    setUpcomingEvents(upcomingResponse.data.map(mapEvent));
+                }
+
+                if (pastResponse.data) {
+                    setPastEvents(pastResponse.data.map(mapEvent));
+                }
+            } catch (error) {
+                console.error("Failed to fetch events:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        fetchEvents();
+    }, []);
 
     // If no upcoming events, show past events by default
     const hasUpcomingEvents = upcomingEvents.length > 0;
-    const [showPastEvents, setShowPastEvents] = useState(!hasUpcomingEvents);
-    const [selectedEvent, setSelectedEvent] = useState(
-        hasUpcomingEvents ? upcomingEvents[0] : (pastEvents.length > 0 ? pastEvents[0] : events[0])
-    );
-    const [hoveredEvent, setHoveredEvent] = useState<Event | null>(null);
+    const [showPastEvents, setShowPastEvents] = useState(false);
+
+    // Update showPastEvents once data is loaded
+    useEffect(() => {
+        if (!isLoading && !hasUpcomingEvents && pastEvents.length > 0) {
+            setShowPastEvents(true);
+        }
+    }, [isLoading, hasUpcomingEvents, pastEvents.length]);
 
     const displayEvents = showPastEvents ? pastEvents : upcomingEvents;
+
+    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+    const [hoveredEvent, setHoveredEvent] = useState<Event | null>(null);
+
+    // Update selected event when view changes or data loads
+    useEffect(() => {
+        if (displayEvents.length > 0 && !selectedEvent) {
+            setSelectedEvent(displayEvents[0]);
+        } else if (displayEvents.length > 0 && selectedEvent) {
+            // Check if selected event is in currently displayed list, if not, select first
+            const exists = displayEvents.find(e => e.id === selectedEvent.id);
+            if (!exists) setSelectedEvent(displayEvents[0]);
+        }
+    }, [displayEvents, selectedEvent]);
+
+    // Get the display image for an event card (prefer poster, then image)
+    const getEventCardImage = (event: Event): string | undefined => {
+        return event.poster || event.image;
+    };
+
+    if (isLoading) {
+        return <EventsSkeleton />;
+    }
 
     return (
         <div className="relative min-h-screen bg-background text-white selection:bg-primary selection:text-black overflow-hidden">
@@ -69,15 +150,14 @@ export default function EventsPage() {
                             <div className="flex justify-center gap-4">
                                 <button
                                     onClick={() => setShowPastEvents(false)}
-                                    disabled={!hasUpcomingEvents}
                                     className={`px-6 py-3 rounded-lg font-display font-bold transition-all duration-300 ${!showPastEvents
                                         ? "bg-primary text-black"
                                         : hasUpcomingEvents
                                             ? "bg-surface border border-white/10 text-gray-400 hover:text-white"
-                                            : "bg-surface border border-white/10 text-gray-600 cursor-not-allowed opacity-50"
+                                            : "bg-surface border border-white/10 text-gray-600 opacity-70"
                                         }`}
                                 >
-                                    Upcoming Events {!hasUpcomingEvents && "(0)"}
+                                    Upcoming Events ({upcomingEvents.length})
                                 </button>
                                 <button
                                     onClick={() => setShowPastEvents(true)}
@@ -108,7 +188,8 @@ export default function EventsPage() {
                                 // Random rotation for pinboard effect
                                 const rotations = ['-rotate-2', 'rotate-1', '-rotate-1', 'rotate-2', '-rotate-3', 'rotate-3'];
                                 const rotation = rotations[index % rotations.length];
-                                const isSelected = selectedEvent.id === event.id;
+                                const isSelected = selectedEvent?.id === event.id;
+                                const cardImage = getEventCardImage(event);
 
                                 return (
                                     <motion.div
@@ -146,10 +227,21 @@ export default function EventsPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Event Image/Gradient */}
+                                            {/* Event Poster Image */}
                                             <div className="h-48 md:h-56 bg-gradient-to-br from-primary/20 via-purple-600/20 to-pink-600/20 relative overflow-hidden">
+                                                {/* Display poster/image if available */}
+                                                {cardImage ? (
+                                                    <Image
+                                                        src={cardImage}
+                                                        alt={event.title}
+                                                        fill
+                                                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                                    />
+                                                ) : null}
+
                                                 {/* Animated gradient overlay */}
-                                                <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-black/60 group-hover:from-black/20 group-hover:to-black/40 transition-all duration-300"></div>
+                                                <div className={`absolute inset-0 bg-gradient-to-br from-black/40 to-black/60 group-hover:from-black/20 group-hover:to-black/40 transition-all duration-300 ${cardImage ? 'bg-black/30' : ''}`}></div>
 
                                                 {/* Event Type Badge */}
                                                 <div className="absolute top-3 right-3 z-10">
@@ -238,125 +330,138 @@ export default function EventsPage() {
                     </div>
 
                     {/* Selected Event Details - Dark Theme */}
-                    <div className="max-w-5xl mx-auto px-4">
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={selectedEvent.id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -20 }}
-                                transition={{ duration: 0.3 }}
-                                className="bg-gradient-to-br from-gray-900 to-black border border-primary/30 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,230,118,0.2)]"
-                            >
-                                {/* Header with gradient and patterns */}
-                                <div className="relative h-64 bg-gradient-to-br from-primary/20 via-purple-600/20 to-pink-600/20 overflow-hidden">
-                                    {/* Dark overlay */}
-                                    <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-black/40"></div>
-
-                                    {/* Grid pattern */}
-                                    <div className="absolute inset-0 opacity-10" style={{
-                                        backgroundImage: 'linear-gradient(rgba(0,230,118,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,230,118,0.3) 1px, transparent 1px)',
-                                        backgroundSize: '30px 30px'
-                                    }}></div>
-
-                                    {/* Diagonal pattern */}
-                                    <div className="absolute inset-0 opacity-5" style={{
-                                        backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(0,230,118,0.2) 15px, rgba(0,230,118,0.2) 30px)'
-                                    }}></div>
-
-                                    <div className="relative z-10 h-full flex flex-col justify-end p-8">
-                                        <div className="flex items-center gap-3 mb-4 flex-wrap">
-                                            <span className="px-4 py-2 bg-black/80 backdrop-blur-sm text-primary text-sm font-bold font-display uppercase rounded-lg border border-primary/30 shadow-lg">
-                                                {selectedEvent.type}
-                                            </span>
-                                            <span className={`px-4 py-2 backdrop-blur-sm text-white text-sm font-bold font-display rounded-lg border shadow-lg ${selectedEvent.status === "Completed"
-                                                ? "bg-gray-800/80 border-gray-600/50"
-                                                : "bg-white/10 border-white/20"
-                                                }`}>
-                                                {selectedEvent.status}
-                                            </span>
-                                        </div>
-                                        <h2 className="text-4xl md:text-5xl font-bold font-display text-white drop-shadow-lg">
-                                            {selectedEvent.title}
-                                        </h2>
-                                    </div>
-                                </div>
-
-                                {/* Content */}
-                                <div className="p-8 md:p-12 bg-gradient-to-b from-gray-900/50 to-black">
-                                    {/* Event Meta Info */}
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
-                                            <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all">
-                                                <Calendar className="w-6 h-6 text-primary" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-gray-500 font-mono uppercase mb-1">Date</p>
-                                                <p className="text-white font-display font-bold">{selectedEvent.date}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
-                                            <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all">
-                                                <Clock className="w-6 h-6 text-primary" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-gray-500 font-mono uppercase mb-1">Time</p>
-                                                <p className="text-white font-display font-bold">{selectedEvent.time}</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
-                                            <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all">
-                                                <Users className="w-6 h-6 text-primary" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-gray-500 font-mono uppercase mb-1">Attendees</p>
-                                                <p className="text-white font-display font-bold">{selectedEvent.attendees}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Location */}
-                                    <div className="flex items-center gap-3 mb-8 p-5 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 border border-primary/20 group-hover:border-primary/40 transition-all">
-                                            <MapPin className="w-6 h-6 text-primary" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500 font-mono uppercase mb-1">Location</p>
-                                            <p className="text-white font-display text-lg">{selectedEvent.location}</p>
-                                        </div>
-                                    </div>
-
-                                    {/* Description */}
-                                    <div className="mb-8 p-6 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10">
-                                        <h3 className="text-2xl font-display font-bold mb-4 text-primary">About this Event</h3>
-                                        <p className="text-lg text-gray-300 leading-relaxed">
-                                            {selectedEvent.description}
-                                        </p>
-                                    </div>
-
-                                    {/* CTA Buttons */}
-                                    <div className="flex gap-4 flex-wrap">
-                                        {selectedEvent.link && (
-                                            <a
-                                                href={selectedEvent.link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center justify-center gap-2 px-8 py-4 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,230,118,0.6)] font-display text-lg group"
-                                            >
-                                                View on FOSS United
-                                                <ExternalLink size={20} className="group-hover:translate-x-1 transition-transform" />
-                                            </a>
+                    {selectedEvent && (
+                        <div className="max-w-5xl mx-auto px-4">
+                            <AnimatePresence mode="wait">
+                                <motion.div
+                                    key={selectedEvent.id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -20 }}
+                                    transition={{ duration: 0.3 }}
+                                    className="bg-gradient-to-br from-gray-900 to-black border border-primary/30 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,230,118,0.2)]"
+                                >
+                                    {/* Header with gradient and patterns */}
+                                    <div className="relative h-64 bg-gradient-to-br from-primary/20 via-purple-600/20 to-pink-600/20 overflow-hidden">
+                                        {/* Display poster or image if available */}
+                                        {(selectedEvent.poster || selectedEvent.image) && (
+                                            <Image
+                                                src={selectedEvent.poster || selectedEvent.image || ""}
+                                                alt={selectedEvent.title}
+                                                fill
+                                                className="object-cover opacity-60"
+                                                sizes="(max-width: 768px) 100vw, 600px"
+                                            />
                                         )}
-                                        {selectedEvent.status !== "Completed" && (
-                                            <button className="px-8 py-4 bg-gradient-to-br from-white/10 to-white/5 text-white font-bold rounded-lg hover:from-white/15 hover:to-white/10 transition-all duration-300 border border-white/20 hover:border-primary/30 font-display">
-                                                Share Event
-                                            </button>
-                                        )}
+
+                                        {/* Dark overlay */}
+                                        <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-black/40"></div>
+
+                                        {/* Grid pattern */}
+                                        <div className="absolute inset-0 opacity-10" style={{
+                                            backgroundImage: 'linear-gradient(rgba(0,230,118,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,230,118,0.3) 1px, transparent 1px)',
+                                            backgroundSize: '30px 30px'
+                                        }}></div>
+
+                                        {/* Diagonal pattern */}
+                                        <div className="absolute inset-0 opacity-5" style={{
+                                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(0,230,118,0.2) 15px, rgba(0,230,118,0.2) 30px)'
+                                        }}></div>
+
+                                        <div className="relative z-10 h-full flex flex-col justify-end p-8">
+                                            <div className="flex items-center gap-3 mb-4 flex-wrap">
+                                                <span className="px-4 py-2 bg-black/80 backdrop-blur-sm text-primary text-sm font-bold font-display uppercase rounded-lg border border-primary/30 shadow-lg">
+                                                    {selectedEvent.type}
+                                                </span>
+                                                <span className={`px-4 py-2 backdrop-blur-sm text-white text-sm font-bold font-display rounded-lg border shadow-lg ${selectedEvent.status === "Completed"
+                                                    ? "bg-gray-800/80 border-gray-600/50"
+                                                    : "bg-white/10 border-white/20"
+                                                    }`}>
+                                                    {selectedEvent.status}
+                                                </span>
+                                            </div>
+                                            <h2 className="text-4xl md:text-5xl font-bold font-display text-white drop-shadow-lg">
+                                                {selectedEvent.title}
+                                            </h2>
+                                        </div>
                                     </div>
-                                </div>
-                            </motion.div>
-                        </AnimatePresence>
-                    </div>
+
+                                    {/* Content */}
+                                    <div className="p-8 md:p-12 bg-gradient-to-b from-gray-900/50 to-black">
+                                        {/* Event Meta Info */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                                            <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all">
+                                                    <Calendar className="w-6 h-6 text-primary" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-500 font-mono uppercase mb-1">Date</p>
+                                                    <p className="text-white font-display font-bold">{selectedEvent.date}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all">
+                                                    <Clock className="w-6 h-6 text-primary" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-500 font-mono uppercase mb-1">Time</p>
+                                                    <p className="text-white font-display font-bold">{selectedEvent.time}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
+                                                <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all">
+                                                    <Users className="w-6 h-6 text-primary" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-xs text-gray-500 font-mono uppercase mb-1">Attendees</p>
+                                                    <p className="text-white font-display font-bold">{selectedEvent.attendees}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Location */}
+                                        <div className="flex items-center gap-3 mb-8 p-5 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
+                                            <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 border border-primary/20 group-hover:border-primary/40 transition-all">
+                                                <MapPin className="w-6 h-6 text-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-500 font-mono uppercase mb-1">Location</p>
+                                                <p className="text-white font-display text-lg">{selectedEvent.location}</p>
+                                            </div>
+                                        </div>
+
+                                        {/* Description */}
+                                        <div className="mb-8 p-6 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10">
+                                            <h3 className="text-2xl font-display font-bold mb-4 text-primary">About this Event</h3>
+                                            <p className="text-lg text-gray-300 leading-relaxed">
+                                                {selectedEvent.description}
+                                            </p>
+                                        </div>
+
+                                        {/* CTA Buttons */}
+                                        <div className="flex gap-4 flex-wrap">
+                                            {selectedEvent.link && (
+                                                <a
+                                                    href={selectedEvent.link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center justify-center gap-2 px-8 py-4 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,230,118,0.6)] font-display text-lg group"
+                                                >
+                                                    View on FOSS United
+                                                    <ExternalLink size={20} className="group-hover:translate-x-1 transition-transform" />
+                                                </a>
+                                            )}
+                                            {selectedEvent.status !== "Completed" && (
+                                                <button className="px-8 py-4 bg-gradient-to-br from-white/10 to-white/5 text-white font-bold rounded-lg hover:from-white/15 hover:to-white/10 transition-all duration-300 border border-white/20 hover:border-primary/30 font-display">
+                                                    Share Event
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            </AnimatePresence>
+                        </div>
+                    )}
                 </main>
 
                 <Footer />

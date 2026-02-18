@@ -1,109 +1,74 @@
-# FOSS Club CE Vadakara
+# FOSS Club CE Vadakara - Official Website
 
-Welcome to the official website of FOSS Club at College of Engineering Vadakara! This is a vibrant community dedicated to promoting Free and Open Source Software (FOSS) among students and enthusiasts.
-
-## 🌟 About
-
-FOSS Club CE Vadakara is a student-led initiative that fosters collaboration, innovation, and learning in the world of open source software. Our mission is to build a strong FOSS culture in our college and contribute to the global open source community.
+Welcome to the official website of the **FOSS Club at College of Engineering Vadakara**! We are a community of open-source enthusiasts dedicated to promoting freedom, collaboration, and innovation through technology.
 
 ## 🚀 Features
 
-- **Modern Design**: Built with Next.js and Tailwind CSS for a sleek, responsive experience
-- **Interactive Components**: Smooth animations powered by Framer Motion
-- **Dark Theme**: Beautiful dark theme with hacker-inspired aesthetics
-- **Community Showcase**: Highlighting events, team members, and FOSS tracks
-- **Responsive Layout**: Optimized for all devices
+- **Modern Stack**: Built with Next.js 16, React 19, and Tailwind CSS.
+- **Dynamic Content**: Events and Team members managed via **Supabase**.
+- **Admin Dashboard**: Secure admin panel for managing club activities.
+- **Responsive Design**: Optimized for all devices with a "cyberpunk/hacker" aesthetic.
+- **SEO Optimized**: Dynamic sitemaps, Open Graph images, and meta tags.
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Next.js 16
-- **Styling**: Tailwind CSS with custom animations
-- **Animations**: Framer Motion
-- **Icons**: Lucide React
-- **Theme**: Next Themes for dark/light mode support
-- **Language**: TypeScript
+- **Frontend**: Next.js 16 (App Router), React, Framer Motion
+- **Styling**: Tailwind CSS, Lucide React Icons
+- **Backend & Auth**: Supabase (PostgreSQL, Auth, Storage)
+- **Deployment**: Vercel (Recommended)
 
-## 📦 Installation
+## 📦 Getting Started
 
-1. Clone the repository:
+### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-username/foss-community-site.git
-cd foss-community-site
+git clone https://github.com/foss-cev/website.git
+cd website
 ```
 
-2. Install dependencies:
+### 2. Install Dependencies
 ```bash
 npm install
-# or
-yarn install
-# or
-pnpm install
 ```
 
-3. Run the development server:
+### 3. Environment Setup
+Create a `.env.local` file in the root directory. **Do not commit this file.**
+```env
+# Public (Safe to expose to browser)
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+NEXT_PUBLIC_SUPABASE_URL=your_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+
+# Private (Server-side only - for scripts)
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+```
+
+### 4. Database Setup (First Time Only)
+Run the setup script to create tables and policies in your Supabase project:
+```bash
+npm run setup:supabase
+```
+
+### 5. Run Development Server
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 ```
+Open [http://localhost:3000](http://localhost:3000) to view the site.
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## 📁 Project Structure
-
-```
-foss-community-site/
-├── app/                    # Next.js app directory
-│   ├── about/             # About page
-│   ├── events/            # Events page
-│   ├── team/              # Team page
-│   └── page.tsx           # Home page
-├── components/            # Reusable React components
-│   ├── Hero.tsx          # Landing section
-│   ├── Navbar.tsx        # Navigation
-│   ├── CoreTeam.tsx      # Team showcase
-│   ├── Tracks.tsx        # FOSS tracks
-│   └── ...
-├── public/               # Static assets
-└── package.json          # Dependencies and scripts
-```
+## 🛡️ Admin Access
+The admin dashboard is located at `/foss-manager`. It is protected by:
+- **Middleware**: Validates Supabase session server-side.
+- **RLS Policies**: Restricts database writes to authenticated users.
 
 ## 🤝 Contributing
+We welcome contributions! Please follow our [Code of Conduct](./app/conduct/page.tsx).
+1. Fork the repo.
+2. Create a feature branch (`git checkout -b feature/amazing-feature`).
+3. Commit your changes.
+4. Push to the branch.
+5. Open a Pull Request.
 
-We welcome contributions from everyone! Here's how you can get involved:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow the existing code style
-- Use TypeScript for type safety
-- Test your changes thoroughly
-- Update documentation as needed
-
-## 📄 Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-
-## 📞 Contact
-
-- **Club**: FOSS Club CE Vadakara
-- **Institution**: College of Engineering Vadakara
-- **Email**: fossclubcev@cev.ac.in 
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## 📄 License
+This project is open source and available under the [MIT License](LICENSE).
 
 ---
-
 Built with ❤️ by FOSS Club CE Vadakara
