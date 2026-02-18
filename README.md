@@ -2,14 +2,6 @@
 
 Welcome to the official website of the **FOSS Club at College of Engineering Vadakara**! We are a community of open-source enthusiasts dedicated to promoting freedom, collaboration, and innovation through technology.
 
-## 🚀 Features
-
-- **Modern Stack**: Built with Next.js 16, React 19, and Tailwind CSS.
-- **Dynamic Content**: Events and Team members managed via **Supabase**.
-- **Admin Dashboard**: Secure admin panel for managing club activities.
-- **Responsive Design**: Optimized for all devices with a "cyberpunk/hacker" aesthetic.
-- **SEO Optimized**: Dynamic sitemaps, Open Graph images, and meta tags.
-
 ## 🛠️ Tech Stack
 
 - **Frontend**: Next.js 16 (App Router), React, Framer Motion
