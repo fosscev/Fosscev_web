@@ -97,6 +97,16 @@ export function Footer() {
                                 Team
                             </Link>
                         </li>
+                        <li>
+                            <Link href="/conduct" className="hover:text-white hover:underline decoration-primary underline-offset-4 transition-colors">
+                                Code of Conduct
+                            </Link>
+                        </li>
+                        <li>
+                            <Link href="/privacy" className="hover:text-white hover:underline decoration-primary underline-offset-4 transition-colors">
+                                Privacy Policy
+                            </Link>
+                        </li>
                     </ul>
                 </div>
 

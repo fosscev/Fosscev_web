@@ -2,18 +2,19 @@
 
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { team, subteam } from "@/data/team";
+import { team as localCoreTeam, subteam as localSubteam } from "@/data/team";
+import { getCoreTeam, getSubteam } from "@/lib/api/team";
 import Image from "next/image";
 import { Github, Linkedin, Instagram } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { SOCIAL_LINKS } from "@/lib/constants";
+import { TeamSkeleton } from "@/components/skeletons/TeamSkeleton";
 
 interface CardPosition {
     x: number;
     y: number;
 }
-
 
 // Personalized messages for each team member
 const getPersonalizedMessage = (name: string, role: string): string => {
@@ -35,6 +36,36 @@ const getPersonalizedMessage = (name: string, role: string): string => {
     return messages[name] || `Passionate ${role}<br />in our FOSS community`;
 };
 
+// Helper to normalize/validate image URLs and map DB fields to component fields
+const normalizeImageUrl = (url: any) => {
+    // Fallback placeholder in public/
+    const placeholder = "/placeholder-user.svg";
+
+    if (!url) return placeholder;
+
+    try {
+        // If it's a valid absolute URL, return as-is
+        // new URL will throw for invalid/relative values
+        // eslint-disable-next-line no-new
+        new URL(url);
+        return url;
+    } catch (e) {
+        // Not an absolute URL — return placeholder
+        return placeholder;
+    }
+};
+
+// Helper to map database fields to component fields if necessary
+const mapTeamMember = (member: any) => ({
+    name: member.name,
+    role: member.role,
+    image: normalizeImageUrl(member.image_url), // Use validated image_url from DB
+    github: member.github,
+    linkedin: member.linkedin,
+    instagram: member.instagram,
+    bio: member.bio,
+    is_core_team: member.is_core_team
+});
 
 const TeamMemberCard = ({
     member,
@@ -44,7 +75,7 @@ const TeamMemberCard = ({
     onLeave,
     cardPositions
 }: {
-    member: typeof team[0],
+    member: typeof localCoreTeam[0] & { bio?: string | null },
     index: number,
     hoveredIndex: number | null,
     onHover: (index: number) => void,
@@ -113,9 +144,6 @@ const TeamMemberCard = ({
 
             const repulseX = Math.cos(angle) * repulsionStrength;
             const repulseY = Math.sin(angle) * repulsionStrength;
-
-
-
 
             setRepulsionPos({
                 x: repulseX,
@@ -204,7 +232,7 @@ const TeamMemberCard = ({
                         <div className="absolute bottom-0 left-0 right-0 p-4">
                             <div
                                 className="font-mono text-primary text-sm leading-relaxed opacity-80"
-                                dangerouslySetInnerHTML={{ __html: getPersonalizedMessage(member.name, member.role) }}
+                                dangerouslySetInnerHTML={{ __html: member.bio || getPersonalizedMessage(member.name, member.role) }}
                             />
                         </div>
                     </div>
@@ -292,6 +320,36 @@ export default function TeamPage() {
     const cardPositions = useRef<Map<number, DOMRect>>(new Map());
     const subteamCardPositions = useRef<Map<number, DOMRect>>(new Map());
 
+    // State for team data
+    const [coreTeamData, setCoreTeamData] = useState<any[]>([]);
+    const [subTeamData, setSubTeamData] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchTeamData() {
+            try {
+                const [coreResponse, subResponse] = await Promise.all([
+                    getCoreTeam(),
+                    getSubteam()
+                ]);
+
+                if (coreResponse.data) {
+                    setCoreTeamData(coreResponse.data.map(mapTeamMember));
+                }
+
+                if (subResponse.data) {
+                    setSubTeamData(subResponse.data.map(mapTeamMember));
+                }
+            } catch (error) {
+                console.error("Failed to fetch team data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        fetchTeamData();
+    }, []);
+
     return (
         <main className="relative min-h-screen bg-background text-white selection:bg-primary selection:text-black overflow-hidden">
             {/* Animated Grid Background */}
@@ -336,55 +394,63 @@ export default function TeamPage() {
                         </p>
                     </div>
 
-                    {/* Team Grid */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-20 overflow-visible min-h-fit">
-                        {team.map((member, i) => (
-                            <TeamMemberCard
-                                key={i}
-                                member={member}
-                                index={i}
-                                hoveredIndex={hoveredIndex}
-                                onHover={setHoveredIndex}
-                                onLeave={() => setHoveredIndex(null)}
-                                cardPositions={cardPositions}
-                            />
-                        ))}
-                    </div>
-
-                    {/* Subteam Section */}
-                    <div className="mb-20">
-                        {/* Subteam Header */}
-                        <div className="mb-12 text-center">
-                            <h2 className="text-4xl md:text-6xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-4 animate-gradient">
-                                SUB_TEAM
-                            </h2>
-                            <div className="flex items-center justify-center gap-4 mb-4">
-                                <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary" />
-                                <p className="text-lg text-primary font-mono">
-                                // THE SUPPORTING FORCE
-                                </p>
-                                <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary" />
-                            </div>
-                            <p className="text-gray-400 font-mono max-w-2xl mx-auto">
-                                Dedicated contributors powering our community initiatives.
-                            </p>
-                        </div>
-
-                        {/* Subteam Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                            {subteam.map((member, i) => (
+                    {isLoading ? (
+                        <TeamSkeleton />
+                    ) : (
+                        // Team Grid
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-20 overflow-visible min-h-fit">
+                            {coreTeamData.map((member, i) => (
                                 <TeamMemberCard
-                                    key={`subteam-${i}`}
+                                    key={i}
                                     member={member}
                                     index={i}
-                                    hoveredIndex={hoveredSubteamIndex}
-                                    onHover={setHoveredSubteamIndex}
-                                    onLeave={() => setHoveredSubteamIndex(null)}
-                                    cardPositions={subteamCardPositions}
+                                    hoveredIndex={hoveredIndex}
+                                    onHover={setHoveredIndex}
+                                    onLeave={() => setHoveredIndex(null)}
+                                    cardPositions={cardPositions}
                                 />
                             ))}
                         </div>
-                    </div>
+                    )}
+
+                    {!isLoading && (
+                        /* Subteam Section */
+                        <div className="mb-20">
+                            {/* Subteam Header */}
+                            <div className="mb-12 text-center">
+                                <h2 className="text-4xl md:text-6xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-4 animate-gradient">
+                                    SUB_TEAM
+                                </h2>
+                                <div className="flex items-center justify-center gap-4 mb-4">
+                                    <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary" />
+                                    <p className="text-lg text-primary font-mono">
+                                    // THE SUPPORTING FORCE
+                                    </p>
+                                    <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary" />
+                                </div>
+                                <p className="text-gray-400 font-mono max-w-2xl mx-auto">
+                                    Dedicated contributors powering our community initiatives.
+                                </p>
+                            </div>
+
+                            {/* Subteam Grid */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                                {subTeamData.map((member, i) => (
+                                    <TeamMemberCard
+                                        key={`subteam-${i}`}
+                                        member={member}
+                                        index={i}
+                                        hoveredIndex={hoveredSubteamIndex}
+                                        onHover={setHoveredSubteamIndex}
+                                        onLeave={() => setHoveredSubteamIndex(null)}
+                                        cardPositions={subteamCardPositions}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+
 
                     {/* Call to Action */}
                     <div className="relative p-8 md:p-12 border border-white/10 bg-surface/50 rounded-xl overflow-hidden backdrop-blur-sm">

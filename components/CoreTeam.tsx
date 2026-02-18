@@ -2,36 +2,113 @@
 
 import { motion, useMotionValue, useAnimationFrame } from "framer-motion";
 import Image from "next/image";
-import { team } from "@/data/team";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
-// Triple the array to ensure seamless looping
-const marqueeTeam = [...team, ...team, ...team];
+interface TeamMember {
+    name: string;
+    role: string;
+    image: string;
+    github?: string;
+    linkedin?: string;
+    instagram?: string;
+}
 
 export function CoreTeam() {
     const [isPaused, setIsPaused] = useState(false);
+    const [teamData, setTeamData] = useState<TeamMember[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const x = useMotionValue(0);
 
-    useAnimationFrame(() => {
-        if (!isPaused) {
-            // Move at constant speed
-            const speed = -1.2; // pixels per frame (increased for faster movement)
-            const newX = x.get() + speed;
+    useEffect(() => {
+        const fetchTeam = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('team_members')
+                    .select('*')
+                    .eq('is_core_team', true)
+                    .order('display_order', { ascending: true });
+
+                if (error) {
+                    console.error('Error fetching team:', error);
+                    return;
+                }
+
+                if (data) {
+                    const formattedData = data.map(member => ({
+                        name: member.name,
+                        role: member.role,
+                        // Use image_url from DB, fallback to placeholder if empty
+                        image: member.image_url || '/placeholder.jpg',
+                        github: member.github || undefined,
+                        linkedin: member.linkedin || undefined,
+                        instagram: member.instagram || undefined,
+                    }));
+                    setTeamData(formattedData);
+                }
+            } catch (err) {
+                console.error('Unexpected error:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchTeam();
+    }, []);
+
+    // Triple the array to ensure seamless looping (only if we have data)
+    const marqueeTeam = teamData.length > 0 ? [...teamData, ...teamData, ...teamData] : [];
+
+    useAnimationFrame((t, delta) => {
+        if (!isPaused && marqueeTeam.length > 0) {
+            // Move at constant speed (pixels per second)
+            // Previously -1.2 per frame @ 60fps ≈ -72px/sec
+            const speedPerSecond = 72;
+            const moveDist = -speedPerSecond * (delta / 1000);
+
+            const newX = x.get() + moveDist;
 
             // Calculate reset point based on card width and gap
             // Each card is ~280px (w-64 md:w-72) + 32px gap = ~312px
-            // One third of tripled array = team.length * 312
             const cardWidth = 312;
-            const resetPoint = -(team.length * cardWidth);
+            const singleSetWidth = teamData.length * cardWidth;
+            const resetPoint = -singleSetWidth;
 
             // Reset position for seamless loop
             if (newX <= resetPoint) {
-                x.set(0);
+                // Adjust for overshoot to maintain smoothness
+                const overshoot = resetPoint - newX;
+                x.set(0 - overshoot);
             } else {
                 x.set(newX);
             }
         }
     });
+
+    if (isLoading) {
+        return (
+            <section className="py-20 overflow-hidden bg-surface/30">
+                <div className="max-w-7xl mx-auto px-4 mb-12">
+                    <div className="h-12 w-64 mx-auto bg-gray-800/50 rounded animate-pulse border border-white/5"></div>
+                </div>
+                <div className="flex gap-6 md:gap-8 px-4 overflow-hidden">
+                    {[...Array(5)].map((_, i) => (
+                        <div key={i} className="w-64 md:w-72 shrink-0 h-80 bg-surface border border-white/10 rounded-xl overflow-hidden animate-pulse">
+                            <div className="h-64 bg-gray-800/50"></div>
+                            <div className="p-4 space-y-2">
+                                <div className="h-6 w-3/4 bg-gray-800/50 rounded"></div>
+                                <div className="h-4 w-1/2 bg-gray-800/50 rounded"></div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </section>
+        );
+    }
+
+    if (teamData.length === 0) {
+        return null; // Or some fallback UI
+    }
 
     return (
         <section className="py-20 overflow-hidden bg-surface/30">
