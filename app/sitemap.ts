@@ -3,7 +3,7 @@ import { getEvents } from '@/lib/api/events';
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Base URL from environment or default
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://foss-cev.org';
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://foss.cev.ac.in';
 
     // Static routes
     const routes = ['', '/about', '/events', '/team', '/conduct', '/privacy'].map((route) => ({
