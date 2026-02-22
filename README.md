@@ -6,7 +6,6 @@ Welcome to the official website of the **FOSS Club at College of Engineering Vad
 
 - **Modern Stack**: Built with Next.js 16, React 19, and Tailwind CSS.
 - **Dynamic Content**: Events and Team members managed via **Supabase**.
-- **Admin Dashboard**: Secure admin panel for managing club activities.
 - **Responsive Design**: Optimized for all devices with a "cyberpunk/hacker" aesthetic.
 - **SEO Optimized**: Dynamic sitemaps, Open Graph images, and meta tags.
 
@@ -53,11 +52,6 @@ npm run setup:supabase
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) to view the site.
-
-## 🛡️ Admin Access
-The admin dashboard is located at `/foss-manager`. It is protected by:
-- **Middleware**: Validates Supabase session server-side.
-- **RLS Policies**: Restricts database writes to authenticated users.
 
 ## 🤝 Contributing
 We welcome contributions! Please follow our [Code of Conduct](./app/conduct/page.tsx).
