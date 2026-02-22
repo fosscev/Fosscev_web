@@ -15,10 +15,10 @@ export default function AdminLayout({
     useEffect(() => {
         const checkSession = async () => {
             const {
-                data: { session },
-            } = await supabase.auth.getSession();
+                data: { user },
+            } = await supabase.auth.getUser();
 
-            if (!session) {
+            if (!user) {
                 router.push("/foss-manager");
             } else {
                 setIsLoading(false);

@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   description: "Code. Collaborate. Create. The official Open Source Community of College of Engineering Vadakara.",
   keywords: ["FOSS", "Open Source", "CEV", "College of Engineering Vadakara", "Tech Community", "Hackathon", "Workshops"],
   authors: [{ name: "FOSS Club CEV" }],
+  icons: {
+    icon: "/logo.png",
+  },
   openGraph: {
     title: "FOSS CEV - Free and Open Source Software Community",
     description: "Code. Collaborate. Create. The official Open Source Community of College of Engineering Vadakara.",

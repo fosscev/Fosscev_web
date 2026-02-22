@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import {
     Plus,
@@ -17,34 +17,62 @@ export default function AdminTeamList() {
     const [editForm, setEditForm] = useState<any>({});
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [addForm, setAddForm] = useState({
         name: '',
         role: '',
         is_core_team: false,
 
         image_url: '',
-        bio: '',
         display_order: 0
     });
 
     const handleAddMember = async () => {
-        const { error } = await supabase
-            .from('team_members')
-            .insert([addForm]);
+        setIsSubmitting(true);
+        let finalImageUrl = addForm.image_url;
 
-        if (error) {
-            alert('Error adding member: ' + error.message);
-        } else {
-            loadData();
-            setIsAdding(false);
-            setAddForm({
-                name: '',
-                role: '',
-                is_core_team: false,
-                image_url: '',
-                bio: '',
-                display_order: 0
-            });
+        try {
+            if (selectedFile) {
+                const fileExt = selectedFile.name.split('.').pop();
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    alert('Session expired. Please log in again.');
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                const { data, error: uploadError } = await supabase.storage.from('team-images').upload(fileName, selectedFile);
+                if (uploadError) throw uploadError;
+
+                const { data: urlData } = supabase.storage.from('team-images').getPublicUrl(data.path);
+                finalImageUrl = urlData.publicUrl;
+            }
+
+            const { error } = await supabase
+                .from('team_members')
+                .insert([{ ...addForm, image_url: finalImageUrl }]);
+
+            if (error) {
+                alert('Error adding member: ' + error.message);
+            } else {
+                loadData();
+                setIsAdding(false);
+                setSelectedFile(null);
+                setAddForm({
+                    name: '',
+                    role: '',
+                    is_core_team: false,
+                    image_url: '',
+                    display_order: 0
+                });
+            }
+        } catch (error: any) {
+            alert('Error: ' + error.message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -63,9 +91,9 @@ export default function AdminTeamList() {
         setIsLoading(false);
     };
 
-    useState(() => {
+    useEffect(() => {
         loadData();
-    });
+    }, []);
 
     const handleEdit = (id: string, member: any) => {
         setIsEditing(id);
@@ -113,7 +141,7 @@ export default function AdminTeamList() {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider"></th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Bio</th>
+
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Core?</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -156,19 +184,7 @@ export default function AdminTeamList() {
                                             <div className="text-sm text-gray-400">{member.role}</div>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-normal">
-                                        {isEditing === member.id ? (
-                                            <input
-                                                type="text"
-                                                className="bg-gray-800 text-white rounded px-2 py-1 w-full border border-gray-700 focus:border-primary outline-none"
-                                                value={editForm.bio || ''}
-                                                onChange={(e) => setEditForm((prev: any) => ({ ...prev, bio: e.target.value }))}
-                                                placeholder="Hover text"
-                                            />
-                                        ) : (
-                                            <div className="text-sm text-gray-500 truncate max-w-[150px]">{member.bio || '-'}</div>
-                                        )}
-                                    </td>
+
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {isEditing === member.id ? (
                                             <select
@@ -222,12 +238,12 @@ export default function AdminTeamList() {
                             <div>
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Image</label>
                                 <ImageUploader
-                                    bucket="team-images"
-                                    onUploadComplete={(url) => setAddForm(prev => ({ ...prev, image_url: url }))}
+                                    onFileSelect={setSelectedFile}
+                                    maxFileSize={2 * 1024 * 1024}
                                 />
-                                {addForm.image_url && (
+                                {selectedFile && (
                                     <div className="mt-2 text-sm text-green-400 flex items-center gap-2">
-                                        <Check size={14} /> Image uploaded successfully
+                                        <Check size={14} /> Image selected for upload
                                     </div>
                                 )}
                             </div>
@@ -254,15 +270,7 @@ export default function AdminTeamList() {
                                 />
                             </div>
 
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Bio (Hover Text)</label>
-                                <textarea
-                                    className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none h-20 resize-none"
-                                    value={addForm.bio}
-                                    onChange={(e) => setAddForm(prev => ({ ...prev, bio: e.target.value }))}
-                                    placeholder="Optional custom text shown on hover"
-                                />
-                            </div>
+
 
                             <div className="flex items-center gap-2">
                                 <label className="text-sm font-medium text-gray-400">Core Team Member?</label>
@@ -277,7 +285,7 @@ export default function AdminTeamList() {
 
                         <div className="flex justify-end gap-3 pt-4 border-t border-gray-800 mt-6">
                             <button
-                                onClick={() => setIsAdding(false)}
+                                onClick={() => { setIsAdding(false); setSelectedFile(null); }}
                                 className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
                             >
                                 Cancel
@@ -285,9 +293,9 @@ export default function AdminTeamList() {
                             <button
                                 onClick={handleAddMember}
                                 className="px-4 py-2 bg-primary text-black font-bold rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={!addForm.name || !addForm.role}
+                                disabled={!addForm.name || !addForm.role || isSubmitting}
                             >
-                                Add Member
+                                {isSubmitting ? 'Saving...' : 'Add Member'}
                             </button>
                         </div>
                     </div>
@@ -303,7 +311,6 @@ export default function AdminTeamList() {
                         is_core_team: false,
 
                         image_url: '',
-                        bio: '',
                         display_order: teamData.length + 1
                     });
                     setIsAdding(true);

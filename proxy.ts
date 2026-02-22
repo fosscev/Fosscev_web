@@ -1,11 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     let response = NextResponse.next({
-        request: {
-            headers: request.headers,
-        },
+        request,
     });
 
     const supabase = createServerClient(
@@ -21,9 +19,7 @@ export async function middleware(request: NextRequest) {
                         request.cookies.set(name, value)
                     );
                     response = NextResponse.next({
-                        request: {
-                            headers: request.headers,
-                        },
+                        request,
                     });
                     cookiesToSet.forEach(({ name, value, options }) =>
                         response.cookies.set(name, value, options)
@@ -33,14 +29,27 @@ export async function middleware(request: NextRequest) {
         }
     );
 
+    // This will refresh session if expired - vital for SSR
+    await supabase.auth.getUser();
+
     const {
         data: { user },
     } = await supabase.auth.getUser();
 
-    // Protect the /foss-manager/dashboard route
-    if (!user && request.nextUrl.pathname.startsWith('/foss-manager/dashboard')) {
+    const pathname = request.nextUrl.pathname;
+
+    // 1. Protect the dashboard: Redirect to login if NOT authenticated
+    if (!user && pathname.startsWith('/foss-manager/dashboard')) {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = '/foss-manager';
+        return NextResponse.redirect(redirectUrl);
+    }
+
+    // 2. Protect the login page: Redirect to dashboard if ALREADY authenticated
+    // Only redirect if specifically on the login root, not its sub-assets
+    if (user && pathname === '/foss-manager') {
+        const redirectUrl = request.nextUrl.clone();
+        redirectUrl.pathname = '/foss-manager/dashboard';
         return NextResponse.redirect(redirectUrl);
     }
 
@@ -49,7 +58,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
     matcher: [
-        // Match only the admin dashboard routes
+        '/foss-manager',
         '/foss-manager/dashboard/:path*',
     ],
 };

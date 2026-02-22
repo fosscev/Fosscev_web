@@ -12,7 +12,6 @@ export default function Error({
     reset: () => void;
 }) {
     useEffect(() => {
-        // Log the error to an error reporting service
         console.error(error);
     }, [error]);
 
@@ -36,8 +35,9 @@ export default function Error({
                     SYSTEM GLITCH
                 </h2>
 
-                <p className="text-center text-gray-400 mb-6 font-mono text-sm border-t border-b border-gray-800 py-3 my-4 bg-black/20">
-                    ERROR_CODE: {error.digest || "UNKNOWN_RUNTIME_EXCEPTION"}
+                <p className="text-center text-gray-400 mb-6 font-mono text-sm border-t border-b border-gray-800 py-3 my-4 bg-black/20 break-words">
+                    ERROR_CODE: {error.digest || "UNKNOWN_RUNTIME_EXCEPTION"}<br />
+                    <span className="text-red-400 mt-2 block">{error.message}</span>
                 </p>
 
                 <p className="text-center text-gray-300 mb-8">
