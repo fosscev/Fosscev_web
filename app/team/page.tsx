@@ -3,7 +3,7 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { team as localCoreTeam, subteam as localSubteam } from "@/data/team";
-import { getCoreTeam, getSubteam } from "@/lib/api/team";
+import { getCoreTeam, getSubteam, getFacultyAdvisors } from "@/lib/api/team";
 import Image from "next/image";
 import { Github, Linkedin, Instagram } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
@@ -312,17 +312,22 @@ export default function TeamPage() {
     const cardPositions = useRef<Map<number, DOMRect>>(new Map());
     const subteamCardPositions = useRef<Map<number, DOMRect>>(new Map());
 
+    const [hoveredFacultyIndex, setHoveredFacultyIndex] = useState<number | null>(null);
+    const facultyCardPositions = useRef<Map<number, DOMRect>>(new Map());
+
     // State for team data
     const [coreTeamData, setCoreTeamData] = useState<any[]>([]);
     const [subTeamData, setSubTeamData] = useState<any[]>([]);
+    const [facultyTeamData, setFacultyTeamData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         async function fetchTeamData() {
             try {
-                const [coreResponse, subResponse] = await Promise.all([
+                const [coreResponse, subResponse, facultyResponse] = await Promise.all([
                     getCoreTeam(),
-                    getSubteam()
+                    getSubteam(),
+                    getFacultyAdvisors()
                 ]);
 
                 if (coreResponse.data) {
@@ -331,6 +336,10 @@ export default function TeamPage() {
 
                 if (subResponse.data) {
                     setSubTeamData(subResponse.data.map(mapTeamMember));
+                }
+
+                if (facultyResponse.data) {
+                    setFacultyTeamData(facultyResponse.data.map(mapTeamMember));
                 }
             } catch (error) {
                 console.error("Failed to fetch team data:", error);
@@ -369,6 +378,44 @@ export default function TeamPage() {
                 <Navbar />
 
                 <section className="pt-32 pb-20 px-4 md:px-8 max-w-7xl mx-auto overflow-visible">
+                    {/* Faculty Advisors Section */}
+                    <div className="mb-20">
+                        <div className="mb-12 text-center">
+                            <h2 className="text-4xl md:text-6xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-4 animate-gradient">
+                                FACULTY_ADVISORS
+                            </h2>
+                            <div className="flex items-center justify-center gap-4 mb-4">
+                                <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary" />
+                                <p className="text-lg text-primary font-mono">
+                                // MENTORS & GUIDES
+                                </p>
+                                <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary" />
+                            </div>
+                            <p className="text-gray-400 font-mono max-w-2xl mx-auto">
+                                The pillars of support guiding our community forward.
+                            </p>
+                        </div>
+
+                        <div className="flex justify-center gap-8 flex-wrap">
+                            {facultyTeamData.length > 0 ? facultyTeamData.map((member, i) => (
+                                <div key={`faculty-${i}`} className="w-full sm:w-[calc(50%-16px)] lg:w-[calc(33.33%-21px)] max-w-[320px]">
+                                    <TeamMemberCard
+                                        member={member as any}
+                                        index={i}
+                                        hoveredIndex={hoveredFacultyIndex}
+                                        onHover={setHoveredFacultyIndex}
+                                        onLeave={() => setHoveredFacultyIndex(null)}
+                                        cardPositions={facultyCardPositions}
+                                    />
+                                </div>
+                            )) : (
+                                <div className="text-gray-500 font-mono text-center w-full py-8">
+                                    No faculty advisors found.
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
                     {/* Header */}
                     <div className="mb-16 text-center">
                         <h1 className="text-6xl md:text-8xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-6 animate-gradient">
