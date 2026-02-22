@@ -80,7 +80,7 @@ export default async function Image() {
                         zIndex: 10,
                     }}
                 >
-                    foss-cev.org
+                    foss.cev.ac.in
                 </div>
             </div>
         ),
