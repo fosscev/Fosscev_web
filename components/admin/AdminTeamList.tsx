@@ -23,7 +23,7 @@ export default function AdminTeamList() {
         name: '',
         role: '',
         is_core_team: false,
-
+        is_faculty_advisor: false,
         image_url: '',
         display_order: 0
     });
@@ -65,6 +65,7 @@ export default function AdminTeamList() {
                     name: '',
                     role: '',
                     is_core_team: false,
+                    is_faculty_advisor: false,
                     image_url: '',
                     display_order: 0
                 });
@@ -141,8 +142,7 @@ export default function AdminTeamList() {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider"></th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
-
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Core?</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Category</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -188,16 +188,26 @@ export default function AdminTeamList() {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {isEditing === member.id ? (
                                             <select
-                                                className="bg-gray-800 text-white rounded px-2 py-1 border border-gray-700"
-                                                value={editForm.is_core_team ? 'true' : 'false'}
-                                                onChange={(e) => setEditForm((prev: any) => ({ ...prev, is_core_team: e.target.value === 'true' }))}
+                                                className="bg-gray-800 text-white rounded px-2 py-1 w-full border border-gray-700"
+                                                value={editForm.is_faculty_advisor ? 'faculty' : (editForm.is_core_team ? 'core' : 'sub')}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setEditForm((prev: any) => ({
+                                                        ...prev,
+                                                        is_core_team: val === 'core',
+                                                        is_faculty_advisor: val === 'faculty'
+                                                    }));
+                                                }}
                                             >
-                                                <option value="true">Yes</option>
-                                                <option value="false">No</option>
+                                                <option value="faculty">Faculty Advisor</option>
+                                                <option value="core">Core Team</option>
+                                                <option value="sub">Sub Team</option>
                                             </select>
                                         ) : (
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${member.is_core_team ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
-                                                {member.is_core_team ? 'Yes' : 'No'}
+                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${member.is_faculty_advisor ? 'bg-purple-100 text-purple-800' :
+                                                    member.is_core_team ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                                }`}>
+                                                {member.is_faculty_advisor ? 'Faculty Advisor' : member.is_core_team ? 'Core Team' : 'Sub Team'}
                                             </span>
                                         )}
                                     </td>
@@ -272,14 +282,24 @@ export default function AdminTeamList() {
 
 
 
-                            <div className="flex items-center gap-2">
-                                <label className="text-sm font-medium text-gray-400">Core Team Member?</label>
-                                <input
-                                    type="checkbox"
-                                    className="w-4 h-4 bg-gray-800 border-gray-700 rounded text-primary focus:ring-primary"
-                                    checked={addForm.is_core_team}
-                                    onChange={(e) => setAddForm(prev => ({ ...prev, is_core_team: e.target.checked }))}
-                                />
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Category</label>
+                                <select
+                                    className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none"
+                                    value={addForm.is_faculty_advisor ? 'faculty' : (addForm.is_core_team ? 'core' : 'sub')}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setAddForm(prev => ({
+                                            ...prev,
+                                            is_core_team: val === 'core',
+                                            is_faculty_advisor: val === 'faculty'
+                                        }));
+                                    }}
+                                >
+                                    <option value="sub">Sub Team</option>
+                                    <option value="core">Core Team</option>
+                                    <option value="faculty">Faculty Advisor</option>
+                                </select>
                             </div>
                         </div>
 
@@ -309,7 +329,7 @@ export default function AdminTeamList() {
                         name: '',
                         role: '',
                         is_core_team: false,
-
+                        is_faculty_advisor: false,
                         image_url: '',
                         display_order: teamData.length + 1
                     });

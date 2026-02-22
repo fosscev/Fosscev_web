@@ -173,3 +173,17 @@ export const subteam: TeamMember[] = [
     //     instagram: "https://instagram.com/",
     // },
 ];
+
+// Faculty Advisors
+export const facultyAdvisors: TeamMember[] = [
+    {
+        name: "Faculty Advisor 1",
+        role: "Faculty Advisor",
+        image: "/logo.png",
+    },
+    {
+        name: "Faculty Advisor 2",
+        role: "Faculty Advisor",
+        image: "/logo.png",
+    }
+];

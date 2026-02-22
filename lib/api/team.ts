@@ -37,6 +37,7 @@ export async function getCoreTeam() {
             .from('team_members')
             .select('*')
             .eq('is_core_team', true)
+            .is('is_faculty_advisor', false)
             .order('display_order', { ascending: true });
 
         if (error) {
@@ -60,6 +61,7 @@ export async function getSubteam() {
             .from('team_members')
             .select('*')
             .eq('is_core_team', false)
+            .is('is_faculty_advisor', false)
             .order('display_order', { ascending: true });
 
         if (error) {
@@ -70,6 +72,29 @@ export async function getSubteam() {
         return { data, error: null };
     } catch (error) {
         console.error('Unexpected error fetching subteam:', error);
+        return { data: null, error };
+    }
+}
+
+/**
+ * Fetch faculty advisors only
+ */
+export async function getFacultyAdvisors() {
+    try {
+        const { data, error } = await supabase
+            .from('team_members')
+            .select('*')
+            .eq('is_faculty_advisor', true)
+            .order('display_order', { ascending: true });
+
+        if (error) {
+            console.error('Error fetching faculty advisors:', error);
+            return { data: null, error };
+        }
+
+        return { data, error: null };
+    } catch (error) {
+        console.error('Unexpected error fetching faculty advisors:', error);
         return { data: null, error };
     }
 }

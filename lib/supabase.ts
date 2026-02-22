@@ -27,6 +27,7 @@ export interface TeamMember {
     instagram?: string | null;
     bio?: string | null;
     is_core_team: boolean;
+    is_faculty_advisor?: boolean;
     display_order: number;
     created_at?: string;
     updated_at?: string;
