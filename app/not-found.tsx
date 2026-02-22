@@ -12,7 +12,7 @@ export default function NotFound() {
 [  0.420069] ACPI: Core revision 20240321
 [  1.023456] systemd[1]: Mounting FOSS Filesystem...
 [  1.141592] systemd[1]: Started FOSS Community Website Service.
-[  1.234567] ERROR: Failed to load resource: /page-not-found
+[  1.234567] 404 ERROR: Page Not Found!
 [  1.234568] kernel: EIP: 404:[<ffffffff81093404>] EFLAGS: 00010046 CPU: 0
 [  1.234569] kernel: RIP: 0010:[<ffffffff81093404>]  [<ffffffff81093404>] path_lookup+0x404/0x500
 [  1.234570] kernel: RSP: 0018:ffff88003f803e00  EFLAGS: 00010246
@@ -31,6 +31,7 @@ export default function NotFound() {
                 setTypedText(fullText.slice(0, currentIndex));
                 currentIndex += Math.floor(Math.random() * 5) + 1; // Random typing speed
             } else {
+                setTypedText(fullText);
                 clearInterval(interval);
             }
         }, 10);
@@ -47,15 +48,26 @@ export default function NotFound() {
                 <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_center,transparent_50%,rgba(0,0,0,0.4)_100%)] z-20"></div>
                 <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] z-20 bg-[length:100%_2px,3px_100%]"></div>
 
-                <div className="whitespace-pre-wrap break-words text-xs md:text-sm lg:text-base leading-tight opacity-90 shadow-[0_0_10px_rgba(0,255,0,0.2)]">
-                    {typedText}
-                    <span className="inline-block w-2.5 h-5 bg-green-500 animate-pulse ml-1 align-middle"></span>
+                <div className="break-words text-xs md:text-sm lg:text-base leading-tight opacity-90 p-4 bg-black/50 border border-green-500/20 rounded shadow-[0_0_15px_rgba(0,255,0,0.15)]">
+                    {typedText.split('\n').map((line, index, arr) => {
+                        const isLastLine = index === arr.length - 1;
+                        const isErrorLine = line.includes('404 ERROR');
+                        return (
+                            <div key={index} className={`${isErrorLine ? 'text-red-500 text-2xl md:text-4xl font-black my-4 py-2 border-l-4 border-red-500 pl-4 bg-red-950/40 shadow-[0_0_20px_rgba(255,0,0,0.2)] tracking-widest' : ''}`}>
+                                {line}
+                                {isLastLine && (
+                                    <span className={`inline-block w-2.5 h-[1em] animate-pulse ml-1 align-middle ${isErrorLine ? 'bg-red-500' : 'bg-green-500'}`}></span>
+                                )}
+                            </div>
+                        );
+                    })}
                 </div>
 
                 <div className={`mt-12 transition-opacity duration-1000 ${typedText.length === fullText.length ? 'opacity-100' : 'opacity-0'}`}>
-                    <div className="border border-red-500 bg-red-950/20 p-4 mb-6 animate-pulse">
-                        <p className="text-red-500 font-bold">&gt;&gt;&gt; CRITICAL ERROR: PAGE_NOT_FOUND</p>
-                        <p className="text-red-400">The requested URL was not found on this server.</p>
+                    <div className="border border-red-500 bg-red-950/20 p-6 mb-6 animate-pulse shadow-[0_0_20px_rgba(255,0,0,0.2)]">
+                        <h2 className="text-5xl md:text-7xl text-red-500 font-bold mb-4">404</h2>
+                        <p className="text-red-500 font-bold text-xl">&gt;&gt;&gt; CRITICAL ERROR: PAGE_NOT_FOUND</p>
+                        <p className="text-red-400 mt-2">The requested URL was not found on this server.</p>
                     </div>
 
                     <p className="text-gray-400 mb-6">Create a new detailed implementation plan or return to safety?</p>

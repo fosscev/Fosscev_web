@@ -9,18 +9,12 @@ import { supabase } from '@/lib/supabase';
 export default function AdminLoginPage() {
     const router = useRouter();
     const [session, setSession] = useState<any>(null);
+    const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            setSession(session);
-            if (session) {
-                router.push('/foss-manager/dashboard');
-            }
-        });
+        setMounted(true);
 
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
             setSession(session);
             if (session) {
                 router.push('/foss-manager/dashboard');
@@ -30,13 +24,27 @@ export default function AdminLoginPage() {
         return () => subscription.unsubscribe();
     }, [router]);
 
+    // Show initial loading background to avoid hydration mismatch
+    if (!mounted) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">
+                <div className="text-xl font-mono animate-pulse">Initializing...</div>
+            </div>
+        );
+    }
+
+    // Show redirect state if session exists
     if (session) {
-        return null; // Redirecting...
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">
+                <div className="text-xl font-mono animate-pulse">Redirecting to Dashboard...</div>
+            </div>
+        );
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-900 p-4">
-            <div className="w-full max-w-md bg-gray-800 p-8 rounded-lg shadow-xl border border-gray-700">
+        <div className="min-h-screen flex items-center justify-center bg-[#050505] p-4">
+            <div className="w-full max-w-md bg-[#0a0a0a] p-8 rounded-lg shadow-2xl border border-white/10">
                 <h1 className="text-3xl font-bold text-center text-white mb-8">Admin Access</h1>
                 <Auth
                     supabaseClient={supabase}

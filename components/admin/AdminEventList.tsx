@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { z } from 'zod';
 import {
@@ -33,6 +33,8 @@ export default function AdminEventList() {
     const [events, setEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isEditing, setIsEditing] = useState<string | null>(null);
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
     const [formData, setFormData] = useState({
@@ -63,9 +65,9 @@ export default function AdminEventList() {
         setIsLoading(false);
     };
 
-    useState(() => {
+    useEffect(() => {
         loadData();
-    });
+    }, []);
 
     const validateForm = (): boolean => {
         const result = eventFormSchema.safeParse(formData);
@@ -84,30 +86,52 @@ export default function AdminEventList() {
 
     const handleSaveEvent = async () => {
         if (!validateForm()) return;
+        setIsSubmitting(true);
 
-        if (isEditing) {
-            const { error } = await supabase
-                .from('events')
-                .update(formData)
-                .eq('id', isEditing);
+        let finalPosterUrl = formData.poster_url;
 
-            if (error) {
-                alert('Error updating event: ' + error.message);
-            } else {
-                loadData();
-                resetForm();
+        try {
+            if (selectedFile) {
+                const fileExt = selectedFile.name.split('.').pop();
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+                const { data: { session } } = await supabase.auth.getSession();
+                if (!session) {
+                    alert('Session expired. Please log in again.');
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                const { data, error: uploadError } = await supabase.storage.from('event-posters').upload(fileName, selectedFile);
+                if (uploadError) throw uploadError;
+
+                const { data: urlData } = supabase.storage.from('event-posters').getPublicUrl(data.path);
+                finalPosterUrl = urlData.publicUrl;
             }
-        } else {
-            const { error } = await supabase
-                .from('events')
-                .insert([formData]);
 
-            if (error) {
-                alert('Error adding event: ' + error.message);
+            const payload = { ...formData, poster_url: finalPosterUrl };
+
+            if (isEditing) {
+                const { error } = await supabase
+                    .from('events')
+                    .update(payload)
+                    .eq('id', isEditing);
+
+                if (error) throw error;
             } else {
-                loadData();
-                resetForm();
+                const { error } = await supabase
+                    .from('events')
+                    .insert([payload]);
+
+                if (error) throw error;
             }
+
+            loadData();
+            resetForm();
+        } catch (error: any) {
+            alert('Error saving event: ' + error.message);
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -145,6 +169,7 @@ export default function AdminEventList() {
     const resetForm = () => {
         setIsAdding(false);
         setIsEditing(null);
+        setSelectedFile(null);
         setFormErrors({});
         setFormData({
             title: '',
@@ -184,13 +209,13 @@ export default function AdminEventList() {
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-400 mb-1">Event Poster <span className="text-xs text-gray-600">(Max 2MB)</span></label>
                                 <ImageUploader
-                                    bucket="event-posters"
+                                    onFileSelect={setSelectedFile}
                                     maxFileSize={MAX_POSTER_SIZE}
-                                    onUploadComplete={(url) => setFormData(prev => ({ ...prev, poster_url: url }))}
+                                    initialPreview={isEditing && formData.poster_url ? formData.poster_url : null}
                                 />
-                                {formData.poster_url && (
+                                {selectedFile && (
                                     <div className="mt-2 text-sm text-green-400 flex items-center gap-2">
-                                        <Check size={14} /> Poster uploaded successfully
+                                        <Check size={14} /> Poster selected for upload
                                     </div>
                                 )}
                                 {isEditing && !formData.poster_url && (
@@ -326,9 +351,9 @@ export default function AdminEventList() {
                             <button
                                 onClick={handleSaveEvent}
                                 className="px-4 py-2 bg-primary text-black font-bold rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={!formData.title || !formData.date}
+                                disabled={!formData.title || !formData.date || isSubmitting}
                             >
-                                {isEditing ? 'Update Event' : 'Create Event'}
+                                {isSubmitting ? 'Saving...' : (isEditing ? 'Update Event' : 'Create Event')}
                             </button>
                         </div>
                     </div>

@@ -1,8 +1,4 @@
 import { ImageResponse } from 'next/og';
-import { readFile } from 'node:fs/promises';
-import { join } from 'node:path';
-
-export const runtime = 'nodejs';
 
 export const alt = 'FOSS Club CEV - Open Source Community';
 export const size = {
@@ -13,10 +9,6 @@ export const size = {
 export const contentType = 'image/png';
 
 export default async function Image() {
-    // Load logo from public directory
-    const logoData = await readFile(join(process.cwd(), 'public', 'logo.png'));
-    const logoBase64 = `data:image/png;base64,${logoData.toString('base64')}`;
-
     // Use a cool dark theme to match the site
     return new ImageResponse(
         (
@@ -37,7 +29,10 @@ export default async function Image() {
                 <div
                     style={{
                         position: 'absolute',
-                        inset: 0,
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
                         backgroundImage:
                             'linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)',
                         backgroundSize: '40px 40px',
@@ -46,30 +41,14 @@ export default async function Image() {
                 />
 
                 {/* Glow Effect */}
-                <div
-                    style={{
-                        position: 'absolute',
-                        width: '600px',
-                        height: '600px',
-                        background: 'radial-gradient(circle, rgba(0, 230, 118, 0.15), transparent 70%)',
-                        top: '50%',
-                        left: '50%',
-                        transform: 'translate(-50%, -50%)',
-                    }}
-                />
+                {/* Glow Effect Removed - radial-gradient is not supported in Satori */}
 
-                {/* Logo */}
-                <img
-                    src={logoBase64}
-                    alt="FOSS CEV Logo"
-                    width="300"
-                    height="85"
-                    style={{
-                        objectFit: 'contain',
-                        marginBottom: '40px',
-                        zIndex: 10,
-                    }}
-                />
+                {/* SVG Logo Replacement */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '40px', zIndex: 10 }}>
+                    <svg width="150" height="150" viewBox="0 0 24 24" fill="none" stroke="#00E676" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                </div>
 
                 {/* Text */}
                 <div

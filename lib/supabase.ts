@@ -1,3 +1,4 @@
+import { createBrowserClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 
 // Validate environment variables
@@ -11,15 +12,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Create a single supabase client for interacting with your database
-// This client is safe to use in the browser as it only uses the public anon key
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-        persistSession: true,
-        storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-    }
-});
+// Using createBrowserClient from @supabase/ssr to ensure cookies are 
+// correctly shared between client and server (middleware/proxy).
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 // Database types
 export interface TeamMember {

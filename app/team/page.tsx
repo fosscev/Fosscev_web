@@ -227,15 +227,7 @@ const TeamMemberCard = ({
                         priority={index < 4}
                     />
 
-                    {/* Overlay with binary code */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500">
-                        <div className="absolute bottom-0 left-0 right-0 p-4">
-                            <div
-                                className="font-mono text-primary text-sm leading-relaxed opacity-80"
-                                dangerouslySetInnerHTML={{ __html: member.bio || getPersonalizedMessage(member.name, member.role) }}
-                            />
-                        </div>
-                    </div>
+
 
                     {/* Scan line effect */}
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
