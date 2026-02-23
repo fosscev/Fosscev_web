@@ -82,16 +82,38 @@ export default function EventsPage() {
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [hoveredEvent, setHoveredEvent] = useState<Event | null>(null);
 
-    // Update selected event when view changes or data loads
+    // Update selected event when view changes, data loads, or on hash navigation
     useEffect(() => {
+        // Handle direct linking to specific event via URL hash
+        if (typeof window !== 'undefined' && window.location.hash) {
+            const hashId = window.location.hash.substring(1);
+
+            // Check if it's in upcoming
+            const inUpcoming = upcomingEvents.find(e => e.id.toString() === hashId);
+            if (inUpcoming) {
+                setShowPastEvents(false);
+                setSelectedEvent(inUpcoming);
+                return;
+            }
+
+            // Check if it's in past
+            const inPast = pastEvents.find(e => e.id.toString() === hashId);
+            if (inPast) {
+                setShowPastEvents(true);
+                setSelectedEvent(inPast);
+                return;
+            }
+        }
+
+        // Default behavior if no hash or hash not found
         if (displayEvents.length > 0 && !selectedEvent) {
             setSelectedEvent(displayEvents[0]);
         } else if (displayEvents.length > 0 && selectedEvent) {
             // Check if selected event is in currently displayed list, if not, select first
-            const exists = displayEvents.find(e => e.id === selectedEvent.id);
+            const exists = displayEvents.find(e => e.id === selectedEvent?.id);
             if (!exists) setSelectedEvent(displayEvents[0]);
         }
-    }, [displayEvents, selectedEvent]);
+    }, [displayEvents, upcomingEvents, pastEvents, selectedEvent?.id]);
 
     // Get the display image for an event card (prefer poster, then image)
     const getEventCardImage = (event: Event): string | undefined => {
@@ -104,26 +126,7 @@ export default function EventsPage() {
 
     return (
         <div className="relative min-h-screen bg-background text-white selection:bg-primary selection:text-black overflow-hidden">
-            {/* Animated Grid Background */}
-            <div className="fixed inset-0 pointer-events-none z-0">
-                {/* Main grid pattern */}
-                <div className="absolute inset-0 hacker-grid opacity-20"></div>
 
-                {/* Animated gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background"></div>
-
-                {/* Glowing dots at grid intersections */}
-                <div className="absolute inset-0" style={{
-                    backgroundImage: 'radial-gradient(circle at center, rgba(0, 230, 118, 0.15) 1px, transparent 1px)',
-                    backgroundSize: '40px 40px',
-                    backgroundPosition: '0 0, 20px 20px'
-                }}></div>
-
-                {/* Animated scan lines */}
-                <div className="absolute inset-0 opacity-5">
-                    <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-vertical"></div>
-                </div>
-            </div>
 
             <div className="relative z-10">
                 <Navbar />
@@ -185,9 +188,6 @@ export default function EventsPage() {
                     <div className="max-w-7xl mx-auto px-4 mb-16">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                             {displayEvents.map((event, index) => {
-                                // Random rotation for pinboard effect
-                                const rotations = ['-rotate-2', 'rotate-1', '-rotate-1', 'rotate-2', '-rotate-3', 'rotate-3'];
-                                const rotation = rotations[index % rotations.length];
                                 const isSelected = selectedEvent?.id === event.id;
                                 const cardImage = getEventCardImage(event);
 
@@ -200,35 +200,16 @@ export default function EventsPage() {
                                         onClick={() => setSelectedEvent(event)}
                                         onMouseEnter={() => setHoveredEvent(event)}
                                         onMouseLeave={() => setHoveredEvent(null)}
-                                        className={`cursor-pointer group relative md:${rotation} transition-all duration-300 hover:scale-105 md:hover:scale-110 hover:rotate-0 hover:z-50`}
-                                        style={{ transformOrigin: 'top center' }}
+                                        className="cursor-pointer group relative transition-all duration-500 hover:-translate-y-2"
                                     >
-                                        {/* Dark Polaroid Card */}
-                                        <div className={`bg-gradient-to-br from-gray-900 to-black rounded-lg shadow-2xl overflow-hidden border transition-all duration-300 ${isSelected
-                                            ? 'border-primary shadow-[0_0_40px_rgba(0,230,118,0.5)]'
-                                            : 'border-white/10 hover:border-primary/50 hover:shadow-[0_20px_60px_rgba(0,0,0,0.9)]'
+                                        {/* Modern Glass Card */}
+                                        <div className={`bg-surface/40 backdrop-blur-sm rounded-2xl overflow-hidden border transition-all duration-500 h-full flex flex-col ${isSelected
+                                            ? 'border-primary shadow-[0_0_30px_rgba(0,230,118,0.2)]'
+                                            : 'border-white/5 hover:border-primary/40 hover:bg-surface/60 hover:shadow-2xl'
                                             }`}>
-                                            {/* Pin at the top */}
-                                            <div className="absolute -top-3 left-1/2 -translate-x-1/2 z-20">
-                                                <div className="relative">
-                                                    {/* Pin glow for selected */}
-                                                    {isSelected && (
-                                                        <div className="absolute inset-0 bg-primary rounded-full blur-md animate-pulse"></div>
-                                                    )}
-                                                    {/* Pin shadow */}
-                                                    <div className="absolute inset-0 bg-black/50 rounded-full blur-sm translate-y-1"></div>
-                                                    {/* Pin head */}
-                                                    <div className={`relative w-6 h-6 rounded-full shadow-lg border-2 transition-all duration-300 ${isSelected
-                                                        ? 'bg-primary border-primary/50 shadow-primary/50'
-                                                        : 'bg-gradient-to-br from-gray-700 to-gray-900 border-white/20 group-hover:from-primary/50 group-hover:to-primary/30'
-                                                        }`}></div>
-                                                    {/* Pin needle */}
-                                                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-0.5 h-4 bg-gradient-to-b from-gray-500 to-gray-700"></div>
-                                                </div>
-                                            </div>
 
                                             {/* Event Poster Image */}
-                                            <div className="h-48 md:h-56 bg-gradient-to-br from-primary/20 via-purple-600/20 to-pink-600/20 relative overflow-hidden">
+                                            <div className="h-48 md:h-56 bg-gradient-to-br from-primary/5 to-transparent relative overflow-hidden shrink-0">
                                                 {/* Display poster/image if available */}
                                                 {cardImage ? (
                                                     <Image
@@ -250,11 +231,20 @@ export default function EventsPage() {
                                                     </span>
                                                 </div>
 
-                                                {/* Status Badge */}
-                                                {event.status === "Completed" && (
+                                                {event.status === "Completed" ? (
                                                     <div className="absolute top-3 left-3 z-10">
-                                                        <span className="px-2 md:px-3 py-1 bg-gray-800/90 backdrop-blur-sm text-gray-300 text-xs font-bold font-display uppercase rounded-md shadow-lg border border-white/10">
+                                                        <span className="px-2 md:px-3 py-1 bg-black/60 backdrop-blur-md text-gray-400 text-xs font-bold font-mono uppercase rounded-md border border-white/10">
                                                             Completed
+                                                        </span>
+                                                    </div>
+                                                ) : (event.status === "Upcoming" || event.status === "Registration Open") && (
+                                                    <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-2 md:px-3 py-1 bg-black/60 backdrop-blur-md border border-primary/20 rounded-md">
+                                                        <span className="relative flex h-2 w-2">
+                                                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                                                            <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                                                        </span>
+                                                        <span className="text-primary text-xs font-bold font-mono uppercase">
+                                                            {event.status}
                                                         </span>
                                                     </div>
                                                 )}
@@ -271,9 +261,9 @@ export default function EventsPage() {
                                                 }}></div>
                                             </div>
 
-                                            {/* Dark info section */}
-                                            <div className="bg-gradient-to-b from-gray-900 to-black p-3 md:p-4 pb-4 md:pb-6 border-t border-white/5">
-                                                <h3 className="text-base md:text-lg font-bold font-display text-white mb-2 md:mb-3 line-clamp-2 min-h-[2.5rem] md:min-h-[3.5rem] group-hover:text-primary transition-colors">
+                                            {/* Minimal info section */}
+                                            <div className="p-4 md:p-6 border-t border-white/5 flex flex-col flex-1">
+                                                <h3 className="text-xl md:text-2xl font-display font-medium text-white mb-4 line-clamp-2 md:min-h-[4rem] group-hover:text-primary transition-colors tracking-tight">
                                                     {event.title}
                                                 </h3>
 
@@ -339,23 +329,28 @@ export default function EventsPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -20 }}
                                     transition={{ duration: 0.3 }}
-                                    className="bg-gradient-to-br from-gray-900 to-black border border-primary/30 rounded-2xl overflow-hidden shadow-[0_0_50px_rgba(0,230,118,0.2)]"
+                                    className="bg-surface/30 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative"
                                 >
+                                    {/* Abstract glow behind the selected event box */}
+                                    <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
+
                                     {/* Header with gradient and patterns */}
-                                    <div className="relative h-64 bg-gradient-to-br from-primary/20 via-purple-600/20 to-pink-600/20 overflow-hidden">
+                                    <div className="relative h-64 bg-gradient-to-br from-surface to-background overflow-hidden border-b border-white/5">
                                         {/* Display poster or image if available */}
-                                        {(selectedEvent.poster || selectedEvent.image) && (
+                                        {(selectedEvent.poster || selectedEvent.image) ? (
                                             <Image
                                                 src={selectedEvent.poster || selectedEvent.image || ""}
                                                 alt={selectedEvent.title}
                                                 fill
-                                                className="object-cover opacity-60"
-                                                sizes="(max-width: 768px) 100vw, 600px"
+                                                className="object-cover opacity-50 mix-blend-overlay"
+                                                sizes="(max-width: 768px) 100vw, 1000px"
                                             />
+                                        ) : (
+                                            <div className="absolute inset-0 bg-background opacity-50"></div>
                                         )}
 
-                                        {/* Dark overlay */}
-                                        <div className="absolute inset-0 bg-gradient-to-br from-black/60 to-black/40"></div>
+                                        {/* Minimal overlay gradient */}
+                                        <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent"></div>
 
                                         {/* Grid pattern */}
                                         <div className="absolute inset-0 opacity-10" style={{
@@ -386,8 +381,8 @@ export default function EventsPage() {
                                         </div>
                                     </div>
 
-                                    {/* Content */}
-                                    <div className="p-8 md:p-12 bg-gradient-to-b from-gray-900/50 to-black">
+                                    {/* Content inside Selected Event */}
+                                    <div className="p-8 md:p-12 bg-surface/50 backdrop-blur-md">
                                         {/* Event Meta Info */}
                                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                                             <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
@@ -439,7 +434,7 @@ export default function EventsPage() {
                                         </div>
 
                                         {/* CTA Buttons */}
-                                        <div className="flex gap-4 flex-wrap">
+                                        <div className="flex gap-4 flex-wrap mt-8">
                                             {selectedEvent.link && (
                                                 <a
                                                     href={selectedEvent.link}

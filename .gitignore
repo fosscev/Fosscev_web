@@ -36,10 +36,3 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local sql dumps
-*.sql
-
-# temp scripts
-push-logos.js
-checklist.md
-FIX_STORAGE_PERMISSIONS.md

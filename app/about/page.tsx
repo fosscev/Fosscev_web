@@ -5,30 +5,12 @@ import { Footer } from "../../components/Footer";
 import { Github, Linkedin, Mail, Instagram, ArrowUpRight, Users, Target, Lightbulb, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { SOCIAL_LINKS } from "@/lib/constants";
+import { WhatWeDo } from "../../components/WhatWeDo";
 
 export default function AboutPage() {
     return (
         <div className="relative min-h-screen bg-background text-white selection:bg-primary selection:text-black overflow-hidden">
-            {/* Animated Grid Background */}
-            <div className="fixed inset-0 pointer-events-none z-0">
-                {/* Main grid pattern */}
-                <div className="absolute inset-0 hacker-grid opacity-20"></div>
 
-                {/* Animated gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background"></div>
-
-                {/* Glowing dots at grid intersections */}
-                <div className="absolute inset-0" style={{
-                    backgroundImage: 'radial-gradient(circle at center, rgba(0, 230, 118, 0.15) 1px, transparent 1px)',
-                    backgroundSize: '40px 40px',
-                    backgroundPosition: '0 0, 20px 20px'
-                }}></div>
-
-                {/* Animated scan lines */}
-                <div className="absolute inset-0 opacity-5">
-                    <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-vertical"></div>
-                </div>
-            </div>
 
             <div className="relative z-10">
                 <Navbar />
@@ -85,51 +67,10 @@ export default function AboutPage() {
                         </motion.div>
                     </div>
 
-                    {/* What We Do */}
-                    <motion.section
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
-                        className="mb-32"
-                    >
-                        <h2 className="text-4xl md:text-5xl font-display font-black mb-12 text-center">
-                            What We <span className="text-primary">Do</span>
-                        </h2>
-                        <div className="grid md:grid-cols-3 gap-8">
-                            {[
-                                {
-                                    icon: Users,
-                                    title: "Workshops & Events",
-                                    description: "Regular hands-on workshops, hackathons, and tech talks featuring industry experts and open-source maintainers."
-                                },
-                                {
-                                    icon: Target,
-                                    title: "Skill Development",
-                                    description: "Structured learning paths covering Git, Linux, web development, and contributing to open-source projects."
-                                },
-                                {
-                                    icon: Heart,
-                                    title: "Community Building",
-                                    description: "Creating a supportive environment where members collaborate, share knowledge, and grow together."
-                                }
-                            ].map((item, index) => (
-                                <motion.div
-                                    key={index}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: 0.5 + index * 0.1 }}
-                                    className="relative group"
-                                >
-                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent rounded-xl blur-lg group-hover:blur-xl transition-all"></div>
-                                    <div className="relative bg-surface/30 backdrop-blur-sm border border-white/10 rounded-xl p-6 hover:border-primary/30 transition-all">
-                                        <item.icon className="w-10 h-10 text-primary mb-4" />
-                                        <h3 className="text-xl font-display font-bold mb-3">{item.title}</h3>
-                                        <p className="text-gray-400 text-sm leading-relaxed">{item.description}</p>
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </motion.section>
+                    {/* What We Do Component */}
+                    <div className="mb-32">
+                        <WhatWeDo />
+                    </div>
 
                     {/* Connect Section */}
                     <motion.section
