@@ -65,10 +65,13 @@ export function TiltedScroll() {
     useEffect(() => {
         const fetchDatabaseGallery = async () => {
             try {
-                // Fetch photos via server action to natively bypass public Anon RLS listing restrictions 
-                const formattedItems = await getGalleryPhotos();
+                // Fetch photos from events database via server action
+                const result = await getGalleryPhotos();
 
-                if (formattedItems && formattedItems.length > 0) {
+                // Defensive check: ensure result is a valid array
+                const formattedItems = Array.isArray(result) ? result : [];
+
+                if (formattedItems.length > 0) {
                     // Distribute distinctly. Ensure no two rows share the same slice index.
                     const chunkSize = Math.max(1, Math.floor(formattedItems.length / 3));
 
@@ -78,7 +81,7 @@ export function TiltedScroll() {
                         setRow2Items(formattedItems.slice(chunkSize, chunkSize * 2));
                         setRow3Items(formattedItems.slice(chunkSize * 2));
                     } else {
-                        // Fallback fallback if very few images
+                        // Fallback if very few images
                         setRow1Items(formattedItems);
                         setRow2Items([...formattedItems].reverse());
                         setRow3Items(formattedItems);
