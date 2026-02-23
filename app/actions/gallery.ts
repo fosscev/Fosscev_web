@@ -3,10 +3,9 @@
 import { createClient } from '@supabase/supabase-js';
 
 /**
- * Fetch gallery photos from the events database table.
- * We pull image_url (and poster_url) from all events instead of listing
- * storage bucket files, since Supabase Storage RLS blocks anonymous listing.
- * Database SELECT works perfectly fine with the public anon key.
+ * Fetch gallery photos from the event-photos storage bucket.
+ * Requires an RLS policy on storage.objects allowing public SELECT
+ * for the 'event-photos' bucket so the anon key can list files.
  */
 export async function getGalleryPhotos() {
     try {
@@ -20,47 +19,39 @@ export async function getGalleryPhotos() {
 
         const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-        // Fetch all events that have an image_url or poster_url
-        const { data: events, error } = await supabase
-            .from('events')
-            .select('id, title, type, date, image_url, poster_url')
-            .order('date', { ascending: false });
+        // List all files in the root of the event-photos bucket
+        const { data: files, error } = await supabase.storage
+            .from('event-photos')
+            .list('', { limit: 100, sortBy: { column: 'created_at', order: 'desc' } });
 
         if (error) {
-            console.error("Error fetching events for gallery:", error);
+            console.error("Error listing event photos:", error);
             return [];
         }
 
-        if (!events || events.length === 0) {
+        if (!files || files.length === 0) {
             return [];
         }
 
-        // Collect all valid image URLs from events
-        const formattedItems: { id: string; title: string; event: string; image: string }[] = [];
+        // Filter out any hidden files or folders
+        const validFiles = files.filter(f => f.name && !f.name.startsWith('.') && f.id);
 
-        events.forEach((event, index) => {
-            const year = event.date ? new Date(event.date).getFullYear() : "2025";
-            const eventLabel = `${event.type || "Event"} ${year}`;
+        const formattedItems = validFiles.map((file, index) => {
+            const { data: urlData } = supabase.storage
+                .from('event-photos')
+                .getPublicUrl(file.name);
 
-            // Add poster_url if available
-            if (event.poster_url) {
-                formattedItems.push({
-                    id: `${event.id}-poster`,
-                    title: event.title,
-                    event: eventLabel,
-                    image: event.poster_url
-                });
-            }
-
-            // Add image_url if available and different from poster
-            if (event.image_url && event.image_url !== event.poster_url) {
-                formattedItems.push({
-                    id: `${event.id}-image`,
-                    title: event.title,
-                    event: eventLabel,
-                    image: event.image_url
-                });
-            }
+            return {
+                id: file.id || String(index),
+                title: file.name
+                    .split('.')[0]
+                    .replace(/_/g, ' ')
+                    .replace(/\s*\(\d+\)\s*/g, ' ')
+                    .replace(/(^\w|\s\w)/g, (m: string) => m.toUpperCase())
+                    .trim(),
+                event: "FOSS CEV Event",
+                image: urlData.publicUrl
+            };
         });
 
         return formattedItems;
