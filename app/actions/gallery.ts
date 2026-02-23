@@ -5,32 +5,28 @@ import { createClient } from '@supabase/supabase-js';
 export async function getGalleryPhotos() {
     try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-        if (!supabaseUrl) {
-            console.error("Missing NEXT_PUBLIC_SUPABASE_URL environment variable.");
+        if (!supabaseUrl || !supabaseAnonKey) {
+            console.error("Missing Supabase environment variables.");
             return [];
         }
 
-        // Initialize Supabase inside the function so it doesn't crash the build/import
-        // if the service key is missing in the deployed environment
-        const supabase = supabaseServiceKey
-            ? createClient(supabaseUrl, supabaseServiceKey)
-            : createClient(supabaseUrl, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '');
+        // Use the safe public anonymous key for listing requests
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-        const { data: rootFiles } = await supabase.storage.from('event-photos').list();
-        const { data: galleryFiles } = await supabase.storage.from('event-photos').list('gallery');
+        const { data: rootFiles, error } = await supabase.storage.from('event-photos').list();
+
+        if (error) {
+            console.error("Error listing files from Supabase:", error);
+            return [];
+        }
 
         let allFiles: any[] = [];
 
         if (rootFiles) {
-            const validRootFiles = rootFiles.filter(f => f.name && f.name !== 'gallery' && !f.name.startsWith('.'));
-            allFiles = [...allFiles, ...validRootFiles.map(f => ({ ...f, path: f.name }))];
-        }
-
-        if (galleryFiles) {
-            const validGalleryFiles = galleryFiles.filter(f => f.name && !f.name.startsWith('.'));
-            allFiles = [...allFiles, ...validGalleryFiles.map(f => ({ ...f, path: `gallery/${f.name}` }))];
+            const validRootFiles = rootFiles.filter(f => f.name && !f.name.startsWith('.'));
+            allFiles = validRootFiles.map(f => ({ ...f, path: f.name }));
         }
 
         const formattedItems = allFiles.map((file, index) => {
