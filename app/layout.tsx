@@ -53,6 +53,33 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
+          {/* Global Minimalistic Background */}
+          <div className="fixed inset-0 pointer-events-none z-0 bg-[#0a0a0a]">
+            {/* Subtle radial glow in the center */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] opacity-50 text-emerald-500"></div>
+
+            {/* Subtle noise texture */}
+            <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }}></div>
+
+            {/* Hacker grid pattern */}
+            <div className="absolute inset-0 hacker-grid opacity-20"></div>
+
+            {/* Animated gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent via-background/50 to-background pointer-events-none"></div>
+
+            {/* Glowing dots at grid intersections */}
+            <div className="absolute inset-0" style={{
+              backgroundImage: 'radial-gradient(circle at center, rgba(0, 230, 118, 0.15) 1px, transparent 1px)',
+              backgroundSize: '40px 40px',
+              backgroundPosition: '0 0, 20px 20px'
+            }}></div>
+
+            {/* Animated scan lines */}
+            <div className="absolute inset-0 opacity-5">
+              <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-vertical"></div>
+            </div>
+          </div>
+
           {children}
         </ThemeProvider>
       </body>

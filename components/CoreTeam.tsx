@@ -112,11 +112,18 @@ export function CoreTeam() {
 
     return (
         <section className="py-20 overflow-hidden bg-surface/30">
-            <div className="max-w-7xl mx-auto px-4 mb-12">
-                <h2 className="text-3xl md:text-5xl font-display font-bold text-center">
-                    Meet the <span className="text-primary">Core</span>
+            <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className="max-w-7xl mx-auto px-4 mb-16 text-center"
+            >
+                <h2 className="text-3xl md:text-5xl font-display font-light text-white tracking-tight">
+                    Core Team
                 </h2>
-            </div>
+                <div className="w-12 h-px bg-white/20 mx-auto mt-6"></div>
+            </motion.div>
 
             <div className="relative w-full">
                 {/* Gradient Masks */}
@@ -131,23 +138,22 @@ export function CoreTeam() {
                         {marqueeTeam.map((member, i) => (
                             <motion.div
                                 key={i}
-                                whileHover={{ y: -10, scale: 1.02, zIndex: 20 }}
                                 onMouseEnter={() => setIsPaused(true)}
                                 onMouseLeave={() => setIsPaused(false)}
-                                className="w-64 md:w-72 shrink-0 group relative bg-surface border border-white/10 rounded-xl overflow-hidden hover:border-primary transition-colors duration-300"
+                                className="w-64 md:w-72 shrink-0 group relative flex flex-col gap-4"
                             >
-                                <div className="aspect-square relative overflow-hidden bg-surface-highlight">
+                                <div className="aspect-[4/5] relative rounded-lg overflow-hidden bg-white/[0.02] opacity-80 group-hover:opacity-100 transition-all duration-700 ease-out">
                                     <Image
                                         src={member.image}
                                         alt={member.name}
                                         fill
-                                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                        className="object-cover transition-transform duration-700 group-hover:scale-105"
                                     />
                                 </div>
 
-                                <div className="p-4 border-t border-white/5 bg-surface/80 backdrop-blur-sm">
-                                    <h3 className="text-lg font-bold text-white font-display">{member.name}</h3>
-                                    <p className="text-primary text-sm font-display">{member.role}</p>
+                                <div className="text-center">
+                                    <h3 className="text-lg font-light text-white tracking-wide">{member.name}</h3>
+                                    <p className="text-gray-500 text-xs font-mono tracking-wider uppercase mt-1">{member.role}</p>
                                 </div>
                             </motion.div>
                         ))}

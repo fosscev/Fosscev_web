@@ -16,6 +16,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // correctly shared between client and server (middleware/proxy).
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
+if (typeof window !== 'undefined') {
+    // Catch unhandled background refresh errors from Supabase Auth (e.g., stale tokens)
+    window.addEventListener('unhandledrejection', (event) => {
+        if (event.reason && (event.reason.name === 'AuthApiError' || event.reason.message?.includes('Auth'))) {
+            console.warn('Caught unhandled Supabase Auth error, clearing stale session...');
+            event.preventDefault(); // Prevent Next.js Error Overlay
+            supabase.auth.signOut().catch(() => { }); // Clear the bad session
+        }
+    });
+}
+
 // Database types
 export interface TeamMember {
     id?: string;
