@@ -15,7 +15,8 @@ export const metadata: Metadata = {
   keywords: ["FOSS", "Open Source", "CEV", "College of Engineering Vadakara", "Tech Community", "Hackathon", "Workshops"],
   authors: [{ name: "FOSS Club CEV" }],
   icons: {
-    icon: "/logo.png",
+    icon: "/icon.png",
+    apple: "/apple-icon.png",
   },
   openGraph: {
     title: "FOSS CEV - Free and Open Source Software Community",
@@ -80,7 +81,9 @@ export default function RootLayout({
             </div>
           </div>
 
-          {children}
+          <div className="relative z-10">
+            {children}
+          </div>
         </ThemeProvider>
       </body>
     </html>

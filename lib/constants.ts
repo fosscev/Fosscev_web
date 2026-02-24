@@ -7,7 +7,7 @@ export const SOCIAL_LINKS = {
     telegram: "https://t.me/+zu7gLcpXrx02NTNl",
 
     // Other social links
-    github: "https://github.com/foss-cev",
+    github: "https://github.com/fosscev",
     linkedin: "https://www.linkedin.com/company/fosscev",
     instagram: "https://www.instagram.com/fosscev/",
     email: "mailto:fossclubcev@cev.ac.in",
