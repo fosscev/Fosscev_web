@@ -2,7 +2,7 @@
 
 import { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useGLTF, ContactShadows, useMatcapTexture } from "@react-three/drei";
+import { useGLTF, ContactShadows, useMatcapTexture, useIntersect } from "@react-three/drei";
 import { EffectComposer, DepthOfField } from "@react-three/postprocessing";
 import * as THREE from "three";
 
@@ -14,14 +14,13 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const _plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
 const _hit = new THREE.Vector3();
 
-// ─── Per-object behavior: smooth mouse rotation + float + drag ─────────────────
 function useObjectBehavior(
     basePos: [number, number, number],
     baseRot: [number, number, number],
     mouseRef: React.MutableRefObject<{ x: number; y: number }>,
-    opts: { floatSpeed?: number; tiltStrength?: number; floatAmp?: number; depth?: number } = {}
+    opts: { floatSpeed?: number; tiltStrength?: number; floatAmp?: number; depth?: number; visibleRef?: React.MutableRefObject<boolean> } = {}
 ) {
-    const { floatSpeed = 0.4, tiltStrength = 0.35, floatAmp = 0.08, depth = 0.4 } = opts;
+    const { floatSpeed = 0.4, tiltStrength = 0.35, floatAmp = 0.08, depth = 0.4, visibleRef } = opts;
     const groupRef = useRef<THREE.Group>(null!);
     const origin = useRef(new THREE.Vector3(...basePos));
     const isDragging = useRef(false);
@@ -59,6 +58,7 @@ function useObjectBehavior(
     };
 
     useFrame((state) => {
+        if (visibleRef && !visibleRef.current) return;
         const g = groupRef.current;
         if (!g) return;
         const t = state.clock.elapsedTime * floatSpeed;
@@ -141,12 +141,20 @@ function GLTFModel({
         });
     }, [cloned, matcap]);
 
+    const isVisible = useRef(false);
+    const intersectRef = useIntersect((visible) => (isVisible.current = visible));
+
     const { groupRef, onPointerDown, onPointerUp, onPointerMove, onPointerEnter, onPointerLeave } =
-        useObjectBehavior(initialPos, baseRot, mouseRef, { floatSpeed, tiltStrength, floatAmp, depth });
+        useObjectBehavior(initialPos, baseRot, mouseRef, { floatSpeed, tiltStrength, floatAmp, depth, visibleRef: isVisible });
 
     return (
         <group
-            ref={groupRef}
+            ref={(node: THREE.Group | null) => {
+                if (node) {
+                    groupRef.current = node;
+                    intersectRef.current = node;
+                }
+            }}
             position={initialPos}
             rotation={baseRot}
             scale={typeof scale === "number" ? [scale, scale, scale] : scale}
@@ -173,6 +181,8 @@ useGLTF.preload("/pen/pen.glb");
 // ─── Particle field ───────────────────────────────────────────────────────────
 function Particles({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: number }> }) {
     const ptsRef = useRef<THREE.Points>(null!);
+    const isVisible = useRef(false);
+    const intersectRef = useIntersect((visible) => (isVisible.current = visible));
     const count = 160;
 
     const geo = useMemo(() => {
@@ -196,14 +206,22 @@ function Particles({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number;
     }, []);
 
     useFrame((state) => {
-        if (!ptsRef.current) return;
+        if (!isVisible.current || !ptsRef.current) return;
         ptsRef.current.rotation.y = state.clock.elapsedTime * 0.009;
         ptsRef.current.position.x = lerp(ptsRef.current.position.x, mouseRef.current.x * 0.14, 0.025);
         ptsRef.current.position.y = lerp(ptsRef.current.position.y, -mouseRef.current.y * 0.14, 0.025);
     });
 
     return (
-        <points ref={ptsRef} geometry={geo}>
+        <points
+            ref={(node: THREE.Points | null) => {
+                if (node) {
+                    ptsRef.current = node;
+                    intersectRef.current = node;
+                }
+            }}
+            geometry={geo}
+        >
             <pointsMaterial size={0.04} vertexColors transparent opacity={0.45} sizeAttenuation />
         </points>
     );
