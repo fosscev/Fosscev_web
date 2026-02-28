@@ -160,13 +160,13 @@ function GLTFModel({
 }
 
 // Preload all
-useGLTF.preload("/tux/scene.gltf");
-useGLTF.preload("/gaming_laptop/scene.gltf");
-useGLTF.preload("/notebook/scene.gltf");
-useGLTF.preload("/coffee_cup/scene.gltf");
-useGLTF.preload("/server_racking_system/scene.gltf");
-useGLTF.preload("/android_logo/scene.gltf");
-useGLTF.preload("/pen/scene.gltf");
+useGLTF.preload("/tux/tux.glb");
+useGLTF.preload("/gaming_laptop/gaming_laptop.glb");
+useGLTF.preload("/notebook/notebook.glb");
+useGLTF.preload("/coffee_cup/coffee_cup.glb");
+useGLTF.preload("/server_racking_system/server_racking_system.glb");
+useGLTF.preload("/android_logo/android_logo.glb");
+useGLTF.preload("/pen/pen.glb");
 
 // ─── Particle field ───────────────────────────────────────────────────────────
 function Particles({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: number }> }) {
@@ -245,7 +245,7 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
 
             {/* Tux — center, DoF focal point */}
             <GLTFModel
-                path="/tux/scene.gltf"
+                path="/tux/tux.glb"
                 initialPos={[0, isMobile ? -0.2 : -0.5, 1.5]}
                 baseRot={[0, 0, 0]}
                 scale={isMobile ? 0.015 : 0.018}
@@ -258,7 +258,7 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
 
             {/* Gaming Laptop — left, facing viewer mostly */}
             <GLTFModel
-                path="/gaming_laptop/scene.gltf"
+                path="/gaming_laptop/gaming_laptop.glb"
                 initialPos={isMobile ? [-1.6, 1.6, -0.8] : [-4.0, 0.8, 0]}
                 baseRot={[0.2, 0.1, 0]}
                 scale={isMobile ? 0.35 : 0.6}
@@ -271,7 +271,7 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
 
             {/* Notebook — right, facing user */}
             <GLTFModel
-                path="/notebook/scene.gltf"
+                path="/notebook/notebook.glb"
                 initialPos={isMobile ? [1.6, 1.8, -0.5] : [3.8, 0.9, -0.2]}
                 baseRot={[Math.PI * 0.06, 0.3, 0]}
                 scale={isMobile ? 0.005 : 0.009}
@@ -284,7 +284,7 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
 
             {/* Coffee Cup — bottom-left */}
             <GLTFModel
-                path="/coffee_cup/scene.gltf"
+                path="/coffee_cup/coffee_cup.glb"
                 initialPos={isMobile ? [-1.4, -2.2, 0.2] : [-3.5, -2.0, 0.5]}
                 baseRot={[0.1, 0.3, 0]}
                 scale={isMobile ? 1.4 : 2.7}
@@ -297,7 +297,7 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
 
             {/* Server Rack — right-back, far for DoF blur */}
             <GLTFModel
-                path="/server_racking_system/scene.gltf"
+                path="/server_racking_system/server_racking_system.glb"
                 initialPos={isMobile ? [1.6, -1.0, -4.5] : [4.0, -1.6, -3.8]}
                 baseRot={[0, -0.4, 0]}
                 scale={isMobile ? 0.7 : 1.0}
@@ -310,7 +310,7 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
 
             {/* Android Logo — top-left */}
             <GLTFModel
-                path="/android_logo/scene.gltf"
+                path="/android_logo/android_logo.glb"
                 initialPos={isMobile ? [-1.0, 2.9, -1.2] : [-2.5, 2.6, -0.8]}
                 baseRot={[0.1, 0.3, 0]}
                 scale={isMobile ? 0.28 : 0.55}
@@ -323,7 +323,7 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
 
             {/* Pen — bottom-right */}
             <GLTFModel
-                path="/pen/scene.gltf"
+                path="/pen/pen.glb"
                 initialPos={isMobile ? [1.4, -2.4, 0.5] : [2.6, -1.8, 0.8]}
                 baseRot={[0.6, -0.5, 0.2]}
                 scale={isMobile ? 0.16 : 0.20}
