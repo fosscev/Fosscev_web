@@ -10,7 +10,7 @@ import { CoreTeam } from "../components/CoreTeam";
 
 export default function Home() {
   return (
-    <div className="relative bg-background selection:bg-primary selection:text-black min-h-screen overflow-hidden">
+    <div className="relative bg-background selection:bg-primary selection:text-black min-h-screen overflow-x-hidden">
       <div className="relative z-10">
         <Navbar />
 
