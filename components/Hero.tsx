@@ -48,8 +48,6 @@ const STATS = [
 export function Hero() {
     const sectionRef = useRef<HTMLDivElement>(null);
     const isInView = useInView(sectionRef);
-    const mouseRef = useRef({ x: 0, y: 0 });
-    const [mouseSmooth, setMouseSmooth] = useState({ x: 0, y: 0 });
     const [isClient, setIsClient] = useState(false);
 
     const { scrollYProgress } = useScroll({
@@ -62,29 +60,6 @@ export function Hero() {
     const scaleCanvas = useTransform(scrollYProgress, [0, 1], [1, 0.94]);
 
     useEffect(() => { setIsClient(true); }, []);
-
-    // Smooth mouse via RAF
-    useEffect(() => {
-        let rafId: number;
-        let cx = 0, cy = 0;
-        const lp = (a: number, b: number, t: number) => a + (b - a) * t;
-        const tick = () => {
-            cx = lp(cx, mouseRef.current.x, 0.08);
-            cy = lp(cy, mouseRef.current.y, 0.08);
-            setMouseSmooth({ x: cx, y: cy });
-            rafId = requestAnimationFrame(tick);
-        };
-        tick();
-        const onMove = (e: MouseEvent) => {
-            mouseRef.current.x = (e.clientX / window.innerWidth - 0.5) * 2;
-            mouseRef.current.y = (e.clientY / window.innerHeight - 0.5) * 2;
-        };
-        window.addEventListener("mousemove", onMove);
-        return () => {
-            cancelAnimationFrame(rafId);
-            window.removeEventListener("mousemove", onMove);
-        };
-    }, []);
 
     return (
         <section
@@ -101,7 +76,7 @@ export function Hero() {
                     style={{ scale: scaleCanvas, opacity: opacityFade }}
                 >
                     <Suspense fallback={null}>
-                        <HeroScene mouse={mouseRef} isInView={isInView} />
+                        <HeroScene isInView={isInView} />
                     </Suspense>
                 </motion.div>
             )}
@@ -117,7 +92,6 @@ export function Hero() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
                     className="text-center"
-                    style={{ x: mouseSmooth.x * -9, y: mouseSmooth.y * -9 }}
                 >
                     <h1 className="font-display font-bold leading-[1.02] tracking-tight">
                         {/* FOSS — gradient green/cyan */}
@@ -158,7 +132,7 @@ export function Hero() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.7, delay: 0.38, ease: [0.16, 1, 0.3, 1] }}
                     className="mt-8 text-base sm:text-lg md:text-xl font-body max-w-lg mx-auto leading-relaxed text-center px-2"
-                    style={{ color: "#d4d0cb", x: mouseSmooth.x * -4, y: mouseSmooth.y * -4 }}
+                    style={{ color: "#d4d0cb" }}
                 >
                     Code. Collaborate. Create.{" "}
                     <span style={{ color: "#a09a94" }}>
@@ -172,7 +146,6 @@ export function Hero() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.7, delay: 0.52, ease: [0.16, 1, 0.3, 1] }}
                     className="mt-10 flex flex-col sm:flex-row gap-4"
-                    style={{ x: mouseSmooth.x * -2.5, y: mouseSmooth.y * -2.5 }}
                 >
                     <a
                         href="/events"
