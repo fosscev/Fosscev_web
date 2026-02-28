@@ -31,8 +31,11 @@ function useObjectBehavior(
 
         // Complex randomized floating orbits using layered sine/cosine waves
         // Increased overall amplitude and layered frequencies so movements are visible
-        const tx = origin.current.x + Math.sin(t * 0.8) * (floatAmp * 4) + Math.cos(t * 0.4) * (floatAmp * 2.5);
-        const ty = origin.current.y + Math.cos(t * 0.6) * (floatAmp * 4) + Math.sin(t * 0.3) * (floatAmp * 2.5);
+        const wanderX = Math.sin(t * 0.04 + randomOffset) * 0.7 + Math.cos(t * 0.02 + randomOffset * 2) * 0.4;
+        const wanderY = Math.cos(t * 0.05 + randomOffset) * 0.5 + Math.sin(t * 0.03 + randomOffset * 2) * 0.4;
+
+        const tx = origin.current.x + wanderX + Math.sin(t * 0.8) * (floatAmp * 4) + Math.cos(t * 0.4) * (floatAmp * 2.5);
+        const ty = origin.current.y + wanderY + Math.cos(t * 0.6) * (floatAmp * 4) + Math.sin(t * 0.3) * (floatAmp * 2.5);
         g.position.x = lerp(g.position.x, tx, 0.05);
         g.position.y = lerp(g.position.y, ty, 0.05);
 
