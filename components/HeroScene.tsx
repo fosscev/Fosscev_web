@@ -218,7 +218,7 @@ function Lighting() {
             <directionalLight
                 position={[6, 8, 5]} intensity={2.2} color="#ffffff"
                 castShadow
-                shadow-mapSize-width={2048} shadow-mapSize-height={2048}
+                shadow-mapSize-width={512} shadow-mapSize-height={512}
                 shadow-camera-near={0.1} shadow-camera-far={30}
                 shadow-camera-left={-12} shadow-camera-right={12}
                 shadow-camera-top={12} shadow-camera-bottom={-12}
@@ -351,12 +351,15 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
 export default function HeroScene({
     mouse,
     onReady,
+    isInView = true,
 }: {
     mouse: React.MutableRefObject<{ x: number; y: number }>;
     onReady?: () => void;
+    isInView?: boolean;
 }) {
     return (
         <Canvas
+            frameloop={isInView ? "always" : "demand"}
             camera={{ position: [0, 0, 9], fov: 50 }}
             dpr={[1, 1.5]}
             shadows
