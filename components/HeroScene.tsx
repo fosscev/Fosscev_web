@@ -2,7 +2,7 @@
 
 import { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useGLTF, ContactShadows } from "@react-three/drei";
+import { useGLTF, ContactShadows, useMatcapTexture } from "@react-three/drei";
 import { EffectComposer, DepthOfField } from "@react-three/postprocessing";
 import * as THREE from "three";
 
@@ -102,27 +102,29 @@ function GLTFModel({
     scale = 1, mouseRef, floatSpeed, tiltStrength, floatAmp, depth,
 }: GLTFModelProps) {
     const { scene } = useGLTF(path);
+    const [matcap] = useMatcapTexture("1B1B1B_999999_575757_747474", 1024);
 
     const cloned = useMemo(() => scene.clone(true), [scene]);
 
     useEffect(() => {
+        if (!matcap) return;
         cloned.traverse((child) => {
             if (!(child as THREE.Mesh).isMesh) return;
             const mesh = child as THREE.Mesh;
 
             const swapMaterial = (mat: THREE.Material) => {
-                if (mat.type === "MeshStandardMaterial" || mat.type === "MeshPhysicalMaterial") {
-                    const standardMat = mat as THREE.MeshStandardMaterial;
-                    const m = new THREE.MeshLambertMaterial();
-                    m.name = standardMat.name;
-                    if (standardMat.color) m.color.copy(standardMat.color);
-                    if (standardMat.map) m.map = standardMat.map;
-                    if (standardMat.emissive) m.emissive.copy(standardMat.emissive);
+                if (mat.type === "MeshStandardMaterial" || mat.type === "MeshPhysicalMaterial" || mat.type === "MeshLambertMaterial") {
+                    const originalMat = mat as THREE.MeshStandardMaterial;
+                    const m = new THREE.MeshMatcapMaterial();
+                    m.name = originalMat.name;
+                    if (originalMat.color) m.color.copy(originalMat.color);
+                    if (originalMat.map) m.map = originalMat.map;
 
                     if (m.name === "android_green") {
                         m.color.set("#3DDC84");
                     }
                     m.color.multiplyScalar(0.55);
+                    m.matcap = matcap;
                     m.needsUpdate = true;
                     return m;
                 }
@@ -137,7 +139,7 @@ function GLTFModel({
             mesh.castShadow = false;
             mesh.receiveShadow = false;
         });
-    }, [cloned]);
+    }, [cloned, matcap]);
 
     const { groupRef, onPointerDown, onPointerUp, onPointerMove, onPointerEnter, onPointerLeave } =
         useObjectBehavior(initialPos, baseRot, mouseRef, { floatSpeed, tiltStrength, floatAmp, depth });
@@ -207,27 +209,6 @@ function Particles({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number;
     );
 }
 
-// ─── 3-Point Lighting ─────────────────────────────────────────────────────────
-function Lighting() {
-    return (
-        <>
-            {/* Ambient — gentle fill */}
-            <ambientLight intensity={0.28} color="#b0bcd0" />
-
-            {/* Key light — top-right strong but not blinding */}
-            <directionalLight
-                position={[6, 8, 5]} intensity={2.2} color="#ffffff"
-            />
-
-            {/* Neon-green rim — behind models */}
-            <pointLight position={[0, 2, -7]} intensity={8} color="#00FF66" distance={22} decay={1.8} />
-
-            {/* Cool blue subtle fill from left */}
-            <pointLight position={[-6, -2, 4]} intensity={0.5} color="#1e40af" distance={14} />
-        </>
-    );
-}
-
 // ─── Scene ────────────────────────────────────────────────────────────────────
 function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: number }> }) {
     const { width } = useThree((state) => state.size);
@@ -235,7 +216,6 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
 
     return (
         <>
-            <Lighting />
             <Particles mouseRef={mouseRef} />
 
             {/* Tux — center, DoF focal point */}
