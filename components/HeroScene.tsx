@@ -2,7 +2,7 @@
 
 import { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useGLTF, ContactShadows, useMatcapTexture, useIntersect } from "@react-three/drei";
+import { useGLTF, ContactShadows, useMatcapTexture } from "@react-three/drei";
 import { EffectComposer, DepthOfField } from "@react-three/postprocessing";
 import * as THREE from "three";
 
@@ -15,15 +15,14 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 function useObjectBehavior(
     basePos: [number, number, number],
     baseRot: [number, number, number],
-    opts: { floatSpeed?: number; tiltStrength?: number; floatAmp?: number; visibleRef?: React.MutableRefObject<boolean> } = {}
+    opts: { floatSpeed?: number; tiltStrength?: number; floatAmp?: number; } = {}
 ) {
-    const { floatSpeed = 0.4, tiltStrength = 0.35, floatAmp = 0.08, visibleRef } = opts;
+    const { floatSpeed = 0.4, tiltStrength = 0.35, floatAmp = 0.08 } = opts;
     const groupRef = useRef<THREE.Group>(null!);
     const origin = useRef(new THREE.Vector3(...basePos));
     const randomOffset = useMemo(() => Math.random() * Math.PI * 2, []);
 
     useFrame((state) => {
-        if (visibleRef && !visibleRef.current) return;
         const g = groupRef.current;
         if (!g) return;
 
@@ -31,8 +30,9 @@ function useObjectBehavior(
         const t = state.clock.elapsedTime * floatSpeed + randomOffset;
 
         // Complex randomized floating orbits using layered sine/cosine waves
-        const tx = origin.current.x + Math.sin(t * 0.8) * (floatAmp * 2.5) + Math.cos(t * 0.4) * floatAmp;
-        const ty = origin.current.y + Math.cos(t * 0.6) * (floatAmp * 2.5) + Math.sin(t * 0.3) * floatAmp;
+        // Increased overall amplitude and layered frequencies so movements are visible
+        const tx = origin.current.x + Math.sin(t * 0.8) * (floatAmp * 4) + Math.cos(t * 0.4) * (floatAmp * 2.5);
+        const ty = origin.current.y + Math.cos(t * 0.6) * (floatAmp * 4) + Math.sin(t * 0.3) * (floatAmp * 2.5);
         g.position.x = lerp(g.position.x, tx, 0.05);
         g.position.y = lerp(g.position.y, ty, 0.05);
 
@@ -104,19 +104,11 @@ function GLTFModel({
         });
     }, [cloned, matcap]);
 
-    const isVisible = useRef(false);
-    const intersectRef = useIntersect((visible) => (isVisible.current = visible));
-
-    const groupRef = useObjectBehavior(initialPos, baseRot, { floatSpeed, tiltStrength, floatAmp, visibleRef: isVisible });
+    const groupRef = useObjectBehavior(initialPos, baseRot, { floatSpeed, tiltStrength, floatAmp });
 
     return (
         <group
-            ref={(node: THREE.Group | null) => {
-                if (node) {
-                    groupRef.current = node;
-                    intersectRef.current = node;
-                }
-            }}
+            ref={groupRef}
             position={initialPos}
             rotation={baseRot}
             scale={typeof scale === "number" ? [scale, scale, scale] : scale}
@@ -138,8 +130,6 @@ useGLTF.preload("/pen/pen.glb");
 // ─── Particle field ───────────────────────────────────────────────────────────
 function Particles() {
     const ptsRef = useRef<THREE.Points>(null!);
-    const isVisible = useRef(false);
-    const intersectRef = useIntersect((visible) => (isVisible.current = visible));
     const count = 160;
 
     const geo = useMemo(() => {
@@ -163,7 +153,7 @@ function Particles() {
     }, []);
 
     useFrame((state) => {
-        if (!isVisible.current || !ptsRef.current) return;
+        if (!ptsRef.current) return;
         const t = state.clock.elapsedTime;
 
         // Randomly drift and rotate the entire background cloud
@@ -177,12 +167,7 @@ function Particles() {
 
     return (
         <points
-            ref={(node: THREE.Points | null) => {
-                if (node) {
-                    ptsRef.current = node;
-                    intersectRef.current = node;
-                }
-            }}
+            ref={ptsRef}
             geometry={geo}
         >
             <pointsMaterial size={0.04} vertexColors transparent opacity={0.45} sizeAttenuation />
