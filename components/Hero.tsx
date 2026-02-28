@@ -1,6 +1,6 @@
 "use client";
 
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { useEffect, useState, useRef, Suspense, lazy } from "react";
 import { SOCIAL_LINKS } from "@/lib/constants";
 
@@ -47,6 +47,7 @@ const STATS = [
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 export function Hero() {
     const sectionRef = useRef<HTMLDivElement>(null);
+    const isInView = useInView(sectionRef);
     const mouseRef = useRef({ x: 0, y: 0 });
     const [mouseSmooth, setMouseSmooth] = useState({ x: 0, y: 0 });
     const [isClient, setIsClient] = useState(false);
@@ -100,7 +101,7 @@ export function Hero() {
                     style={{ scale: scaleCanvas, opacity: opacityFade }}
                 >
                     <Suspense fallback={null}>
-                        <HeroScene mouse={mouseRef} />
+                        <HeroScene mouse={mouseRef} isInView={isInView} />
                     </Suspense>
                 </motion.div>
             )}
