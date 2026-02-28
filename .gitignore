@@ -36,3 +36,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# 3D models unwanted files
+/public/**/license.txt
+/public/**/*.blend
+/public/**/*.blend1
+/public/**/*.fbx
+/public/**/*.obj

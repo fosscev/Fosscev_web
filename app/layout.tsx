@@ -7,6 +7,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-body" });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-display" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://foss-community-site.vercel.app"),
   title: {
     default: "FOSS CEV - Free and Open Source Software Community",
     template: "%s | FOSS CEV",
