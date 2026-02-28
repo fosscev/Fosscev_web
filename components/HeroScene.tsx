@@ -20,24 +20,26 @@ function useObjectBehavior(
     const { floatSpeed = 0.4, tiltStrength = 0.35, floatAmp = 0.08, visibleRef } = opts;
     const groupRef = useRef<THREE.Group>(null!);
     const origin = useRef(new THREE.Vector3(...basePos));
+    const randomOffset = useMemo(() => Math.random() * Math.PI * 2, []);
 
     useFrame((state) => {
         if (visibleRef && !visibleRef.current) return;
         const g = groupRef.current;
         if (!g) return;
 
-        const t = state.clock.elapsedTime * floatSpeed;
+        // Apply a random phase offset so objects don't sync up perfectly
+        const t = state.clock.elapsedTime * floatSpeed + randomOffset;
 
-        // Smooth randomized floating position
-        const tx = origin.current.x + Math.sin(t * 0.8) * floatAmp;
-        const ty = origin.current.y + Math.cos(t * 0.6) * floatAmp;
+        // Complex randomized floating orbits using layered sine/cosine waves
+        const tx = origin.current.x + Math.sin(t * 0.8) * (floatAmp * 2.5) + Math.cos(t * 0.4) * floatAmp;
+        const ty = origin.current.y + Math.cos(t * 0.6) * (floatAmp * 2.5) + Math.sin(t * 0.3) * floatAmp;
         g.position.x = lerp(g.position.x, tx, 0.05);
         g.position.y = lerp(g.position.y, ty, 0.05);
 
         // Smooth randomized 3D rotation
         const targetRX = baseRot[0] + Math.sin(t * 0.4) * tiltStrength;
         const targetRY = baseRot[1] + Math.cos(t * 0.5) * tiltStrength;
-        const targetRZ = baseRot[2] + Math.sin(t * 0.3) * (tiltStrength * 0.3);
+        const targetRZ = baseRot[2] + Math.sin(t * 0.3) * (tiltStrength * 0.5);
 
         g.rotation.x = lerp(g.rotation.x, targetRX, 0.05);
         g.rotation.y = lerp(g.rotation.y, targetRY, 0.05);
@@ -162,8 +164,15 @@ function Particles() {
 
     useFrame((state) => {
         if (!isVisible.current || !ptsRef.current) return;
-        ptsRef.current.rotation.y = state.clock.elapsedTime * 0.015;
-        ptsRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.01) * 0.2;
+        const t = state.clock.elapsedTime;
+
+        // Randomly drift and rotate the entire background cloud
+        ptsRef.current.rotation.y = t * 0.02;
+        ptsRef.current.rotation.x = Math.sin(t * 0.05) * 0.2;
+        ptsRef.current.rotation.z = Math.cos(t * 0.04) * 0.1;
+
+        ptsRef.current.position.x = Math.sin(t * 0.08) * 1.5;
+        ptsRef.current.position.y = Math.cos(t * 0.06) * 1.5;
     });
 
     return (
