@@ -16,7 +16,7 @@ export function WhatWeDo() {
                 <div className="inline-block mb-4 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-sm font-mono text-gray-300">
                     <span className="text-primary mr-2">●</span> Impact
                 </div>
-                <h2 className="text-4xl md:text-6xl font-display font-bold text-white tracking-tight">
+                <h2 className="text-3xl sm:text-4xl md:text-6xl font-display font-bold text-white tracking-tight">
                     What We <span className="text-primary">Do</span>
                 </h2>
                 <p className="mt-6 text-xl text-gray-400 font-body max-w-2xl mx-auto leading-relaxed">
@@ -43,7 +43,7 @@ export function WhatWeDo() {
 
                         <div className="relative h-full p-8 md:p-12 flex flex-col justify-end">
                             <Users className="w-14 h-14 text-primary mb-6 md:mb-8 opacity-90 group-hover:scale-110 transition-transform duration-500" />
-                            <h3 className="text-3xl md:text-4xl font-display font-bold text-white mb-4 tracking-tight drop-shadow-md">Workshops & Events</h3>
+                            <h3 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-white mb-4 tracking-tight drop-shadow-md">Workshops & Events</h3>
                             <p className="text-lg md:text-xl text-gray-400 group-hover:text-gray-200 transition-colors duration-300 max-w-xl leading-relaxed">
                                 Curated hands-on workshops, 24-hour hackathons, and deep-dive technical talks featuring industry professionals and open-source foundation maintainers.
                             </p>
@@ -65,7 +65,7 @@ export function WhatWeDo() {
                             <Target className="w-14 h-14 text-primary mb-auto opacity-90 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500" />
 
                             <div className="mt-8">
-                                <h3 className="text-3xl font-display font-bold text-white mb-4 tracking-tight drop-shadow-md">Skill<br />Development</h3>
+                                <h3 className="text-2xl sm:text-3xl font-display font-bold text-white mb-4 tracking-tight drop-shadow-md">Skill<br />Development</h3>
                                 <p className="text-lg text-gray-400 group-hover:text-gray-200 transition-colors duration-300 leading-relaxed">
                                     Structured, mentor-led learning paths covering Git architecture, Linux administration, full-stack web engineering, and navigating your first pull requests in major open-source repositories.
                                 </p>

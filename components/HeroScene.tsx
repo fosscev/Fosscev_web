@@ -1,0 +1,376 @@
+"use client";
+
+import { useRef, useMemo } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useGLTF } from "@react-three/drei";
+import { EffectComposer, DepthOfField } from "@react-three/postprocessing";
+import * as THREE from "three";
+
+// ─── lerp helper ──────────────────────────────────────────────────────────────
+const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+// ─── Darken original textures — keep maps, multiply color dark ────────────────
+function applyDarkTint(scene: THREE.Object3D) {
+    scene.traverse((child) => {
+        if (!(child as THREE.Mesh).isMesh) return;
+        const mesh = child as THREE.Mesh;
+
+        const applyParams = (mat: THREE.Material) => {
+            const m = mat.clone() as THREE.MeshStandardMaterial;
+            // Fix for Android logo missing PBR spec-gloss extension resulting in plain white
+            if (m.name === "android_green") {
+                m.color.set("#3DDC84");
+            }
+            // Give a small dark tint by multiplying the existing color by a scalar < 1
+            m.color.multiplyScalar(0.55);
+            m.roughness = 0.6;
+            m.metalness = 0.15;
+            m.needsUpdate = true;
+            return m;
+        };
+
+        // Clone materials so we don't mutate the globally cached GLTF materials
+        if (Array.isArray(mesh.material)) {
+            mesh.material = mesh.material.map((mat) => mat ? applyParams(mat) : mat);
+        } else if (mesh.material) {
+            mesh.material = applyParams(mesh.material);
+        }
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+    });
+}
+
+// ─── Drag plane (fixed at each object's Z depth) ──────────────────────────────
+const _plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+const _hit = new THREE.Vector3();
+
+// ─── Per-object behavior: smooth mouse rotation + float + drag ─────────────────
+function useObjectBehavior(
+    basePos: [number, number, number],
+    baseRot: [number, number, number],
+    mouseRef: React.MutableRefObject<{ x: number; y: number }>,
+    opts: { floatSpeed?: number; tiltStrength?: number; floatAmp?: number; depth?: number } = {}
+) {
+    const { floatSpeed = 0.4, tiltStrength = 0.35, floatAmp = 0.08, depth = 0.4 } = opts;
+    const groupRef = useRef<THREE.Group>(null!);
+    const origin = useRef(new THREE.Vector3(...basePos));
+    const isDragging = useRef(false);
+    const { camera, gl } = useThree();
+
+    // Drag pointer handlers — use raycaster → plane intersection for accuracy
+    const onPointerDown = (e: any) => {
+        e.stopPropagation();
+        (gl.domElement as HTMLCanvasElement).style.cursor = "grabbing";
+        isDragging.current = true;
+    };
+    const onPointerUp = (e: any) => {
+        e.stopPropagation();
+        (gl.domElement as HTMLCanvasElement).style.cursor = "grab";
+        isDragging.current = false;
+        if (groupRef.current) origin.current.copy(groupRef.current.position);
+        setTimeout(() => {
+            (gl.domElement as HTMLCanvasElement).style.cursor = "default";
+        }, 200);
+    };
+    const onPointerMove = (e: any) => {
+        if (!isDragging.current) return;
+        e.stopPropagation();
+        // Cast ray to a flat plane at the object's Z depth
+        _plane.constant = groupRef.current.position.z;
+        e.ray.intersectPlane(_plane, _hit);
+        groupRef.current.position.x = lerp(groupRef.current.position.x, _hit.x, 0.5);
+        groupRef.current.position.y = lerp(groupRef.current.position.y, _hit.y, 0.5);
+    };
+    const onPointerEnter = () => {
+        if (!isDragging.current) (gl.domElement as HTMLCanvasElement).style.cursor = "grab";
+    };
+    const onPointerLeave = () => {
+        if (!isDragging.current) (gl.domElement as HTMLCanvasElement).style.cursor = "default";
+    };
+
+    useFrame((state) => {
+        const g = groupRef.current;
+        if (!g) return;
+        const t = state.clock.elapsedTime * floatSpeed;
+        const mx = mouseRef.current.x; // −1 … 1
+        const my = mouseRef.current.y; // −1 … 1
+
+        // Float + subtle mouse position drift (parallax) when not dragging
+        if (!isDragging.current) {
+            const tx = origin.current.x + Math.sin(t * 0.8) * floatAmp + mx * depth;
+            const ty = origin.current.y + Math.cos(t * 0.6) * floatAmp - my * depth;
+            g.position.x = lerp(g.position.x, tx, 0.05);
+            g.position.y = lerp(g.position.y, ty, 0.05);
+        }
+
+        // Mouse-pointing rotation
+        const targetRX = baseRot[0] + my * tiltStrength;
+        const targetRY = baseRot[1] + mx * tiltStrength;
+        g.rotation.x = lerp(g.rotation.x, targetRX, 0.12);
+        g.rotation.y = lerp(g.rotation.y, targetRY, 0.12);
+        g.rotation.z = lerp(g.rotation.z, baseRot[2], 0.08);
+    });
+
+    return { groupRef, onPointerDown, onPointerUp, onPointerMove, onPointerEnter, onPointerLeave };
+}
+
+// ─── Generic GLTF Model ───────────────────────────────────────────────────────
+type GLTFModelProps = {
+    path: string;
+    initialPos: [number, number, number];
+    baseRot?: [number, number, number];
+    scale?: number | [number, number, number];
+    mouseRef: React.MutableRefObject<{ x: number; y: number }>;
+    floatSpeed?: number;
+    tiltStrength?: number;
+    floatAmp?: number;
+    depth?: number;
+};
+
+function GLTFModel({
+    path, initialPos, baseRot = [0, 0, 0],
+    scale = 1, mouseRef, floatSpeed, tiltStrength, floatAmp, depth,
+}: GLTFModelProps) {
+    const { scene } = useGLTF(path);
+
+    const cloned = useMemo(() => {
+        const c = scene.clone(true);
+        applyDarkTint(c);
+        return c;
+    }, [scene]);
+
+    const { groupRef, onPointerDown, onPointerUp, onPointerMove, onPointerEnter, onPointerLeave } =
+        useObjectBehavior(initialPos, baseRot, mouseRef, { floatSpeed, tiltStrength, floatAmp, depth });
+
+    return (
+        <group
+            ref={groupRef}
+            position={initialPos}
+            rotation={baseRot}
+            scale={typeof scale === "number" ? [scale, scale, scale] : scale}
+            onPointerDown={onPointerDown}
+            onPointerUp={onPointerUp}
+            onPointerMove={onPointerMove}
+            onPointerEnter={onPointerEnter}
+            onPointerLeave={onPointerLeave}
+        >
+            <primitive object={cloned} />
+        </group>
+    );
+}
+
+// Preload all
+useGLTF.preload("/tux/scene.gltf");
+useGLTF.preload("/gaming_laptop/scene.gltf");
+useGLTF.preload("/notebook/scene.gltf");
+useGLTF.preload("/coffee_cup/scene.gltf");
+useGLTF.preload("/server_racking_system/scene.gltf");
+useGLTF.preload("/android_logo/scene.gltf");
+useGLTF.preload("/pen/scene.gltf");
+
+// ─── Particle field ───────────────────────────────────────────────────────────
+function Particles({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: number }> }) {
+    const ptsRef = useRef<THREE.Points>(null!);
+    const count = 160;
+
+    const geo = useMemo(() => {
+        const g = new THREE.BufferGeometry();
+        const pos = new Float32Array(count * 3);
+        const col = new Float32Array(count * 3);
+        const palette = [
+            new THREE.Color("#00e676"), new THREE.Color("#00b4d8"),
+            new THREE.Color("#7c3aed"), new THREE.Color("#334155"),
+        ];
+        for (let i = 0; i < count; i++) {
+            pos[i * 3] = (Math.random() - 0.5) * 28;
+            pos[i * 3 + 1] = (Math.random() - 0.5) * 18;
+            pos[i * 3 + 2] = (Math.random() - 0.5) * 8 - 6;
+            const c = palette[Math.floor(Math.random() * palette.length)];
+            col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b;
+        }
+        g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+        g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+        return g;
+    }, []);
+
+    useFrame((state) => {
+        if (!ptsRef.current) return;
+        ptsRef.current.rotation.y = state.clock.elapsedTime * 0.009;
+        ptsRef.current.position.x = lerp(ptsRef.current.position.x, mouseRef.current.x * 0.14, 0.025);
+        ptsRef.current.position.y = lerp(ptsRef.current.position.y, -mouseRef.current.y * 0.14, 0.025);
+    });
+
+    return (
+        <points ref={ptsRef} geometry={geo}>
+            <pointsMaterial size={0.04} vertexColors transparent opacity={0.45} sizeAttenuation />
+        </points>
+    );
+}
+
+// ─── 3-Point Lighting ─────────────────────────────────────────────────────────
+function Lighting() {
+    return (
+        <>
+            {/* Ambient — gentle fill */}
+            <ambientLight intensity={0.28} color="#b0bcd0" />
+
+            {/* Key light — top-right strong but not blinding */}
+            <directionalLight
+                position={[6, 8, 5]} intensity={2.2} color="#ffffff"
+                castShadow
+                shadow-mapSize-width={2048} shadow-mapSize-height={2048}
+                shadow-camera-near={0.1} shadow-camera-far={30}
+                shadow-camera-left={-12} shadow-camera-right={12}
+                shadow-camera-top={12} shadow-camera-bottom={-12}
+            />
+
+            {/* Neon-green rim — behind models */}
+            <pointLight position={[0, 2, -7]} intensity={8} color="#00FF66" distance={22} decay={1.8} />
+
+            {/* Cool blue subtle fill from left */}
+            <pointLight position={[-6, -2, 4]} intensity={0.5} color="#1e40af" distance={14} />
+        </>
+    );
+}
+
+// ─── Scene ────────────────────────────────────────────────────────────────────
+function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: number }> }) {
+    const { width } = useThree((state) => state.size);
+    const isMobile = width < 768;
+
+    return (
+        <>
+            <Lighting />
+            <Particles mouseRef={mouseRef} />
+
+            {/* Tux — center, DoF focal point */}
+            <GLTFModel
+                path="/tux/scene.gltf"
+                initialPos={[0, isMobile ? -0.2 : -0.5, 1.5]}
+                baseRot={[0, 0, 0]}
+                scale={isMobile ? 0.015 : 0.018}
+                mouseRef={mouseRef}
+                floatSpeed={0.45}
+                tiltStrength={0.32}
+                floatAmp={0.06}
+                depth={0.3}
+            />
+
+            {/* Gaming Laptop — left, facing viewer mostly */}
+            <GLTFModel
+                path="/gaming_laptop/scene.gltf"
+                initialPos={isMobile ? [-1.6, 1.6, -0.8] : [-4.0, 0.8, 0]}
+                baseRot={[0.2, 0.1, 0]}
+                scale={isMobile ? 0.35 : 0.6}
+                mouseRef={mouseRef}
+                floatSpeed={0.38}
+                tiltStrength={0.28}
+                floatAmp={0.09}
+                depth={0.35}
+            />
+
+            {/* Notebook — right, facing user */}
+            <GLTFModel
+                path="/notebook/scene.gltf"
+                initialPos={isMobile ? [1.6, 1.8, -0.5] : [3.8, 0.9, -0.2]}
+                baseRot={[Math.PI * 0.06, 0.3, 0]}
+                scale={isMobile ? 0.005 : 0.009}
+                mouseRef={mouseRef}
+                floatSpeed={0.35}
+                tiltStrength={0.26}
+                floatAmp={0.08}
+                depth={0.25}
+            />
+
+            {/* Coffee Cup — bottom-left */}
+            <GLTFModel
+                path="/coffee_cup/scene.gltf"
+                initialPos={isMobile ? [-1.4, -2.2, 0.2] : [-3.5, -2.0, 0.5]}
+                baseRot={[0.1, 0.3, 0]}
+                scale={isMobile ? 1.4 : 2.7}
+                mouseRef={mouseRef}
+                floatSpeed={0.52}
+                tiltStrength={0.22}
+                floatAmp={0.07}
+                depth={0.4}
+            />
+
+            {/* Server Rack — right-back, far for DoF blur */}
+            <GLTFModel
+                path="/server_racking_system/scene.gltf"
+                initialPos={isMobile ? [1.6, -1.0, -4.5] : [4.0, -1.6, -3.8]}
+                baseRot={[0, -0.4, 0]}
+                scale={isMobile ? 0.7 : 1.0}
+                mouseRef={mouseRef}
+                floatSpeed={0.28}
+                tiltStrength={0.18}
+                floatAmp={0.05}
+                depth={0.2}
+            />
+
+            {/* Android Logo — top-left */}
+            <GLTFModel
+                path="/android_logo/scene.gltf"
+                initialPos={isMobile ? [-1.0, 2.9, -1.2] : [-2.5, 2.6, -0.8]}
+                baseRot={[0.1, 0.3, 0]}
+                scale={isMobile ? 0.28 : 0.55}
+                mouseRef={mouseRef}
+                floatSpeed={0.48}
+                tiltStrength={0.3}
+                floatAmp={0.12}
+                depth={0.32}
+            />
+
+            {/* Pen — bottom-right */}
+            <GLTFModel
+                path="/pen/scene.gltf"
+                initialPos={isMobile ? [1.4, -2.4, 0.5] : [2.6, -1.8, 0.8]}
+                baseRot={[0.6, -0.5, 0.2]}
+                scale={isMobile ? 0.16 : 0.20}
+                mouseRef={mouseRef}
+                floatSpeed={0.35}
+                tiltStrength={0.25}
+                floatAmp={0.07}
+                depth={0.28}
+            />
+
+            {/* DoF — Tux is at z=1.5, camera at z=9, so focusDistance ≈ 1−(1.5/9) normalised */}
+            <EffectComposer>
+                <DepthOfField
+                    focusDistance={0.015}
+                    focalLength={0.15}
+                    bokehScale={1.5}
+                    height={700}
+                />
+            </EffectComposer>
+        </>
+    );
+}
+
+// ─── Canvas Export ────────────────────────────────────────────────────────────
+export default function HeroScene({
+    mouse,
+    onReady,
+}: {
+    mouse: React.MutableRefObject<{ x: number; y: number }>;
+    onReady?: () => void;
+}) {
+    return (
+        <Canvas
+            camera={{ position: [0, 0, 9], fov: 50 }}
+            dpr={[1, 1.5]}
+            shadows
+            gl={{
+                antialias: true,
+                alpha: true,
+                powerPreference: "high-performance",
+                toneMapping: THREE.ACESFilmicToneMapping,
+                toneMappingExposure: 1.15,
+            }}
+            style={{ background: "transparent" }}
+            onCreated={() => onReady?.()}
+        >
+            <Scene mouseRef={mouse} />
+        </Canvas>
+    );
+}

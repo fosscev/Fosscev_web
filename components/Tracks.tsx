@@ -75,7 +75,7 @@ export function Tracks() {
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 className="mb-16"
             >
-                <h2 className="text-3xl md:text-5xl font-display font-light text-white tracking-tight">
+                <h2 className="text-2xl sm:text-3xl md:text-5xl font-display font-light text-white tracking-tight">
                     Activities
                 </h2>
                 <div className="w-12 h-px bg-white/20 mt-6"></div>
@@ -124,8 +124,8 @@ export function Tracks() {
                                     </div>
                                 )}
 
-                                <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8 translate-y-4 group-hover:translate-y-0 transition-transform duration-500 ease-out z-20">
-                                    <h3 className="text-2xl md:text-3xl font-display font-bold text-white tracking-tight mb-2 drop-shadow-md">{item.title}</h3>
+                                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 translate-y-4 group-hover:translate-y-0 transition-transform duration-500 ease-out z-20">
+                                    <h3 className="text-xl sm:text-2xl md:text-3xl font-display font-bold text-white tracking-tight mb-2 drop-shadow-md">{item.title}</h3>
                                     <p className="text-gray-300 font-mono text-xs md:text-sm tracking-wider uppercase drop-shadow">{item.event}</p>
                                 </div>
                             </motion.div>

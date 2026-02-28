@@ -36,3 +36,15 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# 3D models
+/public/android_logo/
+/public/coffee_cup/
+/public/gaming_laptop/
+/public/notebook/
+/public/pen/
+/public/server_racking_system/
+/public/tux/
+/public/**/*.glb
+/public/**/*.gltf
+/public/**/*.bin
+/public/**/textures/
