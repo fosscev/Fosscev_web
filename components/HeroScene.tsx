@@ -10,78 +10,41 @@ import * as THREE from "three";
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 
-// ─── Drag plane (fixed at each object's Z depth) ──────────────────────────────
-const _plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-const _hit = new THREE.Vector3();
+
 
 function useObjectBehavior(
     basePos: [number, number, number],
     baseRot: [number, number, number],
-    mouseRef: React.MutableRefObject<{ x: number; y: number }>,
-    opts: { floatSpeed?: number; tiltStrength?: number; floatAmp?: number; depth?: number; visibleRef?: React.MutableRefObject<boolean> } = {}
+    opts: { floatSpeed?: number; tiltStrength?: number; floatAmp?: number; visibleRef?: React.MutableRefObject<boolean> } = {}
 ) {
-    const { floatSpeed = 0.4, tiltStrength = 0.35, floatAmp = 0.08, depth = 0.4, visibleRef } = opts;
+    const { floatSpeed = 0.4, tiltStrength = 0.35, floatAmp = 0.08, visibleRef } = opts;
     const groupRef = useRef<THREE.Group>(null!);
     const origin = useRef(new THREE.Vector3(...basePos));
-    const isDragging = useRef(false);
-    const { camera, gl } = useThree();
-
-    // Drag pointer handlers — use raycaster → plane intersection for accuracy
-    const onPointerDown = (e: any) => {
-        e.stopPropagation();
-        (gl.domElement as HTMLCanvasElement).style.cursor = "grabbing";
-        isDragging.current = true;
-    };
-    const onPointerUp = (e: any) => {
-        e.stopPropagation();
-        (gl.domElement as HTMLCanvasElement).style.cursor = "grab";
-        isDragging.current = false;
-        if (groupRef.current) origin.current.copy(groupRef.current.position);
-        setTimeout(() => {
-            (gl.domElement as HTMLCanvasElement).style.cursor = "default";
-        }, 200);
-    };
-    const onPointerMove = (e: any) => {
-        if (!isDragging.current) return;
-        e.stopPropagation();
-        // Cast ray to a flat plane at the object's Z depth
-        _plane.constant = groupRef.current.position.z;
-        e.ray.intersectPlane(_plane, _hit);
-        groupRef.current.position.x = lerp(groupRef.current.position.x, _hit.x, 0.5);
-        groupRef.current.position.y = lerp(groupRef.current.position.y, _hit.y, 0.5);
-    };
-    const onPointerEnter = () => {
-        if (!isDragging.current) (gl.domElement as HTMLCanvasElement).style.cursor = "grab";
-    };
-    const onPointerLeave = () => {
-        if (!isDragging.current) (gl.domElement as HTMLCanvasElement).style.cursor = "default";
-    };
 
     useFrame((state) => {
         if (visibleRef && !visibleRef.current) return;
         const g = groupRef.current;
         if (!g) return;
+
         const t = state.clock.elapsedTime * floatSpeed;
-        const mx = mouseRef.current.x; // −1 … 1
-        const my = mouseRef.current.y; // −1 … 1
 
-        // Float + subtle mouse position drift (parallax) when not dragging
-        if (!isDragging.current) {
-            const tx = origin.current.x + Math.sin(t * 0.8) * floatAmp + mx * depth;
-            const ty = origin.current.y + Math.cos(t * 0.6) * floatAmp - my * depth;
-            g.position.x = lerp(g.position.x, tx, 0.05);
-            g.position.y = lerp(g.position.y, ty, 0.05);
-        }
+        // Smooth randomized floating position
+        const tx = origin.current.x + Math.sin(t * 0.8) * floatAmp;
+        const ty = origin.current.y + Math.cos(t * 0.6) * floatAmp;
+        g.position.x = lerp(g.position.x, tx, 0.05);
+        g.position.y = lerp(g.position.y, ty, 0.05);
 
-        // Mouse-pointing rotation
-        const targetRX = baseRot[0] + my * tiltStrength;
-        const targetRY = baseRot[1] + mx * tiltStrength;
-        g.rotation.x = lerp(g.rotation.x, targetRX, 0.12);
-        g.rotation.y = lerp(g.rotation.y, targetRY, 0.12);
-        g.rotation.z = lerp(g.rotation.z, baseRot[2], 0.08);
+        // Smooth randomized 3D rotation
+        const targetRX = baseRot[0] + Math.sin(t * 0.4) * tiltStrength;
+        const targetRY = baseRot[1] + Math.cos(t * 0.5) * tiltStrength;
+        const targetRZ = baseRot[2] + Math.sin(t * 0.3) * (tiltStrength * 0.3);
+
+        g.rotation.x = lerp(g.rotation.x, targetRX, 0.05);
+        g.rotation.y = lerp(g.rotation.y, targetRY, 0.05);
+        g.rotation.z = lerp(g.rotation.z, targetRZ, 0.05);
     });
 
-    return { groupRef, onPointerDown, onPointerUp, onPointerMove, onPointerEnter, onPointerLeave };
+    return groupRef;
 }
 
 // ─── Generic GLTF Model ───────────────────────────────────────────────────────
@@ -90,16 +53,14 @@ type GLTFModelProps = {
     initialPos: [number, number, number];
     baseRot?: [number, number, number];
     scale?: number | [number, number, number];
-    mouseRef: React.MutableRefObject<{ x: number; y: number }>;
     floatSpeed?: number;
     tiltStrength?: number;
     floatAmp?: number;
-    depth?: number;
 };
 
 function GLTFModel({
     path, initialPos, baseRot = [0, 0, 0],
-    scale = 1, mouseRef, floatSpeed, tiltStrength, floatAmp, depth,
+    scale = 1, floatSpeed, tiltStrength, floatAmp,
 }: GLTFModelProps) {
     const { scene } = useGLTF(path);
     const [matcap] = useMatcapTexture("1B1B1B_999999_575757_747474", 1024);
@@ -144,8 +105,7 @@ function GLTFModel({
     const isVisible = useRef(false);
     const intersectRef = useIntersect((visible) => (isVisible.current = visible));
 
-    const { groupRef, onPointerDown, onPointerUp, onPointerMove, onPointerEnter, onPointerLeave } =
-        useObjectBehavior(initialPos, baseRot, mouseRef, { floatSpeed, tiltStrength, floatAmp, depth, visibleRef: isVisible });
+    const groupRef = useObjectBehavior(initialPos, baseRot, { floatSpeed, tiltStrength, floatAmp, visibleRef: isVisible });
 
     return (
         <group
@@ -158,11 +118,6 @@ function GLTFModel({
             position={initialPos}
             rotation={baseRot}
             scale={typeof scale === "number" ? [scale, scale, scale] : scale}
-            onPointerDown={onPointerDown}
-            onPointerUp={onPointerUp}
-            onPointerMove={onPointerMove}
-            onPointerEnter={onPointerEnter}
-            onPointerLeave={onPointerLeave}
         >
             <primitive object={cloned} />
         </group>
@@ -179,7 +134,7 @@ useGLTF.preload("/android_logo/android_logo.glb");
 useGLTF.preload("/pen/pen.glb");
 
 // ─── Particle field ───────────────────────────────────────────────────────────
-function Particles({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: number }> }) {
+function Particles() {
     const ptsRef = useRef<THREE.Points>(null!);
     const isVisible = useRef(false);
     const intersectRef = useIntersect((visible) => (isVisible.current = visible));
@@ -207,9 +162,8 @@ function Particles({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number;
 
     useFrame((state) => {
         if (!isVisible.current || !ptsRef.current) return;
-        ptsRef.current.rotation.y = state.clock.elapsedTime * 0.009;
-        ptsRef.current.position.x = lerp(ptsRef.current.position.x, mouseRef.current.x * 0.14, 0.025);
-        ptsRef.current.position.y = lerp(ptsRef.current.position.y, -mouseRef.current.y * 0.14, 0.025);
+        ptsRef.current.rotation.y = state.clock.elapsedTime * 0.015;
+        ptsRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.01) * 0.2;
     });
 
     return (
@@ -228,13 +182,13 @@ function Particles({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number;
 }
 
 // ─── Scene ────────────────────────────────────────────────────────────────────
-function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: number }> }) {
+function Scene() {
     const { width } = useThree((state) => state.size);
     const isMobile = width < 768;
 
     return (
         <>
-            <Particles mouseRef={mouseRef} />
+            <Particles />
 
             {/* Tux — center, DoF focal point */}
             <GLTFModel
@@ -242,11 +196,9 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
                 initialPos={[0, isMobile ? -0.2 : -0.5, 1.5]}
                 baseRot={[0, 0, 0]}
                 scale={isMobile ? 0.015 : 0.018}
-                mouseRef={mouseRef}
                 floatSpeed={0.45}
-                tiltStrength={0.32}
+                tiltStrength={0.6}
                 floatAmp={0.06}
-                depth={0.3}
             />
 
             {/* Gaming Laptop — left, facing viewer mostly */}
@@ -255,11 +207,9 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
                 initialPos={isMobile ? [-1.6, 1.6, -0.8] : [-4.0, 0.8, 0]}
                 baseRot={[0.2, 0.1, 0]}
                 scale={isMobile ? 0.35 : 0.6}
-                mouseRef={mouseRef}
                 floatSpeed={0.38}
-                tiltStrength={0.28}
+                tiltStrength={0.5}
                 floatAmp={0.09}
-                depth={0.35}
             />
 
             {/* Notebook — right, facing user */}
@@ -268,11 +218,9 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
                 initialPos={isMobile ? [1.6, 1.8, -0.5] : [3.8, 0.9, -0.2]}
                 baseRot={[Math.PI * 0.06, 0.3, 0]}
                 scale={isMobile ? 0.005 : 0.009}
-                mouseRef={mouseRef}
                 floatSpeed={0.35}
-                tiltStrength={0.26}
+                tiltStrength={0.55}
                 floatAmp={0.08}
-                depth={0.25}
             />
 
             {/* Coffee Cup — bottom-left */}
@@ -281,11 +229,9 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
                 initialPos={isMobile ? [-1.4, -2.2, 0.2] : [-3.5, -2.0, 0.5]}
                 baseRot={[0.1, 0.3, 0]}
                 scale={isMobile ? 1.4 : 2.7}
-                mouseRef={mouseRef}
                 floatSpeed={0.52}
-                tiltStrength={0.22}
+                tiltStrength={0.7}
                 floatAmp={0.07}
-                depth={0.4}
             />
 
             {/* Server Rack — right-back, far for DoF blur */}
@@ -294,11 +240,9 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
                 initialPos={isMobile ? [1.6, -1.0, -4.5] : [4.0, -1.6, -3.8]}
                 baseRot={[0, -0.4, 0]}
                 scale={isMobile ? 0.7 : 1.0}
-                mouseRef={mouseRef}
                 floatSpeed={0.28}
-                tiltStrength={0.18}
+                tiltStrength={0.4}
                 floatAmp={0.05}
-                depth={0.2}
             />
 
             {/* Android Logo — top-left */}
@@ -307,11 +251,9 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
                 initialPos={isMobile ? [-1.0, 2.9, -1.2] : [-2.5, 2.6, -0.8]}
                 baseRot={[0.1, 0.3, 0]}
                 scale={isMobile ? 0.28 : 0.55}
-                mouseRef={mouseRef}
                 floatSpeed={0.48}
-                tiltStrength={0.3}
+                tiltStrength={0.8}
                 floatAmp={0.12}
-                depth={0.32}
             />
 
             {/* Pen — bottom-right */}
@@ -320,11 +262,9 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
                 initialPos={isMobile ? [1.4, -2.4, 0.5] : [2.6, -1.8, 0.8]}
                 baseRot={[0.6, -0.5, 0.2]}
                 scale={isMobile ? 0.16 : 0.20}
-                mouseRef={mouseRef}
                 floatSpeed={0.35}
-                tiltStrength={0.25}
+                tiltStrength={0.55}
                 floatAmp={0.07}
-                depth={0.28}
             />
 
             {/* DoF — Tux is at z=1.5, camera at z=9, so focusDistance ≈ 1−(1.5/9) normalised */}
@@ -350,11 +290,9 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
 
 // ─── Canvas Export ────────────────────────────────────────────────────────────
 export default function HeroScene({
-    mouse,
     onReady,
     isInView = true,
 }: {
-    mouse: React.MutableRefObject<{ x: number; y: number }>;
     onReady?: () => void;
     isInView?: boolean;
 }) {
@@ -373,7 +311,7 @@ export default function HeroScene({
             style={{ background: "transparent" }}
             onCreated={() => onReady?.()}
         >
-            <Scene mouseRef={mouse} />
+            <Scene />
         </Canvas>
     );
 }
