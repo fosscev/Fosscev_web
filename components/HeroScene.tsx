@@ -1,44 +1,14 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useGLTF } from "@react-three/drei";
+import { useGLTF, ContactShadows } from "@react-three/drei";
 import { EffectComposer, DepthOfField } from "@react-three/postprocessing";
 import * as THREE from "three";
 
 // ─── lerp helper ──────────────────────────────────────────────────────────────
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
-// ─── Darken original textures — keep maps, multiply color dark ────────────────
-function applyDarkTint(scene: THREE.Object3D) {
-    scene.traverse((child) => {
-        if (!(child as THREE.Mesh).isMesh) return;
-        const mesh = child as THREE.Mesh;
-
-        const applyParams = (mat: THREE.Material) => {
-            const m = mat.clone() as THREE.MeshStandardMaterial;
-            // Fix for Android logo missing PBR spec-gloss extension resulting in plain white
-            if (m.name === "android_green") {
-                m.color.set("#3DDC84");
-            }
-            // Give a small dark tint by multiplying the existing color by a scalar < 1
-            m.color.multiplyScalar(0.55);
-            m.roughness = 0.6;
-            m.metalness = 0.15;
-            m.needsUpdate = true;
-            return m;
-        };
-
-        // Clone materials so we don't mutate the globally cached GLTF materials
-        if (Array.isArray(mesh.material)) {
-            mesh.material = mesh.material.map((mat) => mat ? applyParams(mat) : mat);
-        } else if (mesh.material) {
-            mesh.material = applyParams(mesh.material);
-        }
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;
-    });
-}
 
 // ─── Drag plane (fixed at each object's Z depth) ──────────────────────────────
 const _plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
@@ -133,11 +103,41 @@ function GLTFModel({
 }: GLTFModelProps) {
     const { scene } = useGLTF(path);
 
-    const cloned = useMemo(() => {
-        const c = scene.clone(true);
-        applyDarkTint(c);
-        return c;
-    }, [scene]);
+    const cloned = useMemo(() => scene.clone(true), [scene]);
+
+    useEffect(() => {
+        cloned.traverse((child) => {
+            if (!(child as THREE.Mesh).isMesh) return;
+            const mesh = child as THREE.Mesh;
+
+            const swapMaterial = (mat: THREE.Material) => {
+                if (mat.type === "MeshStandardMaterial" || mat.type === "MeshPhysicalMaterial") {
+                    const standardMat = mat as THREE.MeshStandardMaterial;
+                    const m = new THREE.MeshLambertMaterial();
+                    m.name = standardMat.name;
+                    if (standardMat.color) m.color.copy(standardMat.color);
+                    if (standardMat.map) m.map = standardMat.map;
+                    if (standardMat.emissive) m.emissive.copy(standardMat.emissive);
+
+                    if (m.name === "android_green") {
+                        m.color.set("#3DDC84");
+                    }
+                    m.color.multiplyScalar(0.55);
+                    m.needsUpdate = true;
+                    return m;
+                }
+                return mat;
+            };
+
+            if (Array.isArray(mesh.material)) {
+                mesh.material = mesh.material.map((mat) => mat ? swapMaterial(mat) : mat);
+            } else if (mesh.material) {
+                mesh.material = swapMaterial(mesh.material);
+            }
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+        });
+    }, [cloned]);
 
     const { groupRef, onPointerDown, onPointerUp, onPointerMove, onPointerEnter, onPointerLeave } =
         useObjectBehavior(initialPos, baseRot, mouseRef, { floatSpeed, tiltStrength, floatAmp, depth });
@@ -217,11 +217,6 @@ function Lighting() {
             {/* Key light — top-right strong but not blinding */}
             <directionalLight
                 position={[6, 8, 5]} intensity={2.2} color="#ffffff"
-                castShadow
-                shadow-mapSize-width={512} shadow-mapSize-height={512}
-                shadow-camera-near={0.1} shadow-camera-far={30}
-                shadow-camera-left={-12} shadow-camera-right={12}
-                shadow-camera-top={12} shadow-camera-bottom={-12}
             />
 
             {/* Neon-green rim — behind models */}
@@ -343,6 +338,14 @@ function Scene({ mouseRef }: { mouseRef: React.MutableRefObject<{ x: number; y: 
                     height={700}
                 />
             </EffectComposer>
+
+            <ContactShadows
+                position={[0, -1, 0]}
+                resolution={512}
+                blur={2}
+                opacity={0.6}
+                scale={10}
+            />
         </>
     );
 }
@@ -362,7 +365,6 @@ export default function HeroScene({
             frameloop={isInView ? "always" : "demand"}
             camera={{ position: [0, 0, 9], fov: 50 }}
             dpr={[1, 1.5]}
-            shadows
             gl={{
                 antialias: true,
                 alpha: true,
