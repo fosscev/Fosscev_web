@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-body" });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-display" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://foss-community-site.vercel.app"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://foss.cev.ac.in"),
   title: {
     default: "FOSS CEV - Free and Open Source Software Community",
     template: "%s | FOSS CEV",
@@ -16,8 +16,8 @@ export const metadata: Metadata = {
   keywords: ["FOSS", "Open Source", "CEV", "College of Engineering Vadakara", "Tech Community", "Hackathon", "Workshops"],
   authors: [{ name: "FOSS Club CEV" }],
   icons: {
-    icon: "/icon.png",
-    apple: "/apple-icon.png",
+    icon: "/foss.png",
+    apple: "/foss.png",
   },
   openGraph: {
     title: "FOSS CEV - Free and Open Source Software Community",
@@ -45,6 +45,18 @@ export default function RootLayout({
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
           rel="stylesheet"
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "FOSS CEV",
+              "url": process.env.NEXT_PUBLIC_SITE_URL || "https://foss.cev.ac.in",
+              "logo": `${process.env.NEXT_PUBLIC_SITE_URL || "https://foss.cev.ac.in"}/foss.png`
+            })
+          }}
         />
       </head>
       <body className="bg-background text-gray-100 font-body overflow-x-hidden selection:bg-primary selection:text-black">
