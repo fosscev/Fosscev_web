@@ -108,17 +108,17 @@ export function TiltedScroll() {
                 <div className="w-full max-w-none opacity-20">
                     <div className="flex gap-6 mb-8 overflow-hidden">
                         {[...Array(6)].map((_, i) => (
-                            <div key={i} className="w-[300px] h-[200px] bg-gray-800/50 border border-primary/10 rounded-xl shrink-0 animate-pulse"></div>
+                            <div key={i} className="w-[320px] h-[220px] bg-gray-800/50 border border-primary/10 rounded-xl shrink-0 animate-pulse"></div>
                         ))}
                     </div>
                     <div className="flex gap-6 mb-8 overflow-hidden">
                         {[...Array(6)].map((_, i) => (
-                            <div key={i} className="w-[300px] h-[200px] bg-gray-800/50 border border-primary/10 rounded-xl shrink-0 animate-pulse"></div>
+                            <div key={i} className="w-[320px] h-[220px] bg-gray-800/50 border border-primary/10 rounded-xl shrink-0 animate-pulse"></div>
                         ))}
                     </div>
                     <div className="flex gap-6 mb-8 overflow-hidden">
                         {[...Array(6)].map((_, i) => (
-                            <div key={i} className="w-[300px] h-[200px] bg-gray-800/50 border border-primary/10 rounded-xl shrink-0 animate-pulse"></div>
+                            <div key={i} className="w-[320px] h-[220px] bg-gray-800/50 border border-primary/10 rounded-xl shrink-0 animate-pulse"></div>
                         ))}
                     </div>
                 </div>

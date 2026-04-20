@@ -63,11 +63,11 @@ export default function AdminGalleryList() {
             // Generate a safe unique filename based on the original name
             const ext = selectedFile.name.split('.').pop();
             const baseName = selectedFile.name.substring(0, selectedFile.name.lastIndexOf('.')).replace(/[^a-zA-Z0-9_-]/g, '_');
-            const newFileName = `${baseName}_${Date.now()}.${ext}`;
+            const newFileName = `${baseName}.${ext}`;
 
             const { error: uploadErr } = await supabase.storage
                 .from('event-photos')
-                .upload(newFileName, selectedFile);
+                .upload(newFileName, selectedFile, { upsert: true });
 
             if (uploadErr) throw uploadErr;
 
