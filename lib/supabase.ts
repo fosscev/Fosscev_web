@@ -1,3 +1,4 @@
+import { createBrowserClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 
 // Validate environment variables
@@ -10,22 +11,10 @@ if (!supabaseUrl || !supabaseAnonKey) {
     );
 }
 
-// Create a single supabase client for interacting with the database.
-// We use a custom sessionStorage adapter that safely handles SSR/hydration.
-const customSessionStorage = {
-    getItem: (key: string) => typeof window !== 'undefined' ? window.sessionStorage.getItem(key) : null,
-    setItem: (key: string, value: string) => typeof window !== 'undefined' ? window.sessionStorage.setItem(key, value) : undefined,
-    removeItem: (key: string) => typeof window !== 'undefined' ? window.sessionStorage.removeItem(key) : undefined,
-};
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    auth: {
-        storage: customSessionStorage,
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true
-    }
-});
+// Create a single supabase client for interacting with your database
+// Using createBrowserClient from @supabase/ssr to ensure cookies are 
+// correctly shared between client and server (middleware/proxy).
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 if (typeof window !== 'undefined') {
     // Catch unhandled background refresh errors from Supabase Auth (e.g., stale tokens)
