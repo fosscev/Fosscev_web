@@ -11,10 +11,19 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 // Create a single supabase client for interacting with the database.
-// We use sessionStorage so that Admin logins expire immediately when the browser tab is closed.
+// We use a custom sessionStorage adapter that safely handles SSR/hydration.
+const customSessionStorage = {
+    getItem: (key: string) => typeof window !== 'undefined' ? window.sessionStorage.getItem(key) : null,
+    setItem: (key: string, value: string) => typeof window !== 'undefined' ? window.sessionStorage.setItem(key, value) : undefined,
+    removeItem: (key: string) => typeof window !== 'undefined' ? window.sessionStorage.removeItem(key) : undefined,
+};
+
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
-        storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+        storage: customSessionStorage,
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
     }
 });
 
