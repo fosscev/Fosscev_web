@@ -85,7 +85,7 @@ export function Tracks() {
             </motion.div>
 
             {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 auto-rows-[250px] opacity-20">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 md:auto-rows-[300px] max-md:auto-rows-[300px] opacity-20">
                     <div className="md:col-span-2 md:row-span-2 bg-gray-800/50 rounded-2xl animate-pulse"></div>
                     <div className="md:col-span-2 md:row-span-1 bg-gray-800/50 rounded-2xl animate-pulse"></div>
                     <div className="md:col-span-1 md:row-span-1 bg-gray-800/50 rounded-2xl animate-pulse"></div>
