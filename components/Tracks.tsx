@@ -5,10 +5,13 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { getEvents } from "@/lib/api/events";
+import { useSiteContent } from "@/lib/useSiteContent";
 
 export function Tracks() {
     const [items, setItems] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { content: siteContent } = useSiteContent();
+    const sectionContent = siteContent.activities || { title: "Activities" };
 
     useEffect(() => {
         const loadPhotos = async () => {
@@ -76,7 +79,7 @@ export function Tracks() {
                 className="mb-16"
             >
                 <h2 className="text-2xl sm:text-3xl md:text-5xl font-display font-light text-white tracking-tight">
-                    Activities
+                    {sectionContent.title}
                 </h2>
                 <div className="w-12 h-px bg-white/20 mt-6"></div>
             </motion.div>

@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import AdminTeamList from '@/components/admin/AdminTeamList';
 import AdminEventList from '@/components/admin/AdminEventList';
+import AdminContentList from '@/components/admin/AdminContentList';
+import AdminGalleryList from '@/components/admin/AdminGalleryList';
 
 export default function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState<'events' | 'team'>('events');
+    const [activeTab, setActiveTab] = useState<'events' | 'team' | 'content' | 'gallery'>('events');
 
     return (
         <div className="space-y-6">
@@ -35,10 +37,31 @@ export default function AdminDashboard() {
                 >
                     Team Members
                 </button>
+                <button
+                    onClick={() => setActiveTab('content')}
+                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'content'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-gray-400 hover:text-white'
+                        }`}
+                >
+                    Site Content
+                </button>
+                <button
+                    onClick={() => setActiveTab('gallery')}
+                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'gallery'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-gray-400 hover:text-white'
+                        }`}
+                >
+                    Gallery
+                </button>
             </div>
 
             <div className="mt-8">
-                {activeTab === 'events' ? <AdminEventList /> : <AdminTeamList />}
+                {activeTab === 'events' && <AdminEventList />}
+                {activeTab === 'team' && <AdminTeamList />}
+                {activeTab === 'content' && <AdminContentList />}
+                {activeTab === 'gallery' && <AdminGalleryList />}
             </div>
         </div>
     );

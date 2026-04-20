@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { getGalleryPhotos } from "@/app/actions/gallery";
+import { useSiteContent } from "@/lib/useSiteContent";
 
 interface GalleryItem {
     id: string;
@@ -61,6 +62,8 @@ export function TiltedScroll() {
     const [row2Items, setRow2Items] = useState<GalleryItem[]>([]);
     const [row3Items, setRow3Items] = useState<GalleryItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { content: siteContent } = useSiteContent();
+    const sectionContent = siteContent.gallery || { title: "Community\nGallery" };
 
     useEffect(() => {
         const fetchDatabaseGallery = async () => {
@@ -146,8 +149,8 @@ export function TiltedScroll() {
                 transition={{ duration: 1, ease: "easeOut" }}
                 className="absolute inset-0 z-20 flex flex-col items-center justify-center pointer-events-none"
             >
-                <h2 className="text-5xl md:text-8xl font-display font-light text-white opacity-20 mix-blend-overlay tracking-tight text-center pointer-events-none">
-                    Community<br />Gallery
+                <h2 className="text-5xl md:text-8xl font-display font-light text-white opacity-20 mix-blend-overlay tracking-tight text-center pointer-events-none whitespace-pre-line">
+                    {sectionContent.title}
                 </h2>
             </motion.div>
         </section>

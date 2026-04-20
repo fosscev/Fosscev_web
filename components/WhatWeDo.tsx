@@ -2,8 +2,20 @@
 
 import { motion } from "framer-motion";
 import { Users, Target, Heart } from "lucide-react";
+import { useSiteContent } from "@/lib/useSiteContent";
 
 export function WhatWeDo() {
+    const { content } = useSiteContent();
+    const sectionIntro = content.what_we_do || { subtitle: "Empowering students to transition from participants to open-source contributors through hands-on collaboration." };
+    const sectionCards = content.what_we_do_cards || {
+        card1_title: 'Workshops & Events',
+        card1_desc: 'Curated hands-on workshops, 24-hour hackathons, and deep-dive technical talks featuring industry professionals and open-source foundation maintainers.',
+        card2_title: 'Skill Development',
+        card2_desc: 'Structured, mentor-led learning paths covering Git architecture, Linux administration, full-stack web engineering, and navigating your first pull requests in major open-source repositories.',
+        card3_title: 'Community Building',
+        card3_desc: 'Fusing a supportive environment where seasoned developers and beginners collaborate daily. We build side-projects, share knowledge peer-to-peer, and grow as a collective unit.'
+    };
+
     return (
         <section className="py-24 relative overflow-hidden bg-background">
             <motion.div
@@ -20,7 +32,7 @@ export function WhatWeDo() {
                     What We <span className="text-primary">Do</span>
                 </h2>
                 <p className="mt-6 text-xl text-gray-400 font-body max-w-2xl mx-auto leading-relaxed">
-                    Empowering students to transition from participants to open-source contributors through hands-on collaboration.
+                    {sectionIntro.subtitle}
                 </p>
             </motion.div>
 
@@ -43,9 +55,9 @@ export function WhatWeDo() {
 
                         <div className="relative h-full p-8 md:p-12 flex flex-col justify-end">
                             <Users className="w-14 h-14 text-primary mb-6 md:mb-8 opacity-90 group-hover:scale-110 transition-transform duration-500" />
-                            <h3 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-white mb-4 tracking-tight drop-shadow-md">Workshops & Events</h3>
+                            <h3 className="text-2xl sm:text-3xl md:text-4xl font-display font-bold text-white mb-4 tracking-tight drop-shadow-md">{sectionCards.card1_title}</h3>
                             <p className="text-lg md:text-xl text-gray-400 group-hover:text-gray-200 transition-colors duration-300 max-w-xl leading-relaxed">
-                                Curated hands-on workshops, 24-hour hackathons, and deep-dive technical talks featuring industry professionals and open-source foundation maintainers.
+                                {sectionCards.card1_desc}
                             </p>
                         </div>
                     </motion.div>
@@ -65,9 +77,9 @@ export function WhatWeDo() {
                             <Target className="w-14 h-14 text-primary mb-auto opacity-90 group-hover:rotate-12 group-hover:scale-110 transition-all duration-500" />
 
                             <div className="mt-8">
-                                <h3 className="text-2xl sm:text-3xl font-display font-bold text-white mb-4 tracking-tight drop-shadow-md">Skill<br />Development</h3>
+                                <h3 className="text-2xl sm:text-3xl font-display font-bold text-white mb-4 tracking-tight drop-shadow-md">{sectionCards.card2_title.split(' ')[0]}<br />{sectionCards.card2_title.split(' ').slice(1).join(' ')}</h3>
                                 <p className="text-lg text-gray-400 group-hover:text-gray-200 transition-colors duration-300 leading-relaxed">
-                                    Structured, mentor-led learning paths covering Git architecture, Linux administration, full-stack web engineering, and navigating your first pull requests in major open-source repositories.
+                                    {sectionCards.card2_desc}
                                 </p>
                             </div>
                         </div>
@@ -85,9 +97,9 @@ export function WhatWeDo() {
 
                         <div className="p-8 md:p-12 flex-1 relative z-10 w-full">
                             <Heart className="w-12 h-12 text-primary mb-6 opacity-90 group-hover:-translate-y-2 group-hover:scale-110 transition-all duration-500" />
-                            <h3 className="text-2xl md:text-3xl font-display font-bold text-white mb-4 tracking-tight drop-shadow-md">Community Building</h3>
+                            <h3 className="text-2xl md:text-3xl font-display font-bold text-white mb-4 tracking-tight drop-shadow-md">{sectionCards.card3_title}</h3>
                             <p className="text-gray-400 group-hover:text-gray-200 transition-colors duration-300 leading-relaxed max-w-lg">
-                                Fusing a supportive environment where seasoned developers and beginners collaborate daily. We build side-projects, share knowledge peer-to-peer, and grow as a collective unit.
+                                {sectionCards.card3_desc}
                             </p>
                         </div>
 
