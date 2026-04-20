@@ -4,6 +4,7 @@ import { motion, useMotionValue, useAnimationFrame } from "framer-motion";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { useSiteContent } from "@/lib/useSiteContent";
 
 interface TeamMember {
     name: string;
@@ -19,6 +20,8 @@ export function CoreTeam() {
     const [teamData, setTeamData] = useState<TeamMember[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const x = useMotionValue(0);
+    const { content: siteContent } = useSiteContent();
+    const sectionContent = siteContent.core_team || { title: "Core Team" };
 
     useEffect(() => {
         const fetchTeam = async () => {
@@ -120,7 +123,7 @@ export function CoreTeam() {
                 className="max-w-7xl mx-auto px-4 mb-16 text-center"
             >
                 <h2 className="text-3xl md:text-5xl font-display font-light text-white tracking-tight">
-                    Core Team
+                    {sectionContent.title}
                 </h2>
                 <div className="w-12 h-px bg-white/20 mx-auto mt-6"></div>
             </motion.div>

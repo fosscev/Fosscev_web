@@ -3,9 +3,10 @@
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { useEffect, useState, useRef, Suspense, lazy } from "react";
 import { SOCIAL_LINKS } from "@/lib/constants";
+import { useSiteContent } from "@/lib/useSiteContent";
 
-// Lazy-load the heavy Three.js scene — only on client
-const HeroScene = lazy(() => import("./HeroScene"));
+// Lazy-load the lightweight 2D canvas scene instead of heavy robust WebGL
+const CanvasNetwork = lazy(() => import("./CanvasNetwork"));
 
 // ─── Subtle background ────────────────────────────────────────────────────────
 function Background() {
@@ -55,6 +56,9 @@ export function Hero() {
         offset: ["start start", "end start"],
     });
 
+    const { content } = useSiteContent();
+    const heroContent = content.hero || { tagline: "Code. Collaborate. Create.", description: "Building the future of open source engineering through innovation and community." };
+
     const yText = useTransform(scrollYProgress, [0, 1], [0, 260]);
     const opacityFade = useTransform(scrollYProgress, [0, 0.72], [1, 0]);
     const scaleCanvas = useTransform(scrollYProgress, [0, 1], [1, 0.94]);
@@ -69,14 +73,14 @@ export function Hero() {
         >
             <Background />
 
-            {/* 3D Canvas — full bleed, fades in on its own when WebGL starts */}
+            {/* Canvas Node Network — full bleed */}
             {isClient && (
                 <motion.div
                     className="absolute inset-0 z-10"
                     style={{ scale: scaleCanvas, opacity: opacityFade }}
                 >
                     <Suspense fallback={null}>
-                        <HeroScene isInView={isInView} />
+                        <CanvasNetwork />
                     </Suspense>
                 </motion.div>
             )}
@@ -134,9 +138,9 @@ export function Hero() {
                     className="mt-8 text-base sm:text-lg md:text-xl font-body max-w-lg mx-auto leading-relaxed text-center px-2"
                     style={{ color: "#d4d0cb" }}
                 >
-                    Code. Collaborate. Create.{" "}
+                    {heroContent.tagline}{" "}
                     <span style={{ color: "#a09a94" }}>
-                        Building the future of open source engineering through innovation and community.
+                        {heroContent.description}
                     </span>
                 </motion.p>
 

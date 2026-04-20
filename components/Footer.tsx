@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { SOCIAL_LINKS } from "@/lib/constants";
 import { ExternalLink } from "lucide-react";
+import { useSiteContent } from "@/lib/useSiteContent";
 
 export function Footer() {
+    const { content: siteContent } = useSiteContent();
+    const footerContent = siteContent.footer || { location: "College of Engineering Vadakara\nKerala, India", copyright: "© 2025 FOSS Community CEV" };
+
     return (
         <footer className="bg-background/95 backdrop-blur-sm text-white pt-20 pb-0 overflow-hidden relative border-t border-white/10">
             <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-12 mb-20 lg:mb-40">
@@ -113,9 +117,8 @@ export function Footer() {
                 {/* Location & FOSS United */}
                 <div>
                     <h3 className="font-display font-bold text-2xl mb-6 text-primary">Location_</h3>
-                    <p className="font-mono text-gray-400 mb-6">
-                        College of Engineering Vadakara<br />
-                        Kerala, India
+                    <p className="font-mono text-gray-400 mb-6 whitespace-pre-line">
+                        {footerContent.location}
                     </p>
 
                     <div className="mt-8 p-4 bg-white/5 border border-white/10 rounded-lg hover:border-primary transition-colors">
@@ -130,7 +133,7 @@ export function Footer() {
                         </a>
                     </div>
 
-                    <p className="mt-8 text-gray-500 text-sm">© 2025 FOSS Community CEV</p>
+                    <p className="mt-8 text-gray-500 text-sm">{footerContent.copyright}</p>
                 </div>
             </div>
 
