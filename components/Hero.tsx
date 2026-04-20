@@ -1,12 +1,10 @@
 "use client";
 
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
-import { useEffect, useState, useRef, Suspense, lazy } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { SOCIAL_LINKS } from "@/lib/constants";
 import { useSiteContent } from "@/lib/useSiteContent";
-
-// Lazy-load the lightweight 2D canvas scene instead of heavy robust WebGL
-const CanvasNetwork = lazy(() => import("./CanvasNetwork"));
+import CanvasNetwork from "./CanvasNetwork";
 
 // ─── Subtle background ────────────────────────────────────────────────────────
 function Background() {

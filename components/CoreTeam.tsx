@@ -96,11 +96,11 @@ export function CoreTeam() {
                 </div>
                 <div className="flex gap-6 md:gap-8 px-4 overflow-hidden">
                     {[...Array(5)].map((_, i) => (
-                        <div key={i} className="w-64 md:w-72 shrink-0 h-80 bg-surface border border-white/10 rounded-xl overflow-hidden animate-pulse">
-                            <div className="h-64 bg-gray-800/50"></div>
-                            <div className="p-4 space-y-2">
-                                <div className="h-6 w-3/4 bg-gray-800/50 rounded"></div>
-                                <div className="h-4 w-1/2 bg-gray-800/50 rounded"></div>
+                        <div key={i} className="w-64 md:w-72 shrink-0 flex flex-col gap-4 animate-pulse">
+                            <div className="aspect-[4/5] rounded-lg bg-gray-800/50"></div>
+                            <div className="text-center space-y-2">
+                                <div className="h-5 w-3/4 mx-auto bg-gray-800/50 rounded"></div>
+                                <div className="h-4 w-1/2 mx-auto bg-gray-800/50 rounded"></div>
                             </div>
                         </div>
                     ))}
