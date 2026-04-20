@@ -1,4 +1,3 @@
-import { createBrowserClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 
 // Validate environment variables
@@ -11,10 +10,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
     );
 }
 
-// Create a single supabase client for interacting with your database
-// Using createBrowserClient from @supabase/ssr to ensure cookies are 
-// correctly shared between client and server (middleware/proxy).
-export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
+// Create a single supabase client for interacting with the database.
+// We use sessionStorage so that Admin logins expire immediately when the browser tab is closed.
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+        storage: typeof window !== 'undefined' ? window.sessionStorage : undefined,
+    }
+});
 
 if (typeof window !== 'undefined') {
     // Catch unhandled background refresh errors from Supabase Auth (e.g., stale tokens)
