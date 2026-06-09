@@ -61,6 +61,26 @@ export interface Event {
     updated_at?: string;
 }
 
+export interface FinanceDetail {
+    item: string;
+    amount: number;
+}
+
+export interface FinancialReport {
+    id?: string;
+    title: string;
+    type: 'Yearly' | 'Event';
+    income: number;
+    expenses: number;
+    balance: number;
+    income_details?: FinanceDetail[] | null;
+    expense_details?: FinanceDetail[] | null;
+    report_url?: string | null;
+    date: string;
+    created_at?: string;
+    updated_at?: string;
+}
+
 // Helper function to get public URL for storage files
 export const getPublicUrl = (bucket: string, path: string): string => {
     const { data } = supabase.storage.from(bucket).getPublicUrl(path);
