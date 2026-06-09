@@ -6,8 +6,13 @@ import { Github, Linkedin, Mail, Instagram, ArrowUpRight, Users, Target, Lightbu
 import { motion } from "framer-motion";
 import { SOCIAL_LINKS } from "@/lib/constants";
 import { WhatWeDo } from "../../components/WhatWeDo";
+import { useSiteContent } from "@/lib/useSiteContent";
 
 export default function AboutPage() {
+    const { content } = useSiteContent();
+    const aboutContent = content.about || { mission: "To create a culture of coding, collaboration, and contribution to open-source software within the campus.", vision: "Becoming the leading technical community that bridges the gap between academics and the open-source software industry." };
+    const aboutExtras = content.about_extras || { intro_tagline: 'Building a culture of open collaboration, innovation, and knowledge sharing at CEV', connect_desc: 'Join our community on social media and stay updated with the latest events, workshops, and opportunities.' };
+
     return (
         <div className="relative min-h-screen bg-background text-white selection:bg-primary selection:text-black overflow-hidden">
 
@@ -26,9 +31,7 @@ export default function AboutPage() {
                             About FOSS Community
                         </h1>
                         <p className="text-xl md:text-2xl text-gray-400 max-w-3xl mx-auto leading-relaxed">
-                            Building a culture of <span className="text-primary font-bold">open collaboration</span>,
-                            <span className="text-primary font-bold"> innovation</span>, and
-                            <span className="text-primary font-bold"> knowledge sharing</span> at CEV
+                            {aboutExtras.intro_tagline}
                         </p>
                     </motion.section>
 
@@ -45,7 +48,7 @@ export default function AboutPage() {
                                 <Target className="w-12 h-12 text-primary mb-6" />
                                 <h2 className="text-3xl font-display font-bold mb-4">Our Mission</h2>
                                 <p className="text-gray-400 leading-relaxed">
-                                    To foster a vibrant community of developers, designers, and tech enthusiasts who believe in the power of Free and Open Source Software. We aim to democratize technology education and create opportunities for everyone to contribute to the global open-source ecosystem.
+                                    {aboutContent.mission}
                                 </p>
                             </div>
                         </motion.div>
@@ -61,7 +64,7 @@ export default function AboutPage() {
                                 <Lightbulb className="w-12 h-12 text-primary mb-6" />
                                 <h2 className="text-3xl font-display font-bold mb-4">Our Vision</h2>
                                 <p className="text-gray-400 leading-relaxed">
-                                    To become the leading FOSS community in Kerala, inspiring the next generation of open-source contributors. We envision a future where every student has the skills, confidence, and platform to build impactful solutions using open-source technologies.
+                                    {aboutContent.vision}
                                 </p>
                             </div>
                         </motion.div>
@@ -83,7 +86,7 @@ export default function AboutPage() {
                             Connect With <span className="text-primary">Us</span>
                         </h2>
                         <p className="text-gray-400 mb-12 max-w-2xl mx-auto">
-                            Join our community on social media and stay updated with the latest events, workshops, and opportunities.
+                            {aboutExtras.connect_desc}
                         </p>
                         <div className="flex justify-center gap-6 flex-wrap">
                             {[

@@ -13,6 +13,8 @@ export default function AdminLayout({
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        let logoutTimer: NodeJS.Timeout;
+
         const checkSession = async () => {
             const {
                 data: { user },
@@ -25,7 +27,28 @@ export default function AdminLayout({
             }
         };
 
+        const resetTimer = () => {
+            clearTimeout(logoutTimer);
+            // Auto logout after 15 minutes of inactivity (900000 ms)
+            logoutTimer = setTimeout(async () => {
+                await supabase.auth.signOut();
+                router.push("/foss-manager");
+            }, 15 * 60 * 1000);
+        };
+
         checkSession();
+        resetTimer();
+
+        window.addEventListener('mousemove', resetTimer);
+        window.addEventListener('keydown', resetTimer);
+        window.addEventListener('click', resetTimer);
+
+        return () => {
+            clearTimeout(logoutTimer);
+            window.removeEventListener('mousemove', resetTimer);
+            window.removeEventListener('keydown', resetTimer);
+            window.removeEventListener('click', resetTimer);
+        };
     }, [router]);
 
     if (isLoading) {

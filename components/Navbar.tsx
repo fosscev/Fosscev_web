@@ -51,9 +51,7 @@ export function Navbar() {
                     transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
                     className="w-full max-w-3xl pointer-events-auto rounded-2xl"
                     style={{
-                        background: scrolled ? "rgba(5,5,5,0.86)" : "rgba(8,8,12,0.62)",
-                        backdropFilter: "blur(22px)",
-                        WebkitBackdropFilter: "blur(22px)",
+                        background: scrolled ? "rgba(5,5,5,0.96)" : "rgba(8,8,12,0.88)",
                         border: "1px solid rgba(0,230,118,0.14)",
                         boxShadow: scrolled
                             ? "0 8px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,230,118,0.06)"
