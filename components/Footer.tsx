@@ -103,6 +103,11 @@ export function Footer() {
                             </Link>
                         </li>
                         <li>
+                            <Link href="/finances" className="hover:text-white hover:underline decoration-primary underline-offset-4 transition-colors">
+                                Finances
+                            </Link>
+                        </li>
+                        <li>
                             <Link href="/privacy" className="hover:text-white hover:underline decoration-primary underline-offset-4 transition-colors">
                                 Privacy Policy
                             </Link>

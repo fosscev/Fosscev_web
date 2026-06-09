@@ -14,7 +14,7 @@ const NAV_LINKS = [
     { href: "/about", label: "About" },
     { href: "/events", label: "Events" },
     { href: "/team", label: "Team" },
-    { href: "/conduct", label: "Conduct" },
+    { href: "/finances", label: "Finances" },
 ];
 
 export function Logo() { return null; }
