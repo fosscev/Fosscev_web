@@ -20,12 +20,22 @@ export default function AdminFinanceList() {
     const [incomeDetails, setIncomeDetails] = useState<FinanceDetail[]>([]);
     const [expenseDetails, setExpenseDetails] = useState<FinanceDetail[]>([]);
     
+    // Simple states for Yearly reports
+    const [simpleIncome, setSimpleIncome] = useState<number>(0);
+    const [simpleExpenses, setSimpleExpenses] = useState<number>(0);
+    
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isSaving, setIsSaving] = useState(false);
 
     // Derived totals
-    const totalIncome = incomeDetails.reduce((sum, item) => sum + (item.amount || 0), 0);
-    const totalExpenses = expenseDetails.reduce((sum, item) => sum + (item.amount || 0), 0);
+    const totalIncome = type === 'Yearly' 
+        ? simpleIncome 
+        : incomeDetails.reduce((sum, item) => sum + (item.amount || 0), 0);
+        
+    const totalExpenses = type === 'Yearly'
+        ? simpleExpenses
+        : expenseDetails.reduce((sum, item) => sum + (item.amount || 0), 0);
+        
     const balance = totalIncome - totalExpenses;
 
     useEffect(() => {
@@ -73,8 +83,8 @@ export default function AdminFinanceList() {
                 income: totalIncome,
                 expenses: totalExpenses,
                 balance: balance,
-                income_details: incomeDetails,
-                expense_details: expenseDetails,
+                income_details: type === 'Event' ? incomeDetails : [],
+                expense_details: type === 'Event' ? expenseDetails : [],
                 date,
                 report_url: final_report_url,
                 updated_at: new Date().toISOString()
@@ -144,6 +154,8 @@ export default function AdminFinanceList() {
         setCurrentId(null);
         setIncomeDetails([{ item: '', amount: 0 }]);
         setExpenseDetails([{ item: '', amount: 0 }]);
+        setSimpleIncome(0);
+        setSimpleExpenses(0);
         setSelectedFile(null);
     };
 
@@ -154,17 +166,25 @@ export default function AdminFinanceList() {
         setReportUrl(report.report_url || null);
         setCurrentId(report.id || null);
         
-        // Handle legacy reports that don't have details
-        if (report.income_details && report.income_details.length > 0) {
-            setIncomeDetails(report.income_details);
+        if (report.type === 'Yearly') {
+            setSimpleIncome(report.income);
+            setSimpleExpenses(report.expenses);
+            setIncomeDetails([{ item: '', amount: 0 }]);
+            setExpenseDetails([{ item: '', amount: 0 }]);
         } else {
-            setIncomeDetails(report.income > 0 ? [{ item: 'General Income', amount: report.income }] : [{ item: '', amount: 0 }]);
-        }
-        
-        if (report.expense_details && report.expense_details.length > 0) {
-            setExpenseDetails(report.expense_details);
-        } else {
-            setExpenseDetails(report.expenses > 0 ? [{ item: 'General Expense', amount: report.expenses }] : [{ item: '', amount: 0 }]);
+            setSimpleIncome(0);
+            setSimpleExpenses(0);
+            if (report.income_details && report.income_details.length > 0) {
+                setIncomeDetails(report.income_details);
+            } else {
+                setIncomeDetails(report.income > 0 ? [{ item: 'General Income', amount: report.income }] : [{ item: '', amount: 0 }]);
+            }
+            
+            if (report.expense_details && report.expense_details.length > 0) {
+                setExpenseDetails(report.expense_details);
+            } else {
+                setExpenseDetails(report.expenses > 0 ? [{ item: 'General Expense', amount: report.expenses }] : [{ item: '', amount: 0 }]);
+            }
         }
 
         setIsEditing(true);
@@ -241,6 +261,33 @@ export default function AdminFinanceList() {
                                 <option value="Event">Event</option>
                             </select>
                         </div>
+                        
+                        {type === 'Yearly' && (
+                            <>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Total Income (₹)</label>
+                                    <input
+                                        required
+                                        type="number"
+                                        min="0"
+                                        className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white focus:border-primary focus:outline-none"
+                                        value={simpleIncome}
+                                        onChange={e => setSimpleIncome(Number(e.target.value))}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Total Expenses (₹)</label>
+                                    <input
+                                        required
+                                        type="number"
+                                        min="0"
+                                        className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white focus:border-primary focus:outline-none"
+                                        value={simpleExpenses}
+                                        onChange={e => setSimpleExpenses(Number(e.target.value))}
+                                    />
+                                </div>
+                            </>
+                        )}
 
                         <div>
                             <label className="block text-sm font-medium text-gray-400 mb-1">Date</label>
@@ -253,7 +300,7 @@ export default function AdminFinanceList() {
                             />
                         </div>
                         
-                        <div>
+                        <div className={type === 'Event' ? "" : "md:col-span-2"}>
                             <label className="block text-sm font-medium text-gray-400 mb-1">Supporting Document (PDF/Image) - Optional</label>
                             {reportUrl && !selectedFile && (
                                 <div className="mb-2 p-2 bg-gray-800 rounded flex justify-between items-center">
@@ -294,107 +341,109 @@ export default function AdminFinanceList() {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4 border-t border-gray-800">
-                        {/* Income Section */}
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <h4 className="text-lg font-bold text-green-500">Income Details</h4>
-                                <span className="font-mono text-green-400 font-bold">Total: ₹{totalIncome}</span>
-                            </div>
-                            
-                            {incomeDetails.map((detail, index) => (
-                                <div key={`inc-${index}`} className="flex gap-2 items-start">
-                                    <div className="flex-1">
-                                        <input
-                                            type="text"
-                                            required
-                                            placeholder="Item Name (e.g., Sponsorship)"
-                                            className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white focus:border-green-500 focus:outline-none text-sm"
-                                            value={detail.item}
-                                            onChange={(e) => updateDetail(true, index, 'item', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="w-1/3">
-                                        <input
-                                            type="number"
-                                            required
-                                            min="0"
-                                            placeholder="Amount"
-                                            className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white focus:border-green-500 focus:outline-none text-sm"
-                                            value={detail.amount || ''}
-                                            onChange={(e) => updateDetail(true, index, 'amount', Number(e.target.value))}
-                                        />
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeDetailRow(true, index)}
-                                        disabled={incomeDetails.length === 1}
-                                        className="p-2 bg-red-500/20 text-red-500 rounded hover:bg-red-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        <Minus className="w-5 h-5" />
-                                    </button>
+                    {type === 'Event' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-4 border-t border-gray-800">
+                            {/* Income Section */}
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <h4 className="text-lg font-bold text-green-500">Income Details</h4>
+                                    <span className="font-mono text-green-400 font-bold">Total: ₹{totalIncome}</span>
                                 </div>
-                            ))}
-                            
-                            <button
-                                type="button"
-                                onClick={() => addDetailRow(true)}
-                                className="flex items-center gap-1 text-sm text-green-500 hover:text-green-400 font-bold px-2 py-1"
-                            >
-                                <Plus className="w-4 h-4" /> Add Income Row
-                            </button>
-                        </div>
+                                
+                                {incomeDetails.map((detail, index) => (
+                                    <div key={`inc-${index}`} className="flex gap-2 items-start">
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="Item Name (e.g., Sponsorship)"
+                                                className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white focus:border-green-500 focus:outline-none text-sm"
+                                                value={detail.item}
+                                                onChange={(e) => updateDetail(true, index, 'item', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="w-1/3">
+                                            <input
+                                                type="number"
+                                                required
+                                                min="0"
+                                                placeholder="Amount"
+                                                className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white focus:border-green-500 focus:outline-none text-sm"
+                                                value={detail.amount || ''}
+                                                onChange={(e) => updateDetail(true, index, 'amount', Number(e.target.value))}
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeDetailRow(true, index)}
+                                            disabled={incomeDetails.length === 1}
+                                            className="p-2 bg-red-500/20 text-red-500 rounded hover:bg-red-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <Minus className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                ))}
+                                
+                                <button
+                                    type="button"
+                                    onClick={() => addDetailRow(true)}
+                                    className="flex items-center gap-1 text-sm text-green-500 hover:text-green-400 font-bold px-2 py-1"
+                                >
+                                    <Plus className="w-4 h-4" /> Add Income Row
+                                </button>
+                            </div>
 
-                        {/* Expense Section */}
-                        <div className="space-y-4">
-                            <div className="flex justify-between items-center">
-                                <h4 className="text-lg font-bold text-red-500">Expense Details</h4>
-                                <span className="font-mono text-red-400 font-bold">Total: ₹{totalExpenses}</span>
-                            </div>
-                            
-                            {expenseDetails.map((detail, index) => (
-                                <div key={`exp-${index}`} className="flex gap-2 items-start">
-                                    <div className="flex-1">
-                                        <input
-                                            type="text"
-                                            required
-                                            placeholder="Item Name (e.g., Catering)"
-                                            className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white focus:border-red-500 focus:outline-none text-sm"
-                                            value={detail.item}
-                                            onChange={(e) => updateDetail(false, index, 'item', e.target.value)}
-                                        />
-                                    </div>
-                                    <div className="w-1/3">
-                                        <input
-                                            type="number"
-                                            required
-                                            min="0"
-                                            placeholder="Amount"
-                                            className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white focus:border-red-500 focus:outline-none text-sm"
-                                            value={detail.amount || ''}
-                                            onChange={(e) => updateDetail(false, index, 'amount', Number(e.target.value))}
-                                        />
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => removeDetailRow(false, index)}
-                                        disabled={expenseDetails.length === 1}
-                                        className="p-2 bg-red-500/20 text-red-500 rounded hover:bg-red-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                                    >
-                                        <Minus className="w-5 h-5" />
-                                    </button>
+                            {/* Expense Section */}
+                            <div className="space-y-4">
+                                <div className="flex justify-between items-center">
+                                    <h4 className="text-lg font-bold text-red-500">Expense Details</h4>
+                                    <span className="font-mono text-red-400 font-bold">Total: ₹{totalExpenses}</span>
                                 </div>
-                            ))}
-                            
-                            <button
-                                type="button"
-                                onClick={() => addDetailRow(false)}
-                                className="flex items-center gap-1 text-sm text-red-500 hover:text-red-400 font-bold px-2 py-1"
-                            >
-                                <Plus className="w-4 h-4" /> Add Expense Row
-                            </button>
+                                
+                                {expenseDetails.map((detail, index) => (
+                                    <div key={`exp-${index}`} className="flex gap-2 items-start">
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="Item Name (e.g., Catering)"
+                                                className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white focus:border-red-500 focus:outline-none text-sm"
+                                                value={detail.item}
+                                                onChange={(e) => updateDetail(false, index, 'item', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className="w-1/3">
+                                            <input
+                                                type="number"
+                                                required
+                                                min="0"
+                                                placeholder="Amount"
+                                                className="w-full bg-gray-800 border border-gray-700 rounded p-2 text-white focus:border-red-500 focus:outline-none text-sm"
+                                                value={detail.amount || ''}
+                                                onChange={(e) => updateDetail(false, index, 'amount', Number(e.target.value))}
+                                            />
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => removeDetailRow(false, index)}
+                                            disabled={expenseDetails.length === 1}
+                                            className="p-2 bg-red-500/20 text-red-500 rounded hover:bg-red-500/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                        >
+                                            <Minus className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                ))}
+                                
+                                <button
+                                    type="button"
+                                    onClick={() => addDetailRow(false)}
+                                    className="flex items-center gap-1 text-sm text-red-500 hover:text-red-400 font-bold px-2 py-1"
+                                >
+                                    <Plus className="w-4 h-4" /> Add Expense Row
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                     
                     <div className="bg-gray-800 p-4 rounded-lg flex justify-between items-center border border-gray-700">
                         <span className="text-gray-300 font-bold">Final Balance Calculation:</span>
