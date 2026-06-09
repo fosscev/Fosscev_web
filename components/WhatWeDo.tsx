@@ -25,7 +25,7 @@ export function WhatWeDo() {
                 transition={{ duration: 0.8, ease: "easeOut" }}
                 className="max-w-7xl mx-auto px-4 text-center mb-16"
             >
-                <div className="inline-block mb-4 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-sm font-mono text-gray-300">
+                <div className="inline-block mb-4 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-sm font-mono text-gray-300">
                     <span className="text-primary mr-2">●</span> Impact
                 </div>
                 <h2 className="text-3xl sm:text-4xl md:text-6xl font-display font-bold text-white tracking-tight">

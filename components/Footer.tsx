@@ -10,7 +10,7 @@ export function Footer() {
     const footerContent = siteContent.footer || { location: "College of Engineering Vadakara\nKerala, India", copyright: "© 2025 FOSS Community CEV" };
 
     return (
-        <footer className="bg-background/95 backdrop-blur-sm text-white pt-20 pb-0 overflow-hidden relative border-t border-white/10">
+        <footer className="bg-background text-white pt-20 pb-0 overflow-hidden relative border-t border-white/10">
             <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-12 mb-20 lg:mb-40">
                 {/* Connect Section */}
                 <div>

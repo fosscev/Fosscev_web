@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const QUOTES = [
@@ -16,6 +16,56 @@ export function LoadingScreen() {
     const [isLoading, setIsLoading] = useState(true);
     const [progress, setProgress] = useState(0);
     const [quoteIndex, setQuoteIndex] = useState(0);
+
+    // Block all scroll/touch/keyboard during loading
+    const preventScroll = useCallback((e: Event) => {
+        e.preventDefault();
+    }, []);
+
+    const preventKeyScroll = useCallback((e: KeyboardEvent) => {
+        const scrollKeys = ['ArrowUp', 'ArrowDown', 'Space', 'PageUp', 'PageDown', 'Home', 'End'];
+        if (scrollKeys.includes(e.code)) {
+            e.preventDefault();
+        }
+    }, []);
+
+    useEffect(() => {
+        if (isLoading) {
+            // Lock body scroll
+            document.body.style.overflow = 'hidden';
+            document.body.style.position = 'fixed';
+            document.body.style.width = '100%';
+            document.body.style.top = '0';
+
+            // Block all scroll-related events
+            window.addEventListener('wheel', preventScroll, { passive: false });
+            window.addEventListener('touchmove', preventScroll, { passive: false });
+            window.addEventListener('keydown', preventKeyScroll, { passive: false });
+        } else {
+            // Unlock everything
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.top = '';
+
+            window.removeEventListener('wheel', preventScroll);
+            window.removeEventListener('touchmove', preventScroll);
+            window.removeEventListener('keydown', preventKeyScroll);
+
+            // Scroll to top after boot
+            window.scrollTo(0, 0);
+        }
+
+        return () => {
+            document.body.style.overflow = '';
+            document.body.style.position = '';
+            document.body.style.width = '';
+            document.body.style.top = '';
+            window.removeEventListener('wheel', preventScroll);
+            window.removeEventListener('touchmove', preventScroll);
+            window.removeEventListener('keydown', preventKeyScroll);
+        };
+    }, [isLoading, preventScroll, preventKeyScroll]);
 
     useEffect(() => {
         // Randomize quote on mount to keep it fresh
@@ -147,7 +197,7 @@ export function LoadingScreen() {
                                             transition={{ duration: 0.5 }}
                                             className="text-sm md:text-base font-mono text-gray-400 italic"
                                         >
-                                            "{QUOTES[quoteIndex].split('—')[0].trim()}"
+                                            &quot;{QUOTES[quoteIndex].split('—')[0].trim()}&quot;
                                             <br />
                                             <span className="text-xs text-primary font-bold not-italic mt-2 inline-block">
                                                 — {QUOTES[quoteIndex].split('—')[1]?.trim()}
