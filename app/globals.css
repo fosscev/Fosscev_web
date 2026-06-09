@@ -108,11 +108,21 @@
   box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.8);
 }
 
+@keyframes grid-pan {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 40px 40px;
+  }
+}
+
 .hacker-grid {
   background-image:
     linear-gradient(rgba(0, 255, 65, 0.05) 1px, transparent 1px),
     linear-gradient(90deg, rgba(0, 255, 65, 0.05) 1px, transparent 1px);
   background-size: 40px 40px;
+  animation: grid-pan 8s linear infinite;
 }
 
 
