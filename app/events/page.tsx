@@ -29,7 +29,7 @@ const mapEvent = (dbEvent: any): Event => ({
     attendees: dbEvent.attendees,
     status: dbEvent.status,
     image: dbEvent.image_url,
-    poster: dbEvent.image_url, // Use image_url as poster (posters are stored as image_url in DB)
+    poster: dbEvent.poster_url || dbEvent.image_url, // Use poster_url, fallback to image_url
     link: dbEvent.link
 });
 

@@ -5,10 +5,13 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { getEvents } from "@/lib/api/events";
+import { useSiteContent } from "@/lib/useSiteContent";
 
 export function Tracks() {
     const [items, setItems] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const { content: siteContent } = useSiteContent();
+    const sectionContent = siteContent.activities || { title: "Activities" };
 
     useEffect(() => {
         const loadPhotos = async () => {
@@ -76,13 +79,13 @@ export function Tracks() {
                 className="mb-16"
             >
                 <h2 className="text-2xl sm:text-3xl md:text-5xl font-display font-light text-white tracking-tight">
-                    Activities
+                    {sectionContent.title}
                 </h2>
                 <div className="w-12 h-px bg-white/20 mt-6"></div>
             </motion.div>
 
             {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 auto-rows-[250px] opacity-20">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 md:auto-rows-[300px] max-md:auto-rows-[300px] opacity-20">
                     <div className="md:col-span-2 md:row-span-2 bg-gray-800/50 rounded-2xl animate-pulse"></div>
                     <div className="md:col-span-2 md:row-span-1 bg-gray-800/50 rounded-2xl animate-pulse"></div>
                     <div className="md:col-span-1 md:row-span-1 bg-gray-800/50 rounded-2xl animate-pulse"></div>
@@ -92,11 +95,7 @@ export function Tracks() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 md:auto-rows-[300px]">
                     {items.map((item, i) => (
                         <Link href={`/events#${item.id}`} key={i} className={`relative rounded-2xl overflow-hidden group ${item.className} max-md:h-[300px] block`}>
-                            <motion.div
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                            <div
                                 className="h-full w-full"
                             >
                                 <div className="absolute inset-0 bg-white/[0.02]">
@@ -117,7 +116,7 @@ export function Tracks() {
                                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                                                 <span className="relative inline-flex rounded-full h-3 w-3 bg-primary"></span>
                                             </span>
-                                            <span className="px-3 py-1 bg-black/50 backdrop-blur-md rounded-full text-xs font-mono text-primary font-bold border border-primary/30 shadow-lg">
+                                            <span className="px-3 py-1 bg-black/70 rounded-full text-xs font-mono text-primary font-bold border border-primary/30 shadow-lg">
                                                 {item.status}
                                             </span>
                                         </div>
@@ -128,7 +127,7 @@ export function Tracks() {
                                     <h3 className="text-xl sm:text-2xl md:text-3xl font-display font-bold text-white tracking-tight mb-2 drop-shadow-md">{item.title}</h3>
                                     <p className="text-gray-300 font-mono text-xs md:text-sm tracking-wider uppercase drop-shadow">{item.event}</p>
                                 </div>
-                            </motion.div>
+                            </div>
                         </Link>
                     ))}
                 </div>

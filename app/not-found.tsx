@@ -70,7 +70,6 @@ export default function NotFound() {
                         <p className="text-red-400 mt-2">The requested URL was not found on this server.</p>
                     </div>
 
-                    <p className="text-gray-400 mb-6">Create a new detailed implementation plan or return to safety?</p>
 
                     <Link
                         href="/"
