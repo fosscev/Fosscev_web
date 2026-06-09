@@ -7,6 +7,8 @@ export const metadata = {
     description: 'Transparency is key. View our yearly and event-wise financial reports.',
 };
 
+export const dynamic = 'force-dynamic';
+
 export default async function FinancesPage() {
     // Fetch all financial reports
     const { data: reports, error } = await supabase
