@@ -1,7 +1,8 @@
 import { supabase } from '@/lib/supabase';
 import type { FinancialReport } from '@/lib/supabase';
 import { FileText, Calendar, ArrowUpRight, ArrowDownRight, Wallet } from 'lucide-react';
-
+import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 export const metadata = {
     title: 'Financial Reports | FOSS Community CEV',
     description: 'Transparency is key. View our yearly and event-wise financial reports.',
@@ -150,19 +151,23 @@ export default async function FinancesPage() {
     };
 
     return (
-        <div className="min-h-screen bg-background pt-32 pb-24">
-            <div className="max-w-4xl mx-auto px-4">
-                <div className="text-center mb-16 md:mb-24">
-                    <div className="inline-block mb-4 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-sm font-mono text-gray-300">
-                        <span className="text-primary mr-2">●</span> Transparency
-                    </div>
-                    <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-6">
-                        Financial <span className="text-primary">Reports</span>
-                    </h1>
-                    <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-                        We believe in open source and open books. Explore the financial details of our community and events.
-                    </p>
-                </div>
+        <div className="relative min-h-screen bg-background text-white selection:bg-primary selection:text-black overflow-hidden">
+            <div className="relative z-10">
+                <Navbar />
+
+                <main className="pt-32 pb-24">
+                    <div className="max-w-4xl mx-auto px-4">
+                        <div className="text-center mb-16 md:mb-24">
+                            <div className="inline-block mb-4 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-sm font-mono text-gray-300">
+                                <span className="text-primary mr-2">●</span> Transparency
+                            </div>
+                            <h1 className="text-4xl md:text-6xl font-display font-bold text-white mb-6">
+                                Financial <span className="text-primary">Reports</span>
+                            </h1>
+                            <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
+                                We believe in open source and open books. Explore the financial details of our community and events.
+                            </p>
+                        </div>
 
                 <div className="space-y-16 md:space-y-24">
                     {/* Yearly Reports Section */}
@@ -201,6 +206,10 @@ export default async function FinancesPage() {
                         )}
                     </section>
                 </div>
+                    </div>
+                </main>
+                
+                <Footer />
             </div>
         </div>
     );
