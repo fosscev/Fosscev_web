@@ -352,28 +352,7 @@ export default function TeamPage() {
     }, []);
 
     return (
-        <main className="relative min-h-screen bg-background text-white selection:bg-primary selection:text-black overflow-hidden">
-            {/* Animated Grid Background */}
-            <div className="fixed inset-0 pointer-events-none z-0">
-                {/* Main grid pattern */}
-                <div className="absolute inset-0 hacker-grid opacity-20"></div>
-
-                {/* Animated gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background"></div>
-
-                {/* Glowing dots at grid intersections */}
-                <div className="absolute inset-0" style={{
-                    backgroundImage: 'radial-gradient(circle at center, rgba(0, 230, 118, 0.15) 1px, transparent 1px)',
-                    backgroundSize: '40px 40px',
-                    backgroundPosition: '0 0, 20px 20px'
-                }}></div>
-
-                {/* Animated scan lines */}
-                <div className="absolute inset-0 opacity-5">
-                    <div className="absolute w-full h-px bg-gradient-to-r from-transparent via-primary to-transparent animate-scan-vertical"></div>
-                </div>
-            </div>
-
+        <main className="relative min-h-screen text-white selection:bg-primary selection:text-black overflow-hidden">
             <div className="relative z-10">
                 <Navbar />
 

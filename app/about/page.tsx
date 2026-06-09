@@ -14,7 +14,7 @@ export default function AboutPage() {
     const aboutExtras = content.about_extras || { intro_tagline: 'Building a culture of open collaboration, innovation, and knowledge sharing at CEV', connect_desc: 'Join our community on social media and stay updated with the latest events, workshops, and opportunities.' };
 
     return (
-        <div className="relative min-h-screen bg-background text-white selection:bg-primary selection:text-black overflow-hidden">
+        <div className="relative min-h-screen text-white selection:bg-primary selection:text-black overflow-hidden">
 
 
             <div className="relative z-10">
