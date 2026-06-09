@@ -219,10 +219,8 @@ export function Hero() {
                 <div
                     className="grid grid-cols-3 py-5 rounded-2xl"
                     style={{
-                        background: "rgba(5,5,5,0.52)",
+                        background: "rgba(5,5,5,0.85)",
                         border: "1px solid rgba(0,230,118,0.1)",
-                        backdropFilter: "blur(16px)",
-                        WebkitBackdropFilter: "blur(16px)",
                     }}
                 >
                     {STATS.map((stat, i) => (

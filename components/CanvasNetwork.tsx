@@ -35,6 +35,7 @@ class Particle {
 
 export default function CanvasNetwork() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const isVisibleRef = useRef(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -49,7 +50,8 @@ export default function CanvasNetwork() {
     canvas.height = height;
 
     const particles: Particle[] = [];
-    const particleCount = Math.min(Math.floor(width / 15), 100); // Responsive count
+    // Cap particle count for performance
+    const particleCount = Math.min(Math.floor(width / 20), 60);
 
     for (let i = 0; i < particleCount; i++) {
       particles.push(new Particle(width, height));
@@ -63,7 +65,7 @@ export default function CanvasNetwork() {
       mouseY = e.clientY;
     };
 
-    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mousemove", handleMouseMove, { passive: true });
 
     const handleResize = () => {
       width = window.innerWidth;
@@ -72,21 +74,37 @@ export default function CanvasNetwork() {
       canvas.height = height;
     };
 
-    window.addEventListener("resize", handleResize);
+    window.addEventListener("resize", handleResize, { passive: true });
+
+    // Use IntersectionObserver to pause animation when not visible
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisibleRef.current = entry.isIntersecting;
+      },
+      { threshold: 0 }
+    );
+    observer.observe(canvas);
 
     let animationFrameId: number;
 
     const render = () => {
+      // Skip rendering when not visible — huge perf win when scrolled down
+      if (!isVisibleRef.current) {
+        animationFrameId = requestAnimationFrame(render);
+        return;
+      }
+
       ctx.clearRect(0, 0, width, height);
 
-      // Draw lines between nearby particles and mouse
       for (let i = 0; i < particles.length; i++) {
         const p1 = particles[i];
         p1.update(width, height);
         p1.draw(ctx);
 
         // Connect to mouse
-        const distMouse = Math.hypot(p1.x - mouseX, p1.y - mouseY);
+        const dxm = p1.x - mouseX;
+        const dym = p1.y - mouseY;
+        const distMouse = Math.sqrt(dxm * dxm + dym * dym);
         if (distMouse < 150) {
           ctx.beginPath();
           ctx.moveTo(p1.x, p1.y);
@@ -98,7 +116,9 @@ export default function CanvasNetwork() {
 
         for (let j = i + 1; j < particles.length; j++) {
           const p2 = particles[j];
-          const dist = Math.hypot(p1.x - p2.x, p1.y - p2.y);
+          const dx = p1.x - p2.x;
+          const dy = p1.y - p2.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
 
           if (dist < 120) {
             ctx.beginPath();
@@ -119,6 +139,7 @@ export default function CanvasNetwork() {
     return () => {
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("resize", handleResize);
+      observer.disconnect();
       cancelAnimationFrame(animationFrameId);
     };
   }, []);

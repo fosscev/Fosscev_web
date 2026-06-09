@@ -12,15 +12,21 @@ export function SmoothScroll({ children }: { children: React.ReactNode }) {
             touchMultiplier: 2,
         });
 
-        // Add a raf loop to update Lenis
+        let rafId: number;
+
         function raf(time: number) {
             lenis.raf(time);
-            requestAnimationFrame(raf);
+            rafId = requestAnimationFrame(raf);
         }
 
-        requestAnimationFrame(raf);
+        // Delay starting Lenis until after initial paint to avoid fighting Chrome's compositor during load
+        const startTimer = setTimeout(() => {
+            rafId = requestAnimationFrame(raf);
+        }, 100);
 
         return () => {
+            clearTimeout(startTimer);
+            cancelAnimationFrame(rafId);
             lenis.destroy();
         };
     }, []);

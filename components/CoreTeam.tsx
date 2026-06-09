@@ -1,8 +1,6 @@
 "use client";
 
-import { motion, useMotionValue, useAnimationFrame } from "framer-motion";
-import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import { useSiteContent } from "@/lib/useSiteContent";
 
@@ -16,14 +14,35 @@ interface TeamMember {
 }
 
 export function CoreTeam() {
-    const [isPaused, setIsPaused] = useState(false);
     const [teamData, setTeamData] = useState<TeamMember[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const x = useMotionValue(0);
+    const [isVisible, setIsVisible] = useState(false);
+    const sectionRef = useRef<HTMLElement>(null);
     const { content: siteContent } = useSiteContent();
     const sectionContent = siteContent.core_team || { title: "Core Team" };
 
+    // Defer data fetch until section is near viewport
     useEffect(() => {
+        const el = sectionRef.current;
+        if (!el) return;
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry.isIntersecting) {
+                    setIsVisible(true);
+                    observer.disconnect();
+                }
+            },
+            { rootMargin: '300px' }
+        );
+
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (!isVisible) return;
+
         const fetchTeam = async () => {
             try {
                 const { data, error } = await supabase
@@ -41,7 +60,6 @@ export function CoreTeam() {
                     const formattedData = data.map(member => ({
                         name: member.name,
                         role: member.role,
-                        // Use image_url from DB, fallback to placeholder if empty
                         image: member.image_url || '/placeholder.jpg',
                         github: member.github || undefined,
                         linkedin: member.linkedin || undefined,
@@ -57,112 +75,78 @@ export function CoreTeam() {
         };
 
         fetchTeam();
-    }, []);
+    }, [isVisible]);
 
-    // Triple the array to ensure seamless looping (only if we have data)
-    const marqueeTeam = teamData.length > 0 ? [...teamData, ...teamData, ...teamData] : [];
+    // Double the array for seamless CSS marquee loop
+    const marqueeTeam = teamData.length > 0 ? [...teamData, ...teamData] : [];
 
-    useAnimationFrame((t, delta) => {
-        if (!isPaused && marqueeTeam.length > 0) {
-            // Move at constant speed (pixels per second)
-            // Previously -1.2 per frame @ 60fps ≈ -72px/sec
-            const speedPerSecond = 72;
-            const moveDist = -speedPerSecond * (delta / 1000);
-
-            const newX = x.get() + moveDist;
-
-            // Calculate reset point based on card width and gap
-            // Each card is ~280px (w-64 md:w-72) + 32px gap = ~312px
-            const cardWidth = 312;
-            const singleSetWidth = teamData.length * cardWidth;
-            const resetPoint = -singleSetWidth;
-
-            // Reset position for seamless loop
-            if (newX <= resetPoint) {
-                // Adjust for overshoot to maintain smoothness
-                const overshoot = resetPoint - newX;
-                x.set(0 - overshoot);
-            } else {
-                x.set(newX);
-            }
-        }
-    });
-
-    if (isLoading) {
-        return (
-            <section className="py-20 overflow-hidden bg-surface/30">
-                <div className="max-w-7xl mx-auto px-4 mb-12">
-                    <div className="h-12 w-64 mx-auto bg-gray-800/50 rounded animate-pulse border border-white/5"></div>
-                </div>
-                <div className="flex gap-6 md:gap-8 px-4 overflow-hidden">
-                    {[...Array(5)].map((_, i) => (
-                        <div key={i} className="w-64 md:w-72 shrink-0 flex flex-col gap-4 animate-pulse">
-                            <div className="aspect-[4/5] rounded-lg bg-gray-800/50"></div>
-                            <div className="text-center space-y-2">
-                                <div className="h-5 w-3/4 mx-auto bg-gray-800/50 rounded"></div>
-                                <div className="h-4 w-1/2 mx-auto bg-gray-800/50 rounded"></div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-        );
-    }
-
-    if (teamData.length === 0) {
-        return null; // Or some fallback UI
-    }
+    const showSkeleton = !isVisible || isLoading;
 
     return (
-        <section className="py-20 overflow-hidden bg-surface/30">
-            <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-100px" }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                className="max-w-7xl mx-auto px-4 mb-16 text-center"
-            >
-                <h2 className="text-3xl md:text-5xl font-display font-light text-white tracking-tight">
-                    {sectionContent.title}
-                </h2>
-                <div className="w-12 h-px bg-white/20 mx-auto mt-6"></div>
-            </motion.div>
-
-            <div className="relative w-full">
-                {/* Gradient Masks */}
-                <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 z-10 bg-gradient-to-r from-background to-transparent pointer-events-none" />
-                <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 z-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
-
-                <div className="flex overflow-hidden">
-                    <motion.div
-                        className="flex gap-6 md:gap-8 px-4"
-                        style={{ x }}
-                    >
-                        {marqueeTeam.map((member, i) => (
-                            <motion.div
-                                key={i}
-                                onMouseEnter={() => setIsPaused(true)}
-                                onMouseLeave={() => setIsPaused(false)}
-                                className="w-64 md:w-72 shrink-0 group relative flex flex-col gap-4"
-                            >
-                                <div className="aspect-[4/5] relative rounded-lg overflow-hidden bg-white/[0.02] opacity-80 group-hover:opacity-100 transition-all duration-700 ease-out">
-                                    <Image
-                                        src={member.image}
-                                        alt={member.name}
-                                        fill
-                                        className="object-cover transition-transform duration-700 group-hover:scale-105"
-                                    />
+        <section ref={sectionRef} className="py-20 overflow-hidden bg-surface/30" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 500px' }}>
+            {showSkeleton ? (
+                <>
+                    <div className="max-w-7xl mx-auto px-4 mb-12">
+                        <div className="h-12 w-64 mx-auto bg-gray-800/50 rounded animate-pulse border border-white/5"></div>
+                    </div>
+                    <div className="flex gap-6 md:gap-8 px-4 overflow-hidden">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} className="w-64 md:w-72 shrink-0 flex flex-col gap-4 animate-pulse">
+                                <div className="aspect-[4/5] rounded-lg bg-gray-800/50"></div>
+                                <div className="text-center space-y-2">
+                                    <div className="h-5 w-3/4 mx-auto bg-gray-800/50 rounded"></div>
+                                    <div className="h-4 w-1/2 mx-auto bg-gray-800/50 rounded"></div>
                                 </div>
-
-                                <div className="text-center">
-                                    <h3 className="text-lg font-light text-white tracking-wide">{member.name}</h3>
-                                    <p className="text-gray-500 text-xs font-mono tracking-wider uppercase mt-1">{member.role}</p>
-                                </div>
-                            </motion.div>
+                            </div>
                         ))}
-                    </motion.div>
-                </div>
-            </div>
+                    </div>
+                </>
+            ) : teamData.length === 0 ? null : (
+                <>
+                    <div className="max-w-7xl mx-auto px-4 mb-16 text-center">
+                        <h2 className="text-3xl md:text-5xl font-display font-light text-white tracking-tight">
+                            {sectionContent.title}
+                        </h2>
+                        <div className="w-12 h-px bg-white/20 mx-auto mt-6"></div>
+                    </div>
+
+                    <div className="relative w-full">
+                        {/* Gradient Masks */}
+                        <div className="absolute left-0 top-0 bottom-0 w-16 md:w-32 z-10 bg-gradient-to-r from-background to-transparent pointer-events-none" />
+                        <div className="absolute right-0 top-0 bottom-0 w-16 md:w-32 z-10 bg-gradient-to-l from-background to-transparent pointer-events-none" />
+
+                        <div className="flex overflow-hidden">
+                            <div
+                                className="flex gap-6 md:gap-8 px-4 w-max will-change-transform animate-marquee hover:[animation-play-state:paused]"
+                                style={{ animationDuration: `${Math.max(20, teamData.length * 3)}s` }}
+                            >
+                                {marqueeTeam.map((member, i) => (
+                                    <div
+                                        key={i}
+                                        className="w-64 md:w-72 shrink-0 group relative flex flex-col gap-4"
+                                    >
+                                        <div className="aspect-[4/5] relative rounded-lg overflow-hidden isolate">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={member.image}
+                                                alt={member.name}
+                                                loading="lazy"
+                                                decoding="async"
+                                                className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500"
+                                            />
+                                        </div>
+
+                                        <div className="text-center">
+                                            <h3 className="text-lg font-light text-white tracking-wide">{member.name}</h3>
+                                            <p className="text-gray-500 text-xs font-mono tracking-wider uppercase mt-1">{member.role}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </>
+            )}
         </section>
     );
 }
