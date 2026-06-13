@@ -11,8 +11,30 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const flair = searchParams.get('flair') as Flair | undefined;
     const authId = searchParams.get('auth_id') || undefined;
+    const saved = searchParams.get('saved') === 'true';
 
-    // Resolve picks user ID from auth ID
+    // Verify auth if checking saved posts (requires auth header)
+    let authenticatedUserId: string | undefined;
+    if (saved) {
+        const authHeader = request.headers.get('Authorization');
+        if (authHeader) {
+            const token = authHeader.replace('Bearer ', '');
+            const { data: { user } } = await supabase.auth.getUser(token);
+            if (user) {
+                const picksUser = await getPicksUserByAuthId(user.id);
+                authenticatedUserId = picksUser?.id;
+            }
+        }
+        if (!authenticatedUserId) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        
+        const { fetchSavedPosts } = await import('@/lib/picks-db');
+        const posts = await fetchSavedPosts(authenticatedUserId);
+        return NextResponse.json({ posts, total: posts.length });
+    }
+
+    // Resolve picks user ID from auth ID for normal feed
     let userId: string | undefined;
     if (authId) {
         const user = await getPicksUserByAuthId(authId);

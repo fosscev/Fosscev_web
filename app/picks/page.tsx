@@ -10,6 +10,7 @@ import { Sidebar } from '@/components/picks/Sidebar';
 import { SubmitForm } from '@/components/picks/SubmitForm';
 import { Pagination } from '@/components/picks/Pagination';
 import { AuthModal } from '@/components/picks/AuthModal';
+import { ProfileIcon } from '@/components/picks/ProfileIcon';
 import type { PicksPost, SortMode, Flair } from '@/lib/picks-db';
 
 export default function PicksPage() {
@@ -90,19 +91,7 @@ export default function PicksPage() {
                         </div>
 
                         <div className="flex items-center gap-3">
-                            {user && (
-                                <div className="flex items-center gap-3">
-                                    <span className="text-sm text-gray-400">
-                                        <span className="text-[#D85A30] font-mono">{user.username}</span>
-                                    </span>
-                                    <button
-                                        onClick={signOut}
-                                        className="text-xs text-gray-500 hover:text-gray-300 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
-                                    >
-                                        Sign Out
-                                    </button>
-                                </div>
-                            )}
+                            {user && <ProfileIcon />}
 
                             {/* Mobile submit button */}
                             <button
