@@ -90,54 +90,77 @@ export function CommentSection({ postId, onAuthRequired }: CommentSectionProps) 
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="overflow-hidden"
         >
-            <div className="border-t border-white/6 mt-3 pt-3">
+            <div
+                className="mt-3 pt-3"
+                style={{ borderTop: '1px solid rgba(0,230,118,0.06)' }}
+            >
                 {loading ? (
                     <div className="flex items-center gap-2 py-4 px-2">
-                        <div className="w-4 h-4 border-2 border-gray-600 border-t-[#D85A30] rounded-full animate-spin" />
-                        <span className="text-sm text-gray-500">Loading comments...</span>
+                        <div
+                            className="w-4 h-4 rounded-full"
+                            style={{
+                                border: '2px solid rgba(0,230,118,0.1)',
+                                borderTopColor: '#00e676',
+                                animation: 'spin 0.8s linear infinite',
+                            }}
+                        />
+                        <span className="text-xs text-gray-600 font-mono">loading comments...</span>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                         {comments.length === 0 && (
-                            <p className="text-sm text-gray-500 py-2 px-2">No comments yet. Be the first to share your thoughts!</p>
+                            <p className="text-xs text-gray-600 font-mono py-2 px-2">
+                                <span className="text-[#00e676]/40">$</span> no comments yet — be the first!
+                            </p>
                         )}
 
                         <AnimatePresence mode="popLayout">
-                            {comments.map((comment) => (
-                                <motion.div
-                                    key={comment.id}
-                                    initial={{ opacity: 0, y: 8 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0 }}
-                                    className="flex gap-3 px-2 py-2 rounded-lg hover:bg-white/[0.02] transition-colors"
-                                >
-                                    {/* Avatar */}
-                                    <div
-                                        className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                                        style={{
-                                            background: `hsl(${(comment.author?.username || '').charCodeAt(0) * 37 % 360}, 50%, 25%)`,
-                                            color: `hsl(${(comment.author?.username || '').charCodeAt(0) * 37 % 360}, 70%, 75%)`,
+                            {comments.map((comment) => {
+                                const username = comment.author?.username || '?';
+                                const hue = (username.charCodeAt(0) * 37) % 360;
+                                return (
+                                    <motion.div
+                                        key={comment.id}
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0 }}
+                                        className="flex gap-2.5 px-2 py-2 rounded-lg transition-colors"
+                                        style={{ background: 'rgba(255,255,255,0.01)' }}
+                                        onMouseEnter={e => {
+                                            (e.currentTarget as HTMLElement).style.background = 'rgba(0,230,118,0.02)';
+                                        }}
+                                        onMouseLeave={e => {
+                                            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.01)';
                                         }}
                                     >
-                                        {(comment.author?.username || '?')[0].toUpperCase()}
-                                    </div>
-
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex items-center gap-2 mb-0.5">
-                                            <span className="text-xs font-semibold text-gray-300">
-                                                {comment.author?.username || 'anon'}
-                                            </span>
-                                            <span className="text-xs text-gray-600">·</span>
-                                            <span className="text-xs text-gray-500">
-                                                {timeAgo(comment.created_at)}
-                                            </span>
+                                        {/* Avatar */}
+                                        <div
+                                            className="w-6 h-6 rounded-lg flex-shrink-0 flex items-center justify-center text-[10px] font-bold"
+                                            style={{
+                                                background: `hsl(${hue}, 40%, 18%)`,
+                                                color: `hsl(${hue}, 60%, 65%)`,
+                                                border: `1px solid hsl(${hue}, 40%, 28%)`,
+                                            }}
+                                        >
+                                            {username[0].toUpperCase()}
                                         </div>
-                                        <p className="text-sm text-gray-300 leading-relaxed break-words">
-                                            {comment.body}
-                                        </p>
-                                    </div>
-                                </motion.div>
-                            ))}
+
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 mb-0.5">
+                                                <span className="text-[11px] font-semibold text-gray-400 font-mono">
+                                                    {comment.author?.username || 'anon'}
+                                                </span>
+                                                <span className="text-[10px] text-gray-700 font-mono">
+                                                    {timeAgo(comment.created_at)}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-400 leading-relaxed break-words">
+                                                {comment.body}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                );
+                            })}
                         </AnimatePresence>
 
                         {/* Comment input */}
@@ -149,30 +172,43 @@ export function CommentSection({ postId, onAuthRequired }: CommentSectionProps) 
                                 placeholder={user ? "Add a comment..." : "Sign in to comment"}
                                 maxLength={1000}
                                 disabled={!user || submitting}
-                                className="flex-1 px-3 py-2 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="flex-1 px-3 py-1.5 rounded-lg text-xs text-gray-300 placeholder-gray-600 font-mono focus:outline-none transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                                style={{
+                                    background: 'rgba(0,230,118,0.03)',
+                                    border: '1px solid rgba(0,230,118,0.08)',
+                                }}
+                                onFocus={e => {
+                                    (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.2)';
+                                    (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.05)';
+                                }}
+                                onBlur={e => {
+                                    (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.08)';
+                                    (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.03)';
+                                }}
                                 onClick={() => !user && onAuthRequired()}
                             />
                             <motion.button
                                 whileTap={{ scale: 0.9 }}
                                 type="submit"
                                 disabled={!body.trim() || submitting || !user}
-                                className="p-2 rounded-lg transition-all duration-150 disabled:opacity-30"
+                                className="p-1.5 rounded-lg transition-all duration-150 disabled:opacity-25 flex-shrink-0"
                                 style={{
-                                    background: body.trim() ? 'rgba(216, 90, 48, 0.15)' : 'transparent',
-                                    color: body.trim() ? '#D85A30' : '#525252',
+                                    background: body.trim() ? 'rgba(0,230,118,0.1)' : 'transparent',
+                                    color: body.trim() ? '#00e676' : '#525252',
+                                    border: body.trim() ? '1px solid rgba(0,230,118,0.2)' : '1px solid transparent',
                                 }}
                             >
-                                <Send size={16} />
+                                <Send size={13} />
                             </motion.button>
                         </form>
 
                         {error && (
-                            <p className="text-xs text-red-400 px-2">{error}</p>
+                            <p className="text-xs text-red-400/80 px-2 font-mono">{error}</p>
                         )}
 
                         {body.length > 0 && (
                             <div className="px-2">
-                                <span className="text-xs text-gray-600">{body.length}/1000</span>
+                                <span className="text-[10px] text-gray-700 font-mono">{body.length}/1000</span>
                             </div>
                         )}
                     </div>

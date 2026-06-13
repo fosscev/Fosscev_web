@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, ArrowLeft, ShieldCheck, KeyRound } from 'lucide-react';
+import { Mail, Lock, ArrowLeft, ShieldCheck, KeyRound, Terminal } from 'lucide-react';
 import Link from 'next/link';
 
 type Mode = 'signin' | 'signup';
@@ -14,6 +14,7 @@ export default function PicksSignInPage() {
     const [mode, setMode] = useState<Mode>('signin');
     const [step, setStep] = useState<Step>('credentials');
     const [email, setEmail] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [otp, setOtp] = useState('');
     const [loading, setLoading] = useState(false);
@@ -31,30 +32,20 @@ export default function PicksSignInPage() {
                 const res = await fetch('/api/picks/auth/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password }),
+                    body: JSON.stringify({ email, password, username }),
                 });
-
                 const data = await res.json();
-
-                if (!res.ok) {
-                    setError(data.error);
-                    return;
-                }
-
+                if (!res.ok) { setError(data.error); return; }
                 setMessage('Check your email for a 6-digit verification code');
                 setStep('otp');
             } else {
-                // Sign in
                 const res = await fetch('/api/picks/auth/signin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password }),
                 });
-
                 const data = await res.json();
-
                 if (!res.ok) {
-                    // If user isn't verified yet, show OTP step
                     if (data.error?.includes('not confirmed') || data.error?.includes('Email not confirmed')) {
                         setMessage('Your email is not verified yet. Check your email for the verification code.');
                         setStep('otp');
@@ -63,22 +54,13 @@ export default function PicksSignInPage() {
                     setError(data.error);
                     return;
                 }
-
-                // Success — set session via Supabase client
                 const { supabase } = await import('@/lib/supabase');
                 if (data.session) {
-                    try {
-                        // We don't strictly await this to prevent browser lock manager deadlocks 
-                        // from freezing the UI. Supabase will eventually sync the session.
-                        supabase.auth.setSession({
-                            access_token: data.session.access_token,
-                            refresh_token: data.session.refresh_token,
-                        }).catch(console.error);
-                    } catch (e) {
-                        console.error('Session sync error:', e);
-                    }
+                    supabase.auth.setSession({
+                        access_token: data.session.access_token,
+                        refresh_token: data.session.refresh_token,
+                    }).catch(console.error);
                 }
-
                 router.push('/picks');
             }
         } catch (err) {
@@ -100,30 +82,27 @@ export default function PicksSignInPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, token: otp }),
             });
-
             const data = await res.json();
+            if (!res.ok) { setError(data.error); return; }
 
-            if (!res.ok) {
-                setError(data.error);
-                return;
-            }
-
-            // Set session
             const { supabase } = await import('@/lib/supabase');
             if (data.session) {
-                // Non-blocking to avoid lock manager deadlocks
                 supabase.auth.setSession({
                     access_token: data.session.access_token,
                     refresh_token: data.session.refresh_token,
                 }).catch(console.error);
             }
-
             router.push('/picks');
         } catch {
             setError('Something went wrong. Please try again.');
         } finally {
             setLoading(false);
         }
+    };
+
+    const inputStyle = {
+        background: 'rgba(0,230,118,0.03)',
+        border: '1px solid rgba(0,230,118,0.08)',
     };
 
     return (
@@ -137,33 +116,58 @@ export default function PicksSignInPage() {
                 {/* Back link */}
                 <Link
                     href="/picks"
-                    className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-300 transition-colors mb-6"
+                    className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-[#00e676] transition-colors mb-6 font-mono group"
                 >
-                    <ArrowLeft size={14} />
-                    Back to Picks
+                    <ArrowLeft size={12} className="group-hover:-translate-x-0.5 transition-transform" />
+                    cd ../picks
                 </Link>
 
-                <div className="bg-[#0a0a0a]/90 border border-white/[0.08] rounded-2xl p-6 md:p-8 shadow-2xl">
+                {/* Card */}
+                <div
+                    className="rounded-2xl p-6 md:p-8 relative overflow-hidden"
+                    style={{
+                        background: 'rgba(8,8,8,0.96)',
+                        border: '1px solid rgba(0,230,118,0.1)',
+                        backdropFilter: 'blur(20px)',
+                        boxShadow: '0 0 60px rgba(0,230,118,0.05), 0 25px 60px rgba(0,0,0,0.6)',
+                    }}
+                >
+                    {/* Top green line */}
+                    <div
+                        className="absolute top-0 left-0 right-0 h-px"
+                        style={{ background: 'linear-gradient(90deg, transparent, rgba(0,230,118,0.4), transparent)' }}
+                    />
+                    {/* Background glow */}
+                    <div
+                        className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 pointer-events-none"
+                        style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,230,118,0.06) 0%, transparent 70%)' }}
+                    />
+
                     {/* Header */}
-                    <div className="text-center mb-6">
-                        <div className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center"
+                    <div className="text-center mb-8 relative z-10">
+                        <div
+                            className="w-12 h-12 rounded-xl mx-auto mb-4 flex items-center justify-center"
                             style={{
-                                background: 'linear-gradient(135deg, rgba(216, 90, 48, 0.2), rgba(216, 90, 48, 0.05))',
-                                border: '1px solid rgba(216, 90, 48, 0.2)',
-                            }}>
+                                background: 'rgba(0,230,118,0.08)',
+                                border: '1px solid rgba(0,230,118,0.15)',
+                                boxShadow: '0 0 20px rgba(0,230,118,0.08)',
+                            }}
+                        >
                             {step === 'otp' ? (
-                                <KeyRound size={22} className="text-[#D85A30]" />
+                                <KeyRound size={20} className="text-[#00e676]" />
                             ) : (
-                                <ShieldCheck size={22} className="text-[#D85A30]" />
+                                <Terminal size={20} className="text-[#00e676]" />
                             )}
                         </div>
-                        <h1 className="text-2xl font-bold text-white font-display mb-1">
+
+                        <h1 className="text-xl font-bold text-white font-mono mb-1">
                             {step === 'otp' ? 'Verify Email' : mode === 'signup' ? 'Create Account' : 'Welcome Back'}
                         </h1>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-xs text-gray-600 font-mono">
+                            <span className="text-[#00e676]/40">//</span>{' '}
                             {step === 'otp'
-                                ? 'Enter the 6-digit code sent to your email'
-                                : 'Join the FOSS CEV community'}
+                                ? 'enter the 6-digit code sent to your email'
+                                : 'join the FOSS CEV community'}
                         </p>
                     </div>
 
@@ -171,19 +175,20 @@ export default function PicksSignInPage() {
                         {step === 'credentials' ? (
                             <motion.form
                                 key="credentials"
-                                initial={{ opacity: 0, x: -20 }}
+                                initial={{ opacity: 0, x: -16 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 20 }}
+                                exit={{ opacity: 0, x: 16 }}
+                                transition={{ duration: 0.2 }}
                                 onSubmit={handleCredentials}
-                                className="space-y-4"
+                                className="space-y-4 relative z-10"
                             >
                                 {/* Email */}
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                                    <label className="block text-[10px] font-semibold text-gray-600 font-mono uppercase tracking-widest mb-1.5">
                                         Email Address
                                     </label>
                                     <div className="relative">
-                                        <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                                        <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
                                         <input
                                             type="email"
                                             value={email}
@@ -191,21 +196,58 @@ export default function PicksSignInPage() {
                                             placeholder="you@cev.ac.in"
                                             required
                                             suppressHydrationWarning
-                                            className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
+                                            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-gray-300 placeholder-gray-700 font-mono focus:outline-none transition-all"
+                                            style={inputStyle}
+                                            onFocus={e => {
+                                                (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.25)';
+                                                (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.05)';
+                                            }}
+                                            onBlur={e => {
+                                                (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.08)';
+                                                (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.03)';
+                                            }}
                                         />
                                     </div>
-                                    <p className="text-[11px] text-gray-600 mt-1">
-                                        Accepts @cev.ac.in, @gmail.com, @outlook.com, @yahoo.com
+                                    <p className="text-[10px] text-gray-700 font-mono mt-1">
+                                        @cev.ac.in · @gmail.com · @outlook.com · @yahoo.com
                                     </p>
                                 </div>
 
+                                {/* Username (Signup Only) */}
+                                {mode === 'signup' && (
+                                    <div>
+                                        <label className="block text-[10px] font-semibold text-gray-600 font-mono uppercase tracking-widest mb-1.5">
+                                            Username (Optional)
+                                        </label>
+                                        <div className="relative">
+                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 font-mono">@</span>
+                                            <input
+                                                type="text"
+                                                value={username}
+                                                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                                                placeholder="your_handle"
+                                                className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-gray-300 placeholder-gray-700 font-mono focus:outline-none transition-all"
+                                                style={inputStyle}
+                                                onFocus={e => {
+                                                    (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.25)';
+                                                    (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.05)';
+                                                }}
+                                                onBlur={e => {
+                                                    (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.08)';
+                                                    (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.03)';
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Password */}
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                                    <label className="block text-[10px] font-semibold text-gray-600 font-mono uppercase tracking-widest mb-1.5">
                                         Password
                                     </label>
                                     <div className="relative">
-                                        <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                                        <Lock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
                                         <input
                                             type="password"
                                             value={password}
@@ -214,73 +256,94 @@ export default function PicksSignInPage() {
                                             required
                                             minLength={6}
                                             suppressHydrationWarning
-                                            className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
+                                            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-gray-300 placeholder-gray-700 font-mono focus:outline-none transition-all"
+                                            style={inputStyle}
+                                            onFocus={e => {
+                                                (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.25)';
+                                                (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.05)';
+                                            }}
+                                            onBlur={e => {
+                                                (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.08)';
+                                                (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.03)';
+                                            }}
                                         />
                                     </div>
                                     {mode === 'signup' && (
-                                        <p className="text-[11px] text-gray-600 mt-1">Minimum 6 characters</p>
+                                        <p className="text-[10px] text-gray-700 font-mono mt-1">Minimum 6 characters</p>
                                     )}
                                 </div>
 
                                 {error && (
-                                    <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                        <p className="text-xs text-red-400">{error}</p>
+                                    <div
+                                        className="px-3 py-2.5 rounded-xl"
+                                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}
+                                    >
+                                        <p className="text-xs text-red-400 font-mono">{error}</p>
                                     </div>
                                 )}
 
                                 <motion.button
-                                    whileTap={{ scale: 0.97 }}
+                                    whileTap={{ scale: 0.98 }}
                                     type="submit"
                                     disabled={loading}
-                                    className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-50"
+                                    className="w-full py-2.5 rounded-xl text-sm font-semibold font-mono transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
                                     style={{
-                                        background: 'linear-gradient(135deg, #D85A30, #e06b3a)',
-                                        color: '#fff',
-                                        boxShadow: '0 4px 20px rgba(216, 90, 48, 0.2)',
+                                        background: 'linear-gradient(135deg, rgba(0,230,118,0.15) 0%, rgba(0,168,84,0.1) 100%)',
+                                        color: '#00e676',
+                                        border: '1px solid rgba(0,230,118,0.25)',
+                                        boxShadow: '0 0 20px rgba(0,230,118,0.08)',
                                     }}
                                 >
                                     {loading ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <>
+                                            <div
+                                                className="w-3.5 h-3.5 rounded-full"
+                                                style={{
+                                                    border: '2px solid rgba(0,230,118,0.2)',
+                                                    borderTopColor: '#00e676',
+                                                    animation: 'spin 0.8s linear infinite',
+                                                }}
+                                            />
                                             {mode === 'signup' ? 'Creating account...' : 'Signing in...'}
-                                        </span>
+                                        </>
                                     ) : (
-                                        mode === 'signup' ? 'Create Account & Send Code' : 'Sign In'
+                                        mode === 'signup' ? 'Create Account & Send Code' : 'Sign In →'
                                     )}
                                 </motion.button>
 
                                 <div className="text-center">
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            setMode(mode === 'signin' ? 'signup' : 'signin');
-                                            setError(null);
-                                        }}
-                                        className="text-xs text-gray-500 hover:text-[#D85A30] transition-colors"
+                                        onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null); }}
+                                        className="text-xs text-gray-600 font-mono transition-colors hover:text-[#00e676]"
                                     >
                                         {mode === 'signin'
-                                            ? "Don't have an account? Sign up"
-                                            : 'Already have an account? Sign in'}
+                                            ? "Don't have an account? Sign up →"
+                                            : '← Already have an account? Sign in'}
                                     </button>
                                 </div>
                             </motion.form>
                         ) : (
                             <motion.form
                                 key="otp"
-                                initial={{ opacity: 0, x: 20 }}
+                                initial={{ opacity: 0, x: 16 }}
                                 animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
+                                exit={{ opacity: 0, x: -16 }}
+                                transition={{ duration: 0.2 }}
                                 onSubmit={handleVerifyOtp}
-                                className="space-y-4"
+                                className="space-y-4 relative z-10"
                             >
                                 {message && (
-                                    <div className="px-3 py-2 bg-[#D85A30]/10 border border-[#D85A30]/20 rounded-lg">
-                                        <p className="text-xs text-[#D85A30]">{message}</p>
+                                    <div
+                                        className="px-3 py-2.5 rounded-xl"
+                                        style={{ background: 'rgba(0,230,118,0.06)', border: '1px solid rgba(0,230,118,0.15)' }}
+                                    >
+                                        <p className="text-xs text-[#00e676]/80 font-mono">{message}</p>
                                     </div>
                                 )}
 
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                                    <label className="block text-[10px] font-semibold text-gray-600 font-mono uppercase tracking-widest mb-1.5">
                                         Verification Code
                                     </label>
                                     <input
@@ -290,51 +353,70 @@ export default function PicksSignInPage() {
                                         placeholder="00000000"
                                         required
                                         maxLength={8}
-                                        className="w-full px-4 py-3 bg-white/[0.04] border border-white/8 rounded-lg text-center text-xl font-mono text-gray-200 tracking-[0.2em] placeholder-gray-700 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
                                         autoFocus
+                                        className="w-full px-4 py-3.5 rounded-xl text-center text-2xl font-mono text-[#00e676] tracking-[0.3em] placeholder-gray-700 focus:outline-none transition-all"
+                                        style={{
+                                            background: 'rgba(0,230,118,0.04)',
+                                            border: '1px solid rgba(0,230,118,0.12)',
+                                            textShadow: '0 0 20px rgba(0,230,118,0.3)',
+                                        }}
+                                        onFocus={e => {
+                                            (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.3)';
+                                            (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.06)';
+                                        }}
+                                        onBlur={e => {
+                                            (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.12)';
+                                            (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.04)';
+                                        }}
                                     />
-                                    <p className="text-[11px] text-gray-600 mt-1.5">
-                                        Sent to <span className="text-gray-400">{email}</span> · Code expires in 10 minutes
+                                    <p className="text-[10px] text-gray-700 font-mono mt-1.5">
+                                        Sent to <span className="text-gray-500">{email}</span> · expires in 10 min
                                     </p>
                                 </div>
 
                                 {error && (
-                                    <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
-                                        <p className="text-xs text-red-400">{error}</p>
+                                    <div
+                                        className="px-3 py-2.5 rounded-xl"
+                                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}
+                                    >
+                                        <p className="text-xs text-red-400 font-mono">{error}</p>
                                     </div>
                                 )}
 
                                 <motion.button
-                                    whileTap={{ scale: 0.97 }}
+                                    whileTap={{ scale: 0.98 }}
                                     type="submit"
                                     disabled={loading || otp.length < 6}
-                                    className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-50"
+                                    className="w-full py-2.5 rounded-xl text-sm font-semibold font-mono transition-all duration-200 disabled:opacity-40 flex items-center justify-center gap-2"
                                     style={{
-                                        background: 'linear-gradient(135deg, #D85A30, #e06b3a)',
-                                        color: '#fff',
-                                        boxShadow: '0 4px 20px rgba(216, 90, 48, 0.2)',
+                                        background: 'linear-gradient(135deg, rgba(0,230,118,0.15) 0%, rgba(0,168,84,0.1) 100%)',
+                                        color: '#00e676',
+                                        border: '1px solid rgba(0,230,118,0.25)',
+                                        boxShadow: '0 0 20px rgba(0,230,118,0.08)',
                                     }}
                                 >
                                     {loading ? (
-                                        <span className="flex items-center justify-center gap-2">
-                                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                        <>
+                                            <div
+                                                className="w-3.5 h-3.5 rounded-full"
+                                                style={{
+                                                    border: '2px solid rgba(0,230,118,0.2)',
+                                                    borderTopColor: '#00e676',
+                                                    animation: 'spin 0.8s linear infinite',
+                                                }}
+                                            />
                                             Verifying...
-                                        </span>
+                                        </>
                                     ) : (
-                                        'Verify & Enter'
+                                        'Verify & Enter →'
                                     )}
                                 </motion.button>
 
                                 <div className="text-center">
                                     <button
                                         type="button"
-                                        onClick={() => {
-                                            setStep('credentials');
-                                            setOtp('');
-                                            setError(null);
-                                            setMessage(null);
-                                        }}
-                                        className="text-xs text-gray-500 hover:text-[#D85A30] transition-colors"
+                                        onClick={() => { setStep('credentials'); setOtp(''); setError(null); setMessage(null); }}
+                                        className="text-xs text-gray-600 font-mono transition-colors hover:text-[#00e676]"
                                     >
                                         ← Back to credentials
                                     </button>
@@ -344,11 +426,14 @@ export default function PicksSignInPage() {
                     </AnimatePresence>
 
                     {/* Security note */}
-                    <div className="mt-6 pt-4 border-t border-white/[0.06]">
+                    <div
+                        className="mt-6 pt-4 relative z-10"
+                        style={{ borderTop: '1px solid rgba(0,230,118,0.06)' }}
+                    >
                         <div className="flex items-start gap-2">
-                            <ShieldCheck size={14} className="text-gray-600 mt-0.5 flex-shrink-0" />
-                            <p className="text-[11px] text-gray-600 leading-relaxed">
-                                Protected by Supabase Auth with PKCE flow, rate limiting, and encrypted sessions. Your password is never stored in plain text.
+                            <ShieldCheck size={12} className="text-[#00e676]/40 mt-0.5 flex-shrink-0" />
+                            <p className="text-[10px] text-gray-700 leading-relaxed font-mono">
+                                Protected by Supabase Auth · PKCE flow · rate limited · encrypted sessions
                             </p>
                         </div>
                     </div>

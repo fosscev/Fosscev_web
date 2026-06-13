@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Share2, Bookmark, Scale, X } from 'lucide-react';
+import { MessageCircle, Share2, Bookmark, Scale, X, ExternalLink, Trash2 } from 'lucide-react';
 import { VoteButtons } from './VoteButtons';
 import { CommentSection } from './CommentSection';
+import { usePicksAuth } from './PicksAuthProvider';
 import { FLAIR_COLORS, type PicksPost, type Flair } from '@/lib/picks-db';
 
 interface PostCardProps {
@@ -31,6 +32,11 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
     const [saved, setSaved] = useState(post.is_saved || false);
     const [isSaving, setIsSaving] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
+    const [shareCopied, setShareCopied] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isDeleted, setIsDeleted] = useState(false);
+
+    const { user } = usePicksAuth();
 
     const flairColor = FLAIR_COLORS[post.flair as Flair] || '#6B7280';
 
@@ -41,9 +47,12 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
 
     const handleShare = async () => {
         try {
-            await navigator.clipboard.writeText(window.location.href);
+            const shareUrl = `${window.location.origin}/picks?post=${post.id}`;
+            await navigator.clipboard.writeText(shareUrl);
+            setShareCopied(true);
+            setTimeout(() => setShareCopied(false), 2000);
         } catch {
-            // Fallback — do nothing
+            // Fallback
         }
     };
 
@@ -60,9 +69,7 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
 
             const res = await fetch(`/api/picks/posts/${post.id}/save`, {
                 method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`
-                }
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
             });
 
             if (res.ok) {
@@ -78,88 +85,134 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
         }
     };
 
+    // Generate avatar color from username
+    const username = post.author?.username || '?';
+    const avatarHue = (username.charCodeAt(0) * 37) % 360;
+
+    const handleDelete = async () => {
+        if (!confirm('Are you sure you want to delete this pick?')) return;
+        setIsDeleting(true);
+        try {
+            const { supabase } = await import('@/lib/supabase');
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) return;
+
+            const res = await fetch(`/api/picks/posts/${post.id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${session.access_token}` }
+            });
+
+            if (res.ok) {
+                setIsDeleted(true);
+            }
+        } catch (e) {
+            console.error('Failed to delete', e);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
+    if (isDeleted) return null;
+
     return (
         <motion.article
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="group flex gap-3 bg-[#0a0a0a]/80 border border-white/[0.06] rounded-xl p-4 hover:border-white/[0.1] hover:bg-[#0e0e0e]/80 transition-all duration-200"
+            className="group flex gap-3 rounded-xl p-4 transition-all duration-200"
+            style={{
+                background: 'rgba(10,10,10,0.7)',
+                border: '1px solid rgba(255,255,255,0.05)',
+                backdropFilter: 'blur(8px)',
+            }}
+            onMouseEnter={e => {
+                (e.currentTarget as HTMLElement).style.border = '1px solid rgba(0,230,118,0.12)';
+                (e.currentTarget as HTMLElement).style.background = 'rgba(12,12,12,0.85)';
+            }}
+            onMouseLeave={e => {
+                (e.currentTarget as HTMLElement).style.border = '1px solid rgba(255,255,255,0.05)';
+                (e.currentTarget as HTMLElement).style.background = 'rgba(10,10,10,0.7)';
+            }}
         >
-            {/* Vote column */}
-            <div className="flex-shrink-0 pt-1">
-                <VoteButtons
-                    postId={post.id}
-                    score={currentScore}
-                    userVote={currentVote}
-                    onAuthRequired={onAuthRequired}
-                    onVoteChange={handleVoteChange}
-                />
-            </div>
-
             {/* Content column */}
             <div className="flex-1 min-w-0">
                 {/* Flair + Tool Name */}
-                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span
-                        className="px-2 py-0.5 rounded text-xs font-mono font-semibold"
+                        className="px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold tracking-wide"
                         style={{
-                            backgroundColor: `${flairColor}18`,
+                            backgroundColor: `${flairColor}14`,
                             color: flairColor,
-                            border: `1px solid ${flairColor}30`,
+                            border: `1px solid ${flairColor}25`,
                         }}
                     >
                         {post.flair}
                     </span>
-                    <span className="text-xs text-gray-500 font-mono flex items-center gap-1">
-                        🛠 {post.tool_name}
+                    <span className="text-[11px] text-gray-500 font-mono flex items-center gap-1">
+                        <span className="text-[#00e676]/40">›</span>
+                        <span className="text-gray-400">{post.tool_name}</span>
                     </span>
                 </div>
 
                 {/* Title */}
-                <h3 className="text-base font-semibold text-gray-100 mb-1 leading-snug">
+                <h3 className="text-base md:text-lg font-semibold text-gray-100 mb-1.5 leading-snug group-hover:text-white transition-colors">
                     {post.title}
                 </h3>
 
                 {/* Description */}
                 {post.description && (
-                    <p className="text-sm text-gray-400 leading-relaxed mb-3 break-words">
+                    <p className="text-sm md:text-base text-gray-400 leading-relaxed mb-3 break-words">
                         {post.description}
                     </p>
                 )}
 
                 {/* Post Image */}
                 {post.image_url && (
-                    <div className="relative mt-3 mb-4 rounded-xl overflow-hidden border border-white/[0.08] bg-black/50 max-h-96 flex items-center justify-center group/img cursor-zoom-in">
+                    <div
+                        className="relative mt-2 mb-3 rounded-xl overflow-hidden max-h-80 flex items-center justify-center cursor-zoom-in"
+                        style={{
+                            border: '1px solid rgba(0,230,118,0.08)',
+                            background: 'rgba(0,0,0,0.4)',
+                        }}
+                    >
                         <img
                             src={post.image_url}
                             alt={post.title}
-                            className="max-h-96 object-contain w-auto h-auto transition-transform duration-300 group-hover/img:scale-[1.01]"
+                            className="max-h-80 object-contain w-auto h-auto transition-transform duration-300 hover:scale-[1.02]"
                             loading="lazy"
                             onClick={() => setSelectedImage(post.image_url || null)}
                         />
+                        <div
+                            className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center"
+                            style={{ background: 'rgba(0,0,0,0.3)' }}
+                        >
+                            <ExternalLink size={20} className="text-white/70" />
+                        </div>
                     </div>
                 )}
 
                 {/* Meta row */}
-                <div className="flex items-center gap-3 text-xs text-gray-500 mb-2 flex-wrap">
-                    <span className="flex items-center gap-1">
+                <div className="flex items-center gap-2 text-xs text-gray-500 mb-3 flex-wrap font-mono">
+                    {/* Avatar + username */}
+                    <span className="flex items-center gap-1.5">
                         <div
-                            className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+                            className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
                             style={{
-                                background: `hsl(${(post.author?.username || '').charCodeAt(0) * 37 % 360}, 50%, 25%)`,
-                                color: `hsl(${(post.author?.username || '').charCodeAt(0) * 37 % 360}, 70%, 75%)`,
+                                background: `hsl(${avatarHue}, 40%, 20%)`,
+                                color: `hsl(${avatarHue}, 60%, 70%)`,
+                                border: `1px solid hsl(${avatarHue}, 40%, 30%)`,
                             }}
                         >
-                            {(post.author?.username || '?')[0].toUpperCase()}
+                            {username[0].toUpperCase()}
                         </div>
-                        <span className="text-gray-400 font-medium">{post.author?.username || 'anonymous'}</span>
+                        <span className="text-gray-400">{post.author?.username || 'anonymous'}</span>
                     </span>
-                    <span>·</span>
+                    <span className="text-gray-600">·</span>
                     <span>{timeAgo(post.created_at)}</span>
                     {post.license && (
                         <>
-                            <span>·</span>
-                            <span className="flex items-center gap-1">
+                            <span className="text-gray-600">·</span>
+                            <span className="flex items-center gap-1 text-gray-500">
                                 <Scale size={11} />
                                 {post.license}
                             </span>
@@ -168,32 +221,92 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
                 </div>
 
                 {/* Actions row */}
-                <div className="flex items-center gap-1 -ml-2">
+                <div className="flex items-center gap-0.5 -ml-1.5">
+                    <VoteButtons
+                        postId={post.id}
+                        score={currentScore}
+                        userVote={currentVote}
+                        onAuthRequired={onAuthRequired}
+                        onVoteChange={handleVoteChange}
+                    />
+
                     <button
                         onClick={() => setShowComments(!showComments)}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] transition-colors"
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150"
+                        style={{
+                            color: showComments ? '#00e676' : '#525252',
+                            background: showComments ? 'rgba(0,230,118,0.06)' : 'transparent',
+                        }}
+                        onMouseEnter={e => {
+                            if (!showComments) (e.currentTarget as HTMLElement).style.color = '#a3a3a3';
+                            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+                        }}
+                        onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.color = showComments ? '#00e676' : '#525252';
+                            (e.currentTarget as HTMLElement).style.background = showComments ? 'rgba(0,230,118,0.06)' : 'transparent';
+                        }}
                     >
-                        <MessageCircle size={14} />
-                        <span>Comments{post.comment_count ? ` (${post.comment_count})` : ''}</span>
+                        <MessageCircle size={13} />
+                        <span>{post.comment_count ? `${post.comment_count}` : 'Comment'}</span>
                     </button>
 
                     <button
                         onClick={handleShare}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] transition-colors"
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150"
+                        style={{ color: shareCopied ? '#00e676' : '#525252' }}
+                        onMouseEnter={e => {
+                            if (!shareCopied) (e.currentTarget as HTMLElement).style.color = '#a3a3a3';
+                            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
+                        }}
+                        onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.color = shareCopied ? '#00e676' : '#525252';
+                            (e.currentTarget as HTMLElement).style.background = 'transparent';
+                        }}
                     >
-                        <Share2 size={14} />
-                        <span>Share</span>
+                        <Share2 size={13} />
+                        <span>{shareCopied ? 'Copied!' : 'Share'}</span>
                     </button>
 
                     <button
                         onClick={handleSave}
                         disabled={isSaving}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors disabled:opacity-50"
-                        style={{ color: saved ? '#D85A30' : '#6b7280' }}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150 disabled:opacity-40"
+                        style={{
+                            color: saved ? '#00e676' : '#525252',
+                            background: saved ? 'rgba(0,230,118,0.06)' : 'transparent',
+                        }}
+                        onMouseEnter={e => {
+                            if (!saved) (e.currentTarget as HTMLElement).style.color = '#a3a3a3';
+                            (e.currentTarget as HTMLElement).style.background = saved ? 'rgba(0,230,118,0.06)' : 'rgba(255,255,255,0.03)';
+                        }}
+                        onMouseLeave={e => {
+                            (e.currentTarget as HTMLElement).style.color = saved ? '#00e676' : '#525252';
+                            (e.currentTarget as HTMLElement).style.background = saved ? 'rgba(0,230,118,0.06)' : 'transparent';
+                        }}
                     >
-                        <Bookmark size={14} fill={saved ? '#D85A30' : 'none'} />
+                        <Bookmark size={13} fill={saved ? '#00e676' : 'none'} />
                         <span>{saved ? 'Saved' : 'Save'}</span>
                     </button>
+
+                    {user?.id === post.author_id && (
+                        <button
+                            onClick={handleDelete}
+                            disabled={isDeleting}
+                            className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150 ml-auto disabled:opacity-40"
+                            style={{ color: '#525252' }}
+                            onMouseEnter={e => {
+                                (e.currentTarget as HTMLElement).style.color = '#ef4444';
+                                (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.08)';
+                            }}
+                            onMouseLeave={e => {
+                                (e.currentTarget as HTMLElement).style.color = '#525252';
+                                (e.currentTarget as HTMLElement).style.background = 'transparent';
+                            }}
+                        >
+                            <Trash2 size={13} />
+                            <span className="hidden sm:inline">Delete</span>
+                        </button>
+                    )}
                 </div>
 
                 {/* Inline comments */}
@@ -215,21 +328,28 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         onClick={() => setSelectedImage(null)}
-                        className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-4 cursor-zoom-out"
+                        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 cursor-zoom-out"
+                        style={{ background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(8px)' }}
                     >
                         <button
                             onClick={() => setSelectedImage(null)}
-                            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10"
+                            className="absolute top-6 right-6 p-2 rounded-xl transition-colors"
+                            style={{
+                                background: 'rgba(0,230,118,0.1)',
+                                border: '1px solid rgba(0,230,118,0.2)',
+                                color: '#00e676',
+                            }}
                         >
-                            <X size={20} />
+                            <X size={18} />
                         </button>
                         <motion.img
-                            initial={{ scale: 0.95 }}
+                            initial={{ scale: 0.94 }}
                             animate={{ scale: 1 }}
-                            exit={{ scale: 0.95 }}
+                            exit={{ scale: 0.94 }}
                             src={selectedImage}
                             alt="Zoomed pick image"
-                            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
+                            style={{ boxShadow: '0 0 60px rgba(0,230,118,0.05)' }}
                         />
                     </motion.div>
                 )}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Loader2, Bookmark, User as UserIcon, Calendar, Activity } from 'lucide-react';
+import { ArrowLeft, Bookmark, Calendar, Activity, PenTool } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { usePicksAuth } from '@/components/picks/PicksAuthProvider';
@@ -13,9 +13,11 @@ export default function ProfilePage() {
     const router = useRouter();
     const { user, loading: authLoading } = usePicksAuth();
     const [savedPosts, setSavedPosts] = useState<PicksPost[]>([]);
+    const [myPosts, setMyPosts] = useState<PicksPost[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState<'saved' | 'mine'>('saved');
 
-    const fetchSavedPosts = useCallback(async () => {
+    const fetchPosts = useCallback(async () => {
         if (!user) return;
         setLoading(true);
         try {
@@ -23,18 +25,23 @@ export default function ProfilePage() {
             const { data: { session } } = await supabase.auth.getSession();
             if (!session) return;
 
-            const res = await fetch('/api/picks/posts?saved=true', {
-                headers: {
-                    'Authorization': `Bearer ${session.access_token}`
-                }
-            });
+            const headers = { 'Authorization': `Bearer ${session.access_token}` };
+            
+            const [savedRes, mineRes] = await Promise.all([
+                fetch('/api/picks/posts?saved=true', { headers }),
+                fetch('/api/picks/posts?mine=true', { headers })
+            ]);
 
-            if (res.ok) {
-                const data = await res.json();
-                setSavedPosts(data.posts);
+            if (savedRes.ok) {
+                const data = await savedRes.json();
+                setSavedPosts(data.posts || []);
+            }
+            if (mineRes.ok) {
+                const data = await mineRes.json();
+                setMyPosts(data.posts || []);
             }
         } catch (e) {
-            console.error('Error fetching saved posts', e);
+            console.error('Error fetching posts', e);
         } finally {
             setLoading(false);
         }
@@ -44,14 +51,26 @@ export default function ProfilePage() {
         if (!authLoading && !user) {
             router.push('/picks');
         } else if (user) {
-            fetchSavedPosts();
+            fetchPosts();
         }
-    }, [user, authLoading, router, fetchSavedPosts]);
+    }, [user, authLoading, router, fetchPosts]);
 
     if (authLoading || (!user && loading)) {
         return (
             <div className="min-h-screen flex items-center justify-center pt-20">
-                <Loader2 size={32} className="text-[#D85A30] animate-spin" />
+                <div className="flex flex-col items-center gap-3">
+                    <div
+                        className="w-8 h-8 rounded-full"
+                        style={{
+                            border: '2px solid rgba(0,230,118,0.1)',
+                            borderTopColor: '#00e676',
+                            animation: 'spin 0.8s linear infinite',
+                        }}
+                    />
+                    <p className="text-xs text-gray-600 font-mono">
+                        <span className="text-[#00e676]/40">$</span> loading profile...
+                    </p>
+                </div>
             </div>
         );
     }
@@ -63,99 +82,178 @@ export default function ProfilePage() {
         month: 'long',
     });
 
+    const avatarHue = (user.username || '').charCodeAt(0) * 37 % 360;
+
     return (
         <section className="pt-28 pb-20 px-4 md:px-8 max-w-4xl mx-auto">
             {/* Back link */}
             <Link
                 href="/picks"
-                className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-300 transition-colors mb-8"
+                className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-[#00e676] transition-colors mb-8 font-mono group"
             >
-                <ArrowLeft size={14} />
-                Back to Feed
+                <ArrowLeft size={12} className="group-hover:-translate-x-0.5 transition-transform" />
+                cd ../picks
             </Link>
 
             {/* Profile Header */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-[#0a0a0a]/80 border border-white/[0.08] rounded-2xl p-6 md:p-8 mb-10 flex flex-col md:flex-row items-center md:items-start gap-6 relative overflow-hidden"
+                className="rounded-2xl p-6 md:p-8 mb-8 flex flex-col md:flex-row items-center md:items-start gap-6 relative overflow-hidden"
+                style={{
+                    background: 'rgba(8,8,8,0.9)',
+                    border: '1px solid rgba(0,230,118,0.1)',
+                    backdropFilter: 'blur(16px)',
+                    boxShadow: '0 0 40px rgba(0,230,118,0.04)',
+                }}
             >
+                {/* Top line */}
+                <div
+                    className="absolute top-0 left-0 right-0 h-px"
+                    style={{ background: 'linear-gradient(90deg, transparent, rgba(0,230,118,0.3), transparent)' }}
+                />
                 {/* Background glow */}
-                <div 
-                    className="absolute top-0 left-0 w-full h-full opacity-[0.03] pointer-events-none"
-                    style={{ background: 'radial-gradient(circle at 0% 0%, #D85A30 0%, transparent 50%)' }}
+                <div
+                    className="absolute top-0 left-0 w-80 h-80 pointer-events-none"
+                    style={{ background: `radial-gradient(circle at 0% 0%, rgba(0,230,118,0.04) 0%, transparent 60%)` }}
                 />
 
+                {/* Avatar */}
                 <div
-                    className="w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-bold flex-shrink-0 relative z-10"
+                    className="w-20 h-20 md:w-24 md:h-24 rounded-2xl flex items-center justify-center text-3xl md:text-4xl font-bold flex-shrink-0 relative z-10 font-mono"
                     style={{
-                        background: `hsl(${(user.username || '').charCodeAt(0) * 37 % 360}, 50%, 25%)`,
-                        color: `hsl(${(user.username || '').charCodeAt(0) * 37 % 360}, 70%, 75%)`,
-                        border: '1px solid rgba(255,255,255,0.1)'
+                        background: `hsl(${avatarHue}, 40%, 18%)`,
+                        color: `hsl(${avatarHue}, 60%, 65%)`,
+                        border: `1px solid hsl(${avatarHue}, 40%, 28%)`,
+                        boxShadow: `0 0 30px hsl(${avatarHue}, 40%, 18%)`,
                     }}
                 >
                     {(user.username || '?')[0].toUpperCase()}
                 </div>
 
                 <div className="flex-1 text-center md:text-left relative z-10">
-                    <h1 className="text-2xl md:text-3xl font-display font-bold text-white mb-1">
+                    {/* Online badge */}
+                    <div className="inline-flex items-center gap-1.5 mb-2 px-2.5 py-1 rounded-full font-mono"
+                        style={{
+                            background: 'rgba(0,230,118,0.06)',
+                            border: '1px solid rgba(0,230,118,0.12)',
+                        }}
+                    >
+                        <div
+                            className="w-1.5 h-1.5 rounded-full animate-pulse"
+                            style={{ background: '#00e676', boxShadow: '0 0 5px #00e676' }}
+                        />
+                        <span className="text-[10px] text-[#00e676]/70">active member</span>
+                    </div>
+
+                    <h1 className="text-2xl md:text-3xl font-mono font-bold text-white mb-1">
                         {user.username}
                     </h1>
-                    <p className="text-gray-400 text-sm mb-4">
-                        {user.email}
-                    </p>
+                    <p className="text-gray-600 text-xs font-mono mb-4">{user.email}</p>
 
-                    <div className="flex items-center justify-center md:justify-start gap-4 text-sm text-gray-500">
+                    <div className="flex items-center justify-center md:justify-start gap-4 text-xs text-gray-600 font-mono">
                         <div className="flex items-center gap-1.5">
-                            <Calendar size={14} />
-                            <span>Joined {memberSince}</span>
+                            <Calendar size={11} className="text-[#00e676]/50" />
+                            <span>joined {memberSince}</span>
                         </div>
                         <div className="flex items-center gap-1.5">
-                            <Activity size={14} />
-                            <span>Active Member</span>
+                            <Activity size={11} className="text-[#00e676]/50" />
+                            <span>active member</span>
                         </div>
                     </div>
                 </div>
             </motion.div>
 
-            {/* Saved Posts Section */}
+            {/* Tabs & Content Section */}
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
             >
-                <div className="flex items-center gap-2 mb-6">
-                    <Bookmark className="text-[#D85A30]" size={20} />
-                    <h2 className="text-xl font-bold text-white font-display">Saved Posts</h2>
+                {/* Tabs */}
+                <div className="flex items-center gap-3 mb-6 border-b border-[rgba(0,230,118,0.1)] pb-px">
+                    <button
+                        onClick={() => setActiveTab('saved')}
+                        className="flex items-center gap-1.5 px-4 py-2 font-mono text-sm relative transition-colors"
+                        style={{ color: activeTab === 'saved' ? '#00e676' : '#525252' }}
+                    >
+                        <Bookmark size={14} />
+                        Saved
+                        {activeTab === 'saved' && (
+                            <motion.div
+                                layoutId="activeTab"
+                                className="absolute bottom-0 left-0 right-0 h-0.5"
+                                style={{ background: '#00e676', boxShadow: '0 -2px 10px rgba(0,230,118,0.5)' }}
+                            />
+                        )}
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('mine')}
+                        className="flex items-center gap-1.5 px-4 py-2 font-mono text-sm relative transition-colors"
+                        style={{ color: activeTab === 'mine' ? '#00e676' : '#525252' }}
+                    >
+                        <PenTool size={14} />
+                        Your Picks
+                        {activeTab === 'mine' && (
+                            <motion.div
+                                layoutId="activeTab"
+                                className="absolute bottom-0 left-0 right-0 h-0.5"
+                                style={{ background: '#00e676', boxShadow: '0 -2px 10px rgba(0,230,118,0.5)' }}
+                            />
+                        )}
+                    </button>
                 </div>
 
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
-                        <Loader2 size={24} className="text-[#D85A30] animate-spin" />
-                    </div>
-                ) : savedPosts.length === 0 ? (
-                    <div className="text-center py-20 bg-white/[0.02] border border-white/[0.04] rounded-xl">
-                        <Bookmark size={32} className="mx-auto text-gray-600 mb-3" />
-                        <p className="text-gray-400 mb-1">No saved posts yet</p>
-                        <p className="text-sm text-gray-600">
-                            When you see a tool you like, click the save button to keep it here.
-                        </p>
+                        <div
+                            className="w-6 h-6 rounded-full"
+                            style={{
+                                border: '2px solid rgba(0,230,118,0.1)',
+                                borderTopColor: '#00e676',
+                                animation: 'spin 0.8s linear infinite',
+                            }}
+                        />
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        {savedPosts.map((post, i) => (
-                            <motion.div
-                                key={post.id}
-                                initial={{ opacity: 0, y: 16 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: i * 0.05 }}
-                            >
-                                <PostCard
-                                    post={post}
-                                    onAuthRequired={() => {}}
-                                />
-                            </motion.div>
-                        ))}
+                    <div className="space-y-3">
+                        {activeTab === 'saved' && (
+                            savedPosts.length === 0 ? (
+                                <div className="text-center py-20 rounded-2xl" style={{ border: '1px dashed rgba(0,230,118,0.1)' }}>
+                                    <p className="text-gray-500 font-mono text-sm">no saved picks yet</p>
+                                </div>
+                            ) : (
+                                savedPosts.map((post, i) => (
+                                    <motion.div
+                                        key={post.id}
+                                        initial={{ opacity: 0, y: 16 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: i * 0.05 }}
+                                    >
+                                        <PostCard post={post} onAuthRequired={() => {}} />
+                                    </motion.div>
+                                ))
+                            )
+                        )}
+
+                        {activeTab === 'mine' && (
+                            myPosts.length === 0 ? (
+                                <div className="text-center py-20 rounded-2xl" style={{ border: '1px dashed rgba(0,230,118,0.1)' }}>
+                                    <p className="text-gray-500 font-mono text-sm">you haven't submitted any picks yet</p>
+                                </div>
+                            ) : (
+                                myPosts.map((post, i) => (
+                                    <motion.div
+                                        key={post.id}
+                                        initial={{ opacity: 0, y: 16 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: i * 0.05 }}
+                                    >
+                                        <PostCard post={post} onAuthRequired={() => {}} />
+                                    </motion.div>
+                                ))
+                            )
+                        )}
                     </div>
                 )}
             </motion.div>

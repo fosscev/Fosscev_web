@@ -96,21 +96,25 @@ export async function getPicksUserByAuthId(authId: string): Promise<PicksUser | 
     return data;
 }
 
-export async function createPicksUser(authId: string, email: string): Promise<PicksUser | null> {
-    const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
+export async function createPicksUser(authId: string, email: string, customUsername?: string): Promise<PicksUser | null> {
+    const baseUsername = customUsername 
+        ? customUsername.toLowerCase().replace(/[^a-z0-9_]/g, '_')
+        : email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
+
+    const serviceClient = getServiceClient();
 
     // Check if username exists, append random digits if so
-    const { data: existing } = await supabase
+    const { data: existing } = await serviceClient
         .from('picks_users')
         .select('id')
-        .eq('username', username)
-        .single();
+        .eq('username', baseUsername)
+        .maybeSingle();
 
     const finalUsername = existing
-        ? `${username}_${Math.floor(Math.random() * 9999)}`
-        : username;
+        ? `${baseUsername}_${Math.floor(Math.random() * 9999)}`
+        : baseUsername;
 
-    const { data, error } = await supabase
+    const { data, error } = await serviceClient
         .from('picks_users')
         .insert({ auth_id: authId, email, username: finalUsername })
         .select()
@@ -130,9 +134,10 @@ export async function fetchPosts(options: {
     page: number;
     flair?: Flair;
     userId?: string;
+    authorId?: string;
     perPage?: number;
 }): Promise<{ posts: PicksPost[]; total: number }> {
-    const { sort, page, flair, userId, perPage = 20 } = options;
+    const { sort, page, flair, userId, authorId, perPage = 20 } = options;
     const offset = (page - 1) * perPage;
 
     let query = supabase
@@ -147,6 +152,11 @@ export async function fetchPosts(options: {
     // Flair filter
     if (flair) {
         query = query.eq('flair', flair);
+    }
+
+    // Author filter
+    if (authorId) {
+        query = query.eq('author_id', authorId);
     }
 
     // Sort-specific filters

@@ -208,58 +208,91 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
             className="mb-6 w-full"
             onPaste={handlePaste}
         >
-            <div className="bg-[#0a0a0a]/95 border border-white/[0.08] rounded-xl p-5 md:p-6 shadow-2xl relative overflow-hidden backdrop-blur-md">
+            <div
+                className="rounded-xl p-5 md:p-6 shadow-2xl relative overflow-hidden"
+                style={{
+                    background: 'rgba(8,8,8,0.96)',
+                    border: '1px solid rgba(0,230,118,0.1)',
+                    backdropFilter: 'blur(20px)',
+                    boxShadow: '0 0 40px rgba(0,230,118,0.04), 0 25px 60px rgba(0,0,0,0.6)',
+                }}
+            >
+                {/* Green glow top */}
+                <div
+                    className="absolute top-0 left-0 right-0 h-px"
+                    style={{ background: 'linear-gradient(90deg, transparent, rgba(0,230,118,0.3), transparent)' }}
+                />
                 
                 {/* Close Button */}
                 <button
                     onClick={onClose}
-                    className="absolute right-4 top-4 p-1.5 rounded-lg hover:bg-white/5 text-gray-500 hover:text-gray-300 transition-colors"
+                    className="absolute right-4 top-4 p-1.5 rounded-lg transition-colors"
+                    style={{ color: '#525252' }}
+                    onMouseEnter={e => {
+                        (e.currentTarget as HTMLElement).style.color = '#a3a3a3';
+                        (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.05)';
+                    }}
+                    onMouseLeave={e => {
+                        (e.currentTarget as HTMLElement).style.color = '#525252';
+                        (e.currentTarget as HTMLElement).style.background = 'transparent';
+                    }}
                 >
-                    <X size={18} />
+                    <X size={17} />
                 </button>
 
                 {/* Heading */}
                 <div className="mb-4">
-                    <h3 className="text-lg font-bold text-gray-100 font-display tracking-wide flex items-center gap-2">
-                        <span className="w-1.5 h-4 bg-[#D85A30] rounded-full" />
+                    <h3 className="text-base font-bold text-gray-100 font-mono tracking-wide flex items-center gap-2">
+                        <span
+                            className="w-1.5 h-4 rounded-full"
+                            style={{ background: '#00e676', boxShadow: '0 0 8px rgba(0,230,118,0.5)' }}
+                        />
                         Create a Pick
                     </h3>
-                    <p className="text-xs text-gray-500 font-mono mt-0.5">
-                        // Share an open source tool that helped you
+                    <p className="text-xs text-gray-600 font-mono mt-0.5">
+                        <span className="text-[#00e676]/40">//</span> share an open source tool that helped you
                     </p>
                 </div>
 
                 {/* Tab Selectors */}
-                <div className="flex border-b border-white/[0.06] mb-5 gap-2">
+                <div
+                    className="flex mb-5 gap-1 p-1 rounded-xl"
+                    style={{
+                        background: 'rgba(0,0,0,0.4)',
+                        border: '1px solid rgba(0,230,118,0.06)',
+                    }}
+                >
                     <button
                         type="button"
                         onClick={() => setActiveTab('text')}
-                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all relative border-b-2 ${
-                            activeTab === 'text'
-                                ? 'text-gray-100 border-[#D85A30]'
-                                : 'text-gray-500 hover:text-gray-300 border-transparent'
-                        }`}
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-semibold font-mono transition-all rounded-lg flex-1 justify-center"
+                        style={{
+                            background: activeTab === 'text' ? 'rgba(0,230,118,0.1)' : 'transparent',
+                            color: activeTab === 'text' ? '#00e676' : '#525252',
+                            border: activeTab === 'text' ? '1px solid rgba(0,230,118,0.2)' : '1px solid transparent',
+                        }}
                     >
-                        <FileText size={16} />
+                        <FileText size={13} />
                         Post
                     </button>
                     <button
                         type="button"
                         onClick={() => setActiveTab('image')}
-                        className={`flex items-center gap-2 px-4 py-2.5 text-sm font-semibold transition-all relative border-b-2 ${
-                            activeTab === 'image'
-                                ? 'text-gray-100 border-[#D85A30]'
-                                : 'text-gray-500 hover:text-gray-300 border-transparent'
-                        }`}
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-semibold font-mono transition-all rounded-lg flex-1 justify-center"
+                        style={{
+                            background: activeTab === 'image' ? 'rgba(0,230,118,0.1)' : 'transparent',
+                            color: activeTab === 'image' ? '#00e676' : '#525252',
+                            border: activeTab === 'image' ? '1px solid rgba(0,230,118,0.2)' : '1px solid transparent',
+                        }}
                     >
-                        <ImageIcon size={16} />
+                        <ImageIcon size={13} />
                         Image
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     
-                    {/* Rich Title Area (Large, borderless title) */}
+                    {/* Title */}
                     <div>
                         <textarea
                             ref={titleRef}
@@ -269,9 +302,12 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                             rows={1}
                             required
                             disabled={submitting}
-                            className="w-full text-lg md:text-xl font-bold bg-transparent border-0 border-b border-white/[0.06] focus:border-[#D85A30]/40 focus:ring-0 px-0 py-2 placeholder-gray-600 text-gray-100 resize-none overflow-hidden focus:outline-none transition-colors"
+                            className="w-full text-base md:text-lg font-bold bg-transparent border-0 px-0 py-2 placeholder-gray-700 text-gray-100 resize-none overflow-hidden focus:outline-none transition-colors font-mono"
+                            style={{ borderBottom: '1px solid rgba(0,230,118,0.08)' }}
+                            onFocus={e => { (e.target as HTMLElement).style.borderBottomColor = 'rgba(0,230,118,0.25)'; }}
+                            onBlur={e => { (e.target as HTMLElement).style.borderBottomColor = 'rgba(0,230,118,0.08)'; }}
                         />
-                        <div className="flex justify-end text-[10px] text-gray-600 font-mono mt-1">
+                        <div className="flex justify-end text-[10px] text-gray-700 font-mono mt-1">
                             {title.length}/200
                         </div>
                     </div>
@@ -297,7 +333,19 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                                     rows={4}
                                     required
                                     disabled={submitting}
-                                    className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.06] rounded-xl text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all resize-none h-32 leading-relaxed"
+                                    className="w-full px-4 py-3 rounded-xl text-sm text-gray-300 placeholder-gray-700 focus:outline-none transition-all resize-none h-32 leading-relaxed font-mono"
+                                    style={{
+                                        background: 'rgba(0,230,118,0.03)',
+                                        border: '1px solid rgba(0,230,118,0.08)',
+                                    }}
+                                    onFocus={e => {
+                                        (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.2)';
+                                        (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.05)';
+                                    }}
+                                    onBlur={e => {
+                                        (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.08)';
+                                        (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.03)';
+                                    }}
                                 />
                             </motion.div>
                         ) : (
@@ -321,11 +369,13 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                                             onDragLeave={handleDragLeave}
                                             onDrop={handleDrop}
                                             onClick={() => fileInputRef.current?.click()}
-                                            className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-200 min-h-[160px] ${
-                                                isDragging
-                                                    ? 'border-[#D85A30] bg-[#D85A30]/5'
-                                                    : 'border-white/[0.08] hover:border-white/[0.16] hover:bg-white/[0.01]'
-                                            }`}
+                                            className="rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all duration-200 min-h-[160px]"
+                                            style={{
+                                                border: isDragging
+                                                    ? '2px dashed rgba(0,230,118,0.5)'
+                                                    : '2px dashed rgba(0,230,118,0.1)',
+                                                background: isDragging ? 'rgba(0,230,118,0.05)' : 'rgba(0,230,118,0.02)',
+                                            }}
                                         >
                                             <input
                                                 ref={fileInputRef}
@@ -337,15 +387,22 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                                                 }}
                                                 className="hidden"
                                             />
-                                            <div className="p-3 bg-white/[0.04] rounded-full text-gray-400 group-hover:text-gray-300 transition-colors">
-                                                <Upload size={22} />
+                                            <div
+                                                className="p-3 rounded-xl"
+                                                style={{
+                                                    background: 'rgba(0,230,118,0.08)',
+                                                    border: '1px solid rgba(0,230,118,0.15)',
+                                                    color: '#00e676',
+                                                }}
+                                            >
+                                                <Upload size={20} />
                                             </div>
                                             <div className="text-center">
-                                                <p className="text-sm font-semibold text-gray-300">
-                                                    Drag and drop an image, or click to browse
+                                                <p className="text-sm font-semibold text-gray-400 font-mono">
+                                                    Drop image or click to browse
                                                 </p>
-                                                <p className="text-xs text-gray-500 font-mono mt-1">
-                                                    PNG, JPG, WEBP, GIF up to 5MB (or copy & paste directly)
+                                                <p className="text-xs text-gray-600 font-mono mt-1">
+                                                    PNG, JPG, WEBP, GIF · max 5MB · paste supported
                                                 </p>
                                             </div>
                                         </div>
@@ -379,22 +436,41 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                                         placeholder="Add some text or context to go with your image (optional)..."
                                         rows={2}
                                         disabled={submitting}
-                                        className="w-full px-4 py-3 bg-white/[0.02] border border-white/[0.06] rounded-xl text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all resize-none leading-relaxed"
+                                        className="w-full px-4 py-3 rounded-xl text-sm text-gray-300 placeholder-gray-700 focus:outline-none transition-all resize-none leading-relaxed font-mono"
+                                        style={{
+                                            background: 'rgba(0,230,118,0.03)',
+                                            border: '1px solid rgba(0,230,118,0.08)',
+                                        }}
+                                        onFocus={e => {
+                                            (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.2)';
+                                        }}
+                                        onBlur={e => {
+                                            (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.08)';
+                                        }}
                                     />
                                 </div>
                             </motion.div>
                         )}
                     </AnimatePresence>
 
-                    {/* Metadata tags area (badges/tags layout instead of form grids) */}
-                    <div className="pt-2 border-t border-white/[0.06]">
-                        <label className="block text-xs font-semibold text-gray-500 font-mono uppercase tracking-wider mb-2.5">
-                            Post Settings & Metadata
+                    {/* Metadata */}
+                    <div
+                        className="pt-3"
+                        style={{ borderTop: '1px solid rgba(0,230,118,0.06)' }}
+                    >
+                        <label className="block text-[10px] font-semibold text-gray-600 font-mono uppercase tracking-widest mb-2.5">
+                            Post Metadata
                         </label>
-                        <div className="flex flex-wrap gap-3 items-center">
+                        <div className="flex flex-wrap gap-2 items-center">
                             
                             {/* Tool Name Badge */}
-                            <div className="flex items-center bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] focus-within:border-[#D85A30]/40 focus-within:ring-1 focus-within:ring-[#D85A30]/20 rounded-full px-3 py-1 transition-all">
+                            <div
+                                className="flex items-center rounded-full px-3 py-1.5 transition-all"
+                                style={{
+                                    background: 'rgba(0,230,118,0.04)',
+                                    border: '1px solid rgba(0,230,118,0.1)',
+                                }}
+                            >
                                 <Laptop size={12} className="text-gray-500 mr-2" />
                                 <input
                                     type="text"
@@ -409,9 +485,12 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                             </div>
 
                             {/* Category Selector Badge */}
-                            <div 
-                                className="flex items-center bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] rounded-full px-3 py-1 transition-all"
-                                style={{ borderColor: `${flairColor}30` }}
+                            <div
+                                className="flex items-center rounded-full px-3 py-1.5 transition-all"
+                                style={{
+                                    background: `${flairColor}0a`,
+                                    border: `1px solid ${flairColor}25`,
+                                }}
                             >
                                 <Tag size={12} style={{ color: flairColor }} className="mr-2" />
                                 <select
@@ -428,13 +507,20 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                             </div>
 
                             {/* License Selector Badge */}
-                            <div className="flex items-center bg-white/[0.03] border border-white/[0.08] hover:border-white/[0.15] rounded-full px-3 py-1 transition-all">
-                                <Scale size={12} className="text-gray-500 mr-2" />
+                            <div
+                                className="flex items-center rounded-full px-3 py-1.5 transition-all"
+                                style={{
+                                    background: 'rgba(0,230,118,0.04)',
+                                    border: '1px solid rgba(0,230,118,0.1)',
+                                }}
+                            >
+                                <Scale size={12} className="mr-2" style={{ color: '#00e676', opacity: 0.6 }} />
                                 <select
                                     value={licenseType}
                                     onChange={(e) => setLicenseType(e.target.value)}
                                     disabled={submitting}
-                                    className="bg-transparent border-0 focus:ring-0 p-0 text-xs font-mono font-semibold text-gray-200 cursor-pointer appearance-none pr-4 focus:outline-none"
+                                    className="bg-transparent border-0 focus:ring-0 p-0 text-xs font-mono font-semibold cursor-pointer appearance-none pr-4 focus:outline-none"
+                                    style={{ color: '#a3a3a3' }}
                                 >
                                     {['MIT', 'Apache-2.0', 'GPL-3.0', 'BSD-3-Clause', 'MPL-2.0', 'Unlicense', 'Other', 'None'].map(l => (
                                         <option key={l} value={l} className="bg-[#0f0f0f] text-gray-200">{l}</option>
@@ -447,7 +533,11 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                                 <motion.div
                                     initial={{ opacity: 0, scale: 0.95 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className="flex items-center bg-white/[0.03] border border-[#D85A30]/30 rounded-full px-3 py-1 transition-all"
+                                    className="flex items-center rounded-full px-3 py-1.5 transition-all"
+                                    style={{
+                                        background: 'rgba(0,230,118,0.06)',
+                                        border: '1px solid rgba(0,230,118,0.2)',
+                                    }}
                                 >
                                     <input
                                         type="text"
@@ -473,20 +563,24 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                     )}
 
                     {/* Footer / Buttons */}
-                    <div className="flex items-center justify-between pt-3 border-t border-white/[0.04] mt-2">
+                    <div
+                        className="flex items-center justify-between pt-3 mt-2"
+                        style={{ borderTop: '1px solid rgba(0,230,118,0.06)' }}
+                    >
                         {/* User Identity info */}
                         <div className="flex items-center gap-2">
                             <div
-                                className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold shadow-inner"
+                                className="w-5 h-5 rounded-lg flex items-center justify-center text-[9px] font-bold font-mono"
                                 style={{
-                                    background: `hsl(${(user.username || '').charCodeAt(0) * 37 % 360}, 50%, 25%)`,
-                                    color: `hsl(${(user.username || '').charCodeAt(0) * 37 % 360}, 70%, 75%)`,
+                                    background: `hsl(${(user.username || '').charCodeAt(0) * 37 % 360}, 40%, 20%)`,
+                                    color: `hsl(${(user.username || '').charCodeAt(0) * 37 % 360}, 60%, 70%)`,
+                                    border: `1px solid hsl(${(user.username || '').charCodeAt(0) * 37 % 360}, 40%, 30%)`,
                                 }}
                             >
                                 {user.username[0].toUpperCase()}
                             </div>
-                            <p className="text-xs text-gray-500 font-mono">
-                                Posting as <span className="text-[#D85A30] font-semibold">{user.username}</span>
+                            <p className="text-[11px] text-gray-600 font-mono">
+                                as <span className="text-[#00e676]/80">{user.username}</span>
                             </p>
                         </div>
 
@@ -496,7 +590,16 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                                 type="button"
                                 onClick={onClose}
                                 disabled={submitting}
-                                className="px-4 py-2 rounded-lg text-sm text-gray-400 hover:text-gray-200 hover:bg-white/[0.02] transition-colors disabled:opacity-40"
+                                className="px-3 py-1.5 rounded-lg text-xs font-mono transition-colors disabled:opacity-40"
+                                style={{ color: '#525252' }}
+                                onMouseEnter={e => {
+                                    (e.currentTarget as HTMLElement).style.color = '#a3a3a3';
+                                    (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)';
+                                }}
+                                onMouseLeave={e => {
+                                    (e.currentTarget as HTMLElement).style.color = '#525252';
+                                    (e.currentTarget as HTMLElement).style.background = 'transparent';
+                                }}
                             >
                                 Cancel
                             </button>
@@ -504,16 +607,17 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                                 whileTap={{ scale: 0.98 }}
                                 type="submit"
                                 disabled={submitting || !title.trim() || !toolName.trim() || (licenseType === 'Other' && !customLicense.trim()) || (activeTab === 'text' && !description.trim()) || (activeTab === 'image' && !imageFile)}
-                                className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
+                                className="px-4 py-2 rounded-xl text-xs font-semibold font-mono transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
                                 style={{
-                                    background: 'linear-gradient(135deg, #D85A30, #e06b3a)',
-                                    color: '#fff',
-                                    boxShadow: '0 0 20px rgba(216, 90, 48, 0.15)',
+                                    background: 'linear-gradient(135deg, rgba(0,230,118,0.15) 0%, rgba(0,168,84,0.1) 100%)',
+                                    color: '#00e676',
+                                    border: '1px solid rgba(0,230,118,0.25)',
+                                    boxShadow: '0 0 20px rgba(0,230,118,0.08)',
                                 }}
                             >
                                 {submitting ? (
                                     <>
-                                        <Loader2 size={14} className="animate-spin" />
+                                        <Loader2 size={13} className="animate-spin" />
                                         <span>{submitStatus || 'Posting...'}</span>
                                     </>
                                 ) : (

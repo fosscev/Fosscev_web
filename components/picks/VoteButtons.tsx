@@ -29,15 +29,12 @@ export function VoteButtons({ postId, score, userVote, onAuthRequired, onVoteCha
         let optimisticVote: number | null = value;
 
         if (userVote === value) {
-            // Toggle off
             optimisticScore -= value;
             optimisticVote = null;
         } else if (userVote) {
-            // Switch direction
             optimisticScore += value * 2;
             optimisticVote = value;
         } else {
-            // New vote
             optimisticScore += value;
             optimisticVote = value;
         }
@@ -56,7 +53,6 @@ export function VoteButtons({ postId, score, userVote, onAuthRequired, onVoteCha
                 const data = await res.json();
                 onVoteChange(data.score, data.userVote);
             } else {
-                // Revert on error
                 onVoteChange(score, userVote);
             }
         } catch {
@@ -66,45 +62,63 @@ export function VoteButtons({ postId, score, userVote, onAuthRequired, onVoteCha
         }
     };
 
+    const upvoted = userVote === 1;
+    const downvoted = userVote === -1;
+
     return (
-        <div className="flex flex-col items-center gap-0.5 select-none">
+        <div className="flex flex-row items-center gap-1 select-none mr-2">
             <motion.button
-                whileTap={{ scale: 1.3 }}
+                whileTap={{ scale: 1.25 }}
                 onClick={() => handleVote(1)}
-                className="p-1 rounded transition-colors duration-150 hover:bg-white/5"
-                aria-label="Upvote"
                 disabled={loading}
+                aria-label="Upvote"
+                className="group p-1 rounded-lg transition-all duration-150 disabled:opacity-40"
+                style={{
+                    background: upvoted ? 'rgba(0,230,118,0.1)' : 'transparent',
+                    border: upvoted ? '1px solid rgba(0,230,118,0.2)' : '1px solid transparent',
+                }}
             >
                 <ChevronUp
-                    size={22}
+                    size={15}
                     strokeWidth={2.5}
-                    className="transition-colors duration-150"
-                    style={{ color: userVote === 1 ? '#D85A30' : '#525252' }}
+                    style={{
+                        color: upvoted ? '#00e676' : '#525252',
+                        filter: upvoted ? 'drop-shadow(0 0 4px rgba(0,230,118,0.5))' : 'none',
+                        transition: 'color 0.15s, filter 0.15s',
+                    }}
                 />
             </motion.button>
 
             <motion.span
                 key={score}
-                initial={{ scale: 1.2 }}
-                animate={{ scale: 1 }}
-                className="text-sm font-bold font-mono tabular-nums min-w-[2ch] text-center"
-                style={{ color: score > 0 ? '#D85A30' : score < 0 ? '#6366f1' : '#a3a3a3' }}
+                initial={{ scale: 1.3, opacity: 0.6 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="text-xs font-bold font-mono tabular-nums min-w-[2ch] text-center leading-none"
+                style={{
+                    color: upvoted ? '#00e676' : downvoted ? '#818cf8' : '#6b7280',
+                }}
             >
                 {score}
             </motion.span>
 
             <motion.button
-                whileTap={{ scale: 1.3 }}
+                whileTap={{ scale: 1.25 }}
                 onClick={() => handleVote(-1)}
-                className="p-1 rounded transition-colors duration-150 hover:bg-white/5"
-                aria-label="Downvote"
                 disabled={loading}
+                aria-label="Downvote"
+                className="p-1 rounded-lg transition-all duration-150 disabled:opacity-40"
+                style={{
+                    background: downvoted ? 'rgba(129,140,248,0.1)' : 'transparent',
+                    border: downvoted ? '1px solid rgba(129,140,248,0.2)' : '1px solid transparent',
+                }}
             >
                 <ChevronDown
-                    size={22}
+                    size={15}
                     strokeWidth={2.5}
-                    className="transition-colors duration-150"
-                    style={{ color: userVote === -1 ? '#6366f1' : '#525252' }}
+                    style={{
+                        color: downvoted ? '#818cf8' : '#525252',
+                        transition: 'color 0.15s',
+                    }}
                 />
             </motion.button>
         </div>

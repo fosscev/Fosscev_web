@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface PaginationProps {
@@ -28,27 +29,49 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
     }
 
     return (
-        <div className="flex items-center justify-center gap-1 mt-6">
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center justify-center gap-1 mt-8"
+        >
             <button
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="p-2 rounded-lg transition-all duration-150 disabled:opacity-25 disabled:cursor-not-allowed"
+                style={{
+                    color: '#525252',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    background: 'rgba(10,10,10,0.8)',
+                }}
+                onMouseEnter={e => {
+                    if (currentPage !== 1) {
+                        (e.currentTarget as HTMLElement).style.color = '#00e676';
+                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,230,118,0.2)';
+                    }
+                }}
+                onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.color = '#525252';
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.05)';
+                }}
             >
-                <ChevronLeft size={16} />
+                <ChevronLeft size={14} />
             </button>
 
             {pages.map((page, i) =>
                 page === '...' ? (
-                    <span key={`dots-${i}`} className="px-2 text-gray-600 text-sm">…</span>
+                    <span key={`dots-${i}`} className="px-2 text-gray-700 text-sm font-mono">…</span>
                 ) : (
                     <button
                         key={page}
                         onClick={() => onPageChange(page)}
-                        className="min-w-[32px] h-8 rounded-lg text-sm font-medium transition-all duration-150"
+                        className="min-w-[32px] h-8 rounded-lg text-xs font-mono font-medium transition-all duration-150"
                         style={{
-                            backgroundColor: currentPage === page ? 'rgba(216, 90, 48, 0.15)' : 'transparent',
-                            color: currentPage === page ? '#D85A30' : '#6b7280',
-                            border: currentPage === page ? '1px solid rgba(216, 90, 48, 0.3)' : '1px solid transparent',
+                            backgroundColor: currentPage === page ? 'rgba(0,230,118,0.1)' : 'rgba(10,10,10,0.8)',
+                            color: currentPage === page ? '#00e676' : '#525252',
+                            border: currentPage === page
+                                ? '1px solid rgba(0,230,118,0.25)'
+                                : '1px solid rgba(255,255,255,0.05)',
+                            boxShadow: currentPage === page ? '0 0 10px rgba(0,230,118,0.08)' : 'none',
                         }}
                     >
                         {page}
@@ -59,10 +82,25 @@ export function Pagination({ currentPage, totalPages, onPageChange }: Pagination
             <button
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="p-1.5 rounded-lg text-gray-500 hover:text-gray-300 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="p-2 rounded-lg transition-all duration-150 disabled:opacity-25 disabled:cursor-not-allowed"
+                style={{
+                    color: '#525252',
+                    border: '1px solid rgba(255,255,255,0.05)',
+                    background: 'rgba(10,10,10,0.8)',
+                }}
+                onMouseEnter={e => {
+                    if (currentPage !== totalPages) {
+                        (e.currentTarget as HTMLElement).style.color = '#00e676';
+                        (e.currentTarget as HTMLElement).style.borderColor = 'rgba(0,230,118,0.2)';
+                    }
+                }}
+                onMouseLeave={e => {
+                    (e.currentTarget as HTMLElement).style.color = '#525252';
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255,255,255,0.05)';
+                }}
             >
-                <ChevronRight size={16} />
+                <ChevronRight size={14} />
             </button>
-        </div>
+        </motion.div>
     );
 }

@@ -19,13 +19,19 @@ export default function AdminLoginPage() {
         // Check if user is already logged in
         const checkUser = async () => {
             try {
-                const { data: { user } } = await supabase.auth.getUser();
-                if (user) {
+                // Add a 2.5s timeout to prevent infinite loading on network/lock issues
+                const sessionPromise = supabase.auth.getSession();
+                const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 2500));
+                
+                const response = await Promise.race([sessionPromise, timeoutPromise]) as any;
+                const session = response?.data?.session;
+                
+                if (session?.user) {
                     router.push('/foss-manager/dashboard');
                     return;
                 }
             } catch (err) {
-                // Not logged in, show login form
+                // Not logged in or network error, show login form
             }
             setCheckingSession(false);
         };

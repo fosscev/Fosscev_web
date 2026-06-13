@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus, Loader2, Terminal } from 'lucide-react';
 import { usePicksAuth } from '@/components/picks/PicksAuthProvider';
 import { PostCard } from '@/components/picks/PostCard';
 import { SortTabs } from '@/components/picks/SortTabs';
@@ -78,15 +78,33 @@ export default function PicksPage() {
         <>
             <section className="pt-28 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="mb-8">
-                    <div className="flex items-center justify-between flex-wrap gap-4">
+                <motion.div
+                    initial={{ opacity: 0, y: -16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="mb-10"
+                >
+                    <div className="flex items-start justify-between flex-wrap gap-4">
                         <div>
-                            <h1 className="text-3xl md:text-4xl font-display font-black text-transparent bg-clip-text mb-2"
-                                style={{ backgroundImage: 'linear-gradient(135deg, #fff 0%, #D85A30 50%, #fff 100%)' }}>
-                                Open Source Picks
+                            {/* Eyebrow tag */}
+                            <div className="inline-flex items-center gap-2 mb-3 px-3 py-1 rounded-full border border-[#00e676]/20 bg-[#00e676]/5">
+                                <Terminal size={12} className="text-[#00e676]" />
+                                <span className="text-xs font-mono text-[#00e676]/80 tracking-wider uppercase">
+                                    Community Feed
+                                </span>
+                            </div>
+
+                            <h1 className="text-3xl md:text-5xl font-display font-black mb-2 leading-tight">
+                                <span className="text-white">Open Source</span>{' '}
+                                <span
+                                    className="text-transparent bg-clip-text"
+                                    style={{ backgroundImage: 'linear-gradient(135deg, #00e676 0%, #69f0ae 50%, #00e676 100%)' }}
+                                >
+                                    Picks
+                                </span>
                             </h1>
                             <p className="text-sm text-gray-500 font-mono">
-                                // Community-curated tools that actually help
+                                <span className="text-[#00e676]/60">//</span> Community-curated tools that actually help
                             </p>
                         </div>
 
@@ -94,26 +112,28 @@ export default function PicksPage() {
                             {user && <ProfileIcon />}
 
                             {/* Mobile submit button */}
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.03 }}
+                                whileTap={{ scale: 0.97 }}
                                 onClick={handleSubmitClick}
                                 className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold"
                                 style={{
-                                    background: 'rgba(216, 90, 48, 0.15)',
-                                    color: '#D85A30',
-                                    border: '1px solid rgba(216, 90, 48, 0.3)',
+                                    background: 'rgba(0, 230, 118, 0.12)',
+                                    color: '#00e676',
+                                    border: '1px solid rgba(0, 230, 118, 0.25)',
                                 }}
                             >
                                 <Plus size={14} strokeWidth={2.5} />
                                 Submit
-                            </button>
+                            </motion.button>
                         </div>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Main grid */}
-                <div className="flex flex-col lg:flex-row gap-6">
+                <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
                     {/* Feed column */}
-                    <div className="flex-1 min-w-0">
+                    <div className="flex-1 min-w-0 xl:mr-8">
                         {/* Sort tabs */}
                         <SortTabs
                             activeSort={sort}
@@ -134,33 +154,59 @@ export default function PicksPage() {
 
                         {/* Posts list */}
                         {loading ? (
-                            <div className="flex flex-col items-center justify-center py-20 gap-3">
-                                <Loader2 size={24} className="text-[#D85A30] animate-spin" />
-                                <p className="text-sm text-gray-500 font-mono">Loading picks...</p>
+                            <div className="flex flex-col items-center justify-center py-24 gap-4">
+                                <div className="relative">
+                                    <div
+                                        className="w-10 h-10 rounded-full"
+                                        style={{
+                                            border: '2px solid rgba(0,230,118,0.1)',
+                                            borderTopColor: '#00e676',
+                                            animation: 'spin 0.8s linear infinite',
+                                        }}
+                                    />
+                                    <div
+                                        className="absolute inset-0 rounded-full blur-md opacity-40"
+                                        style={{ background: '#00e676' }}
+                                    />
+                                </div>
+                                <p className="text-sm text-gray-500 font-mono">
+                                    <span className="text-[#00e676]/60">$</span> fetching picks...
+                                </p>
                             </div>
                         ) : posts.length === 0 ? (
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
-                                className="text-center py-20"
+                                className="text-center py-24 border border-white/[0.05] rounded-2xl bg-[#0a0a0a]/50"
                             >
-                                <p className="text-lg text-gray-400 mb-2">No picks yet</p>
-                                <p className="text-sm text-gray-600 mb-4">
+                                <div
+                                    className="w-12 h-12 rounded-xl mx-auto mb-4 flex items-center justify-center"
+                                    style={{
+                                        background: 'rgba(0,230,118,0.08)',
+                                        border: '1px solid rgba(0,230,118,0.15)',
+                                    }}
+                                >
+                                    <Terminal size={20} className="text-[#00e676]" />
+                                </div>
+                                <p className="text-base text-gray-300 font-semibold mb-1">No picks yet</p>
+                                <p className="text-sm text-gray-500 mb-5">
                                     {flair
                                         ? `No posts with the "${flair}" flair yet.`
                                         : 'Be the first to share an open-source tool!'}
                                 </p>
-                                <button
+                                <motion.button
+                                    whileHover={{ scale: 1.03 }}
+                                    whileTap={{ scale: 0.97 }}
                                     onClick={handleSubmitClick}
-                                    className="px-4 py-2 rounded-lg text-sm font-semibold"
+                                    className="px-5 py-2 rounded-xl text-sm font-semibold"
                                     style={{
-                                        background: 'rgba(216, 90, 48, 0.15)',
-                                        color: '#D85A30',
-                                        border: '1px solid rgba(216, 90, 48, 0.3)',
+                                        background: 'rgba(0, 230, 118, 0.12)',
+                                        color: '#00e676',
+                                        border: '1px solid rgba(0, 230, 118, 0.25)',
                                     }}
                                 >
                                     Submit the first pick →
-                                </button>
+                                </motion.button>
                             </motion.div>
                         ) : (
                             <div className="space-y-3">
@@ -169,7 +215,7 @@ export default function PicksPage() {
                                         key={post.id}
                                         initial={{ opacity: 0, y: 16 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: i * 0.03 }}
+                                        transition={{ delay: i * 0.03, duration: 0.3 }}
                                     >
                                         <PostCard
                                             post={post}
