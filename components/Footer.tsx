@@ -116,6 +116,11 @@ export function Footer() {
                                 Privacy Policy
                             </Link>
                         </li>
+                        <li>
+                            <Link href="/picks" className="hover:text-white hover:underline decoration-primary underline-offset-4 transition-colors">
+                                Picks
+                            </Link>
+                        </li>
                     </ul>
                 </div>
 
