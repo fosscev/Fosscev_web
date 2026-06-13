@@ -47,9 +47,37 @@ export default function ConductPage() {
                             <li>The use of sexualized language or imagery and unwelcome sexual attention or advances</li>
                             <li>Trolling, insulting/derogatory comments, and personal or political attacks</li>
                             <li>Public or private harassment</li>
-                            <li>Publishing others' private information, such as a physical or electronic address, without explicit permission</li>
+                            <li>Publishing others&apos; private information, such as a physical or electronic address, without explicit permission</li>
                             <li>Other conduct which could reasonably be considered inappropriate in a professional setting</li>
                         </ul>
+
+                        <h2 className="text-2xl font-bold text-white mt-8 mb-4 font-display text-primary">Open Source Picks Guidelines</h2>
+                        <p className="text-gray-400 mb-4">
+                            The following additional rules apply to the <strong className="text-white">Open Source Picks</strong> platform:
+                        </p>
+                        <ul className="list-disc pl-6 space-y-2 text-gray-300 marker:text-[#D85A30]">
+                            <li><strong className="text-white">Open source only</strong> — share only tools and software with recognized open-source licenses (MIT, GPL, Apache, BSD, etc.)</li>
+                            <li><strong className="text-white">No self-promotion or spam</strong> — commercial products, affiliate links, and repetitive promotional content are not allowed</li>
+                            <li><strong className="text-white">Constructive feedback</strong> — critique tools and ideas, not people. Comments should add value to the discussion</li>
+                            <li><strong className="text-white">No vote manipulation</strong> — creating multiple accounts to upvote/downvote or coordinating voting campaigns is prohibited</li>
+                            <li><strong className="text-white">Accurate information</strong> — do not misrepresent licenses, tool capabilities, or your affiliation with a project</li>
+                            <li><strong className="text-white">Use appropriate flairs</strong> — categorize posts correctly to help others find relevant content</li>
+                            <li><strong className="text-white">Respect rate limits</strong> — automated posting, scraping, or API abuse will result in account suspension</li>
+                        </ul>
+
+                        <h2 className="text-2xl font-bold text-white mt-8 mb-4 font-display text-primary">Content Moderation</h2>
+                        <p className="text-gray-300 mb-4">
+                            Posts and comments on Open Source Picks are moderated by the FOSS CEV admin team. Content may be removed if it violates these guidelines. Moderation actions include:
+                        </p>
+                        <ul className="list-disc pl-6 space-y-2 text-gray-300 marker:text-primary">
+                            <li><strong className="text-white">Warning</strong> — first-time minor violations will receive a warning</li>
+                            <li><strong className="text-white">Post/comment removal</strong> — content that violates rules will be removed with a reason provided</li>
+                            <li><strong className="text-white">Temporary suspension</strong> — repeated violations may result in a temporary posting ban</li>
+                            <li><strong className="text-white">Permanent ban</strong> — severe or persistent violations will result in permanent account removal</li>
+                        </ul>
+                        <p className="text-gray-300 mt-3">
+                            Posts with a community score below -3 are automatically flagged for admin review.
+                        </p>
 
                         <h2 className="text-2xl font-bold text-white mt-8 mb-4 font-display text-primary">Enforcement</h2>
                         <p className="text-gray-300 mb-4">
@@ -58,7 +86,7 @@ export default function ConductPage() {
 
                         <h2 className="text-2xl font-bold text-white mt-8 mb-4 font-display text-primary">Attribution</h2>
                         <p className="text-sm text-gray-500">
-                            This Code of Conduct is adapted from the <a href="https://www.contributor-covenant.org" target="_blank" className="text-primary hover:underline">Contributor Covenant</a>, version 2.1.
+                            This Code of Conduct is adapted from the <a href="https://www.contributor-covenant.org" target="_blank" className="text-primary hover:underline">Contributor Covenant</a>, version 2.1, with additional guidelines for the Open Source Picks platform.
                         </p>
                     </div>
                 </section>

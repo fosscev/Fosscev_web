@@ -30,22 +30,55 @@ export default function PrivacyPage() {
                                 <span className="text-primary">//</span> Collection of Data
                             </h2>
                             <p className="text-gray-300">
-                                Currently, we <strong className="text-white">do not</strong> collect any personal data from visitors to our website. You can browse our site anonymously without creating an account.
+                                You can browse most of our site anonymously. However, our <strong className="text-white">Open Source Picks</strong> feature requires an account, and we collect the following data when you register:
                             </p>
-                            <p className="text-gray-300 mt-2">
-                                We only store public event data and information regarding our team members, which is displayed publicly on the site to facilitate community engagement.
+                            <ul className="list-disc pl-6 space-y-1.5 text-gray-300 mt-3 marker:text-primary">
+                                <li><strong className="text-white">Email address</strong> — used for account verification (OTP) and account recovery</li>
+                                <li><strong className="text-white">Username</strong> — auto-derived from your email prefix, displayed publicly on posts and comments</li>
+                                <li><strong className="text-white">Posts, votes, and comments</strong> — content you create is stored and displayed publicly</li>
+                                <li><strong className="text-white">Flair preferences</strong> — your voting patterns are used to personalize your &quot;For You&quot; feed (not shared with third parties)</li>
+                            </ul>
+                            <p className="text-gray-300 mt-3">
+                                We also store public event data and information regarding our team members, which is displayed publicly on the site.
                             </p>
                         </div>
 
                         <div className="bg-white/5 border border-white/10 p-6 rounded-xl hover:border-primary/50 transition-colors">
                             <h2 className="text-2xl font-bold text-white mb-4 font-display text-primary flex items-center gap-2">
-                                <span className="text-primary">//</span> Cookies & Tracking
+                                <span className="text-primary">//</span> Authentication &amp; Security
+                            </h2>
+                            <p className="text-gray-300">
+                                Account authentication is handled by <strong className="text-white">Supabase Auth</strong> (an open-source platform). Your password is hashed using bcrypt and is <strong className="text-white">never stored in plain text</strong>.
+                            </p>
+                            <ul className="list-disc pl-6 space-y-1.5 text-gray-300 mt-3 marker:text-primary">
+                                <li>Email verification uses a <strong className="text-white">6-digit OTP</strong> with a 10-minute expiry, sent only during account creation</li>
+                                <li>Sessions use <strong className="text-white">HTTP-only cookies</strong> with the PKCE security flow to prevent token interception</li>
+                                <li>Rate limiting is applied to sign-in attempts, OTP requests, posts, comments, and votes to prevent abuse</li>
+                                <li>We accept registrations only from verified email domains (@cev.ac.in, @gmail.com, @outlook.com, @yahoo.com) to prevent spam</li>
+                            </ul>
+                        </div>
+
+                        <div className="bg-white/5 border border-white/10 p-6 rounded-xl hover:border-primary/50 transition-colors">
+                            <h2 className="text-2xl font-bold text-white mb-4 font-display text-primary flex items-center gap-2">
+                                <span className="text-primary">//</span> Data Storage
+                            </h2>
+                            <p className="text-gray-300">
+                                All user data is stored in a <strong className="text-white">Supabase-managed PostgreSQL database</strong> with Row Level Security (RLS) policies to ensure users can only access and modify their own data. Supabase servers are hosted on AWS infrastructure.
+                            </p>
+                            <p className="text-gray-300 mt-2">
+                                We retain your data for as long as your account is active. You may request account deletion by contacting us, and all associated data (posts, comments, votes) will be permanently removed.
+                            </p>
+                        </div>
+
+                        <div className="bg-white/5 border border-white/10 p-6 rounded-xl hover:border-primary/50 transition-colors">
+                            <h2 className="text-2xl font-bold text-white mb-4 font-display text-primary flex items-center gap-2">
+                                <span className="text-primary">//</span> Cookies &amp; Tracking
                             </h2>
                             <p className="text-gray-300">
                                 FOSS CEV respects your privacy. We <strong className="text-white">do not</strong> use cookies for advertising, tracking, or marketing purposes.
                             </p>
                             <p className="text-gray-300 mt-2">
-                                Any local storage used by the website is strictly for functional purposes (like remembering your theme preference or minimizing repeat animations) and is not shared with third parties.
+                                We use <strong className="text-white">essential cookies only</strong>: authentication session tokens (HTTP-only, SameSite) for Open Source Picks login, and local storage for functional purposes like theme preferences. These are never shared with third parties.
                             </p>
                         </div>
 
@@ -54,8 +87,30 @@ export default function PrivacyPage() {
                                 <span className="text-primary">//</span> Third-Party Services
                             </h2>
                             <p className="text-gray-300">
-                                Our website may contain links to external sites (such as GitHub, LinkedIn, or registration forms). We are not responsible for the privacy practices or content of these external sites. We encourage you to review their privacy policies.
+                                We use the following third-party services:
                             </p>
+                            <ul className="list-disc pl-6 space-y-1.5 text-gray-300 mt-3 marker:text-primary">
+                                <li><strong className="text-white">Supabase</strong> — database hosting, authentication, and email OTP delivery (<a href="https://supabase.com/privacy" target="_blank" className="text-primary hover:underline">Supabase Privacy Policy</a>)</li>
+                                <li><strong className="text-white">Google Fonts</strong> — typography (Inter, JetBrains Mono)</li>
+                            </ul>
+                            <p className="text-gray-300 mt-3">
+                                Our website may also contain links to external sites (GitHub, LinkedIn, etc.). We are not responsible for the privacy practices of these external sites.
+                            </p>
+                        </div>
+
+                        <div className="bg-white/5 border border-white/10 p-6 rounded-xl hover:border-primary/50 transition-colors">
+                            <h2 className="text-2xl font-bold text-white mb-4 font-display text-primary flex items-center gap-2">
+                                <span className="text-primary">//</span> Your Rights
+                            </h2>
+                            <p className="text-gray-300">
+                                You have the right to:
+                            </p>
+                            <ul className="list-disc pl-6 space-y-1.5 text-gray-300 mt-3 marker:text-primary">
+                                <li>Access the personal data we hold about you</li>
+                                <li>Request correction of inaccurate data</li>
+                                <li>Request deletion of your account and all associated data</li>
+                                <li>Withdraw from the Open Source Picks platform at any time</li>
+                            </ul>
                         </div>
 
                         <div className="bg-white/5 border border-white/10 p-6 rounded-xl hover:border-primary/50 transition-colors">
@@ -63,7 +118,7 @@ export default function PrivacyPage() {
                                 <span className="text-primary">//</span> Contact Us
                             </h2>
                             <p className="text-gray-300">
-                                If you have any questions about this Privacy Policy, please contact us at <span className="text-primary font-mono">fossclubcev@cev.ac.in</span>.
+                                If you have any questions about this Privacy Policy or want to exercise your data rights, please contact us at <span className="text-primary font-mono">fossclubcev@cev.ac.in</span>.
                             </p>
                         </div>
 
