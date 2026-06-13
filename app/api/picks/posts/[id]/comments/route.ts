@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit, sanitizeText } from '@/lib/rate-limit';
-import { getPicksUserByAuthId, fetchComments } from '@/lib/picks-db';
-import { supabase } from '@/lib/supabase';
+import { getPicksUserByAuthId, fetchComments, getServiceClient } from '@/lib/picks-db';
 
 // GET /api/picks/posts/[id]/comments — Fetch comments for a post
 export async function GET(
@@ -45,8 +44,10 @@ export async function POST(
             return NextResponse.json({ error: 'Comment cannot be empty' }, { status: 400 });
         }
 
+        const serviceClient = getServiceClient();
+
         // Verify post exists
-        const { data: post } = await supabase
+        const { data: post } = await serviceClient
             .from('picks_posts')
             .select('id')
             .eq('id', postId)
@@ -57,7 +58,7 @@ export async function POST(
             return NextResponse.json({ error: 'Post not found' }, { status: 404 });
         }
 
-        const { data, error } = await supabase
+        const { data, error } = await serviceClient
             .from('picks_comments')
             .insert({
                 post_id: postId,

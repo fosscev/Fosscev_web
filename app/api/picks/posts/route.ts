@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit, sanitizeText } from '@/lib/rate-limit';
-import { fetchPosts, getPicksUserByAuthId, FLAIRS, type Flair, type SortMode } from '@/lib/picks-db';
+import { fetchPosts, getPicksUserByAuthId, getServiceClient, FLAIRS, type Flair, type SortMode } from '@/lib/picks-db';
 import { supabase } from '@/lib/supabase';
 
 // GET /api/picks/posts — Fetch posts with sorting, filtering, pagination
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { title, description, tool_name, flair, license, auth_id } = body;
+        const { title, description, tool_name, flair, license, auth_id, image_url } = body;
 
         // Auth check
         if (!auth_id) {
@@ -77,8 +77,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Validate
-        if (!title || !description || !tool_name || !flair || !license) {
-            return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
+        if (!title || !tool_name || !flair) {
+            return NextResponse.json({ error: 'Title, tool name, and category are required' }, { status: 400 });
         }
 
         if (!FLAIRS.includes(flair)) {
@@ -86,17 +86,20 @@ export async function POST(request: NextRequest) {
         }
 
         const cleanTitle = sanitizeText(title).slice(0, 200);
-        const cleanDesc = sanitizeText(description).slice(0, 300);
+        const cleanDesc = description ? sanitizeText(description) : null;
         const cleanTool = sanitizeText(tool_name).slice(0, 100);
-        const cleanLicense = sanitizeText(license).slice(0, 50);
+        const cleanLicense = license ? sanitizeText(license).slice(0, 50) : null;
+        const cleanImageUrl = image_url ? sanitizeText(image_url) : null;
 
         if (cleanTitle.length < 3) {
             return NextResponse.json({ error: 'Title must be at least 3 characters' }, { status: 400 });
         }
 
+        const serviceClient = getServiceClient();
+
         // Duplicate check — same title + tool in 24h
         const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
-        const { data: dupes } = await supabase
+        const { data: dupes } = await serviceClient
             .from('picks_posts')
             .select('id')
             .eq('title', cleanTitle)
@@ -112,7 +115,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Insert
-        const { data, error } = await supabase
+        const { data, error } = await serviceClient
             .from('picks_posts')
             .insert({
                 title: cleanTitle,
@@ -123,6 +126,7 @@ export async function POST(request: NextRequest) {
                 author_id: picksUser.id,
                 score: 0,
                 is_removed: false,
+                image_url: cleanImageUrl,
             })
             .select(`
                 *,

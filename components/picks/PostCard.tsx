@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Share2, Bookmark, Scale } from 'lucide-react';
+import { MessageCircle, Share2, Bookmark, Scale, X } from 'lucide-react';
 import { VoteButtons } from './VoteButtons';
 import { CommentSection } from './CommentSection';
 import { FLAIR_COLORS, type PicksPost, type Flair } from '@/lib/picks-db';
@@ -30,6 +30,7 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
     const [showComments, setShowComments] = useState(false);
     const [saved, setSaved] = useState(post.is_saved || false);
     const [isSaving, setIsSaving] = useState(false);
+    const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
     const flairColor = FLAIR_COLORS[post.flair as Flair] || '#6B7280';
 
@@ -120,9 +121,24 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
                 </h3>
 
                 {/* Description */}
-                <p className="text-sm text-gray-400 leading-relaxed mb-3 break-words">
-                    {post.description}
-                </p>
+                {post.description && (
+                    <p className="text-sm text-gray-400 leading-relaxed mb-3 break-words">
+                        {post.description}
+                    </p>
+                )}
+
+                {/* Post Image */}
+                {post.image_url && (
+                    <div className="relative mt-3 mb-4 rounded-xl overflow-hidden border border-white/[0.08] bg-black/50 max-h-96 flex items-center justify-center group/img cursor-zoom-in">
+                        <img
+                            src={post.image_url}
+                            alt={post.title}
+                            className="max-h-96 object-contain w-auto h-auto transition-transform duration-300 group-hover/img:scale-[1.01]"
+                            loading="lazy"
+                            onClick={() => setSelectedImage(post.image_url || null)}
+                        />
+                    </div>
+                )}
 
                 {/* Meta row */}
                 <div className="flex items-center gap-3 text-xs text-gray-500 mb-2 flex-wrap">
@@ -140,11 +156,15 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
                     </span>
                     <span>·</span>
                     <span>{timeAgo(post.created_at)}</span>
-                    <span>·</span>
-                    <span className="flex items-center gap-1">
-                        <Scale size={11} />
-                        {post.license}
-                    </span>
+                    {post.license && (
+                        <>
+                            <span>·</span>
+                            <span className="flex items-center gap-1">
+                                <Scale size={11} />
+                                {post.license}
+                            </span>
+                        </>
+                    )}
                 </div>
 
                 {/* Actions row */}
@@ -186,6 +206,34 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
                     )}
                 </AnimatePresence>
             </div>
+
+            {/* Image Lightbox Modal */}
+            <AnimatePresence>
+                {selectedImage && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        onClick={() => setSelectedImage(null)}
+                        className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center p-4 cursor-zoom-out"
+                    >
+                        <button
+                            onClick={() => setSelectedImage(null)}
+                            className="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors border border-white/10"
+                        >
+                            <X size={20} />
+                        </button>
+                        <motion.img
+                            initial={{ scale: 0.95 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.95 }}
+                            src={selectedImage}
+                            alt="Zoomed pick image"
+                            className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                        />
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </motion.article>
     );
 }
