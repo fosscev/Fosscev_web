@@ -12,10 +12,11 @@ export async function GET(request: NextRequest) {
     const flair = searchParams.get('flair') as Flair | undefined;
     const authId = searchParams.get('auth_id') || undefined;
     const saved = searchParams.get('saved') === 'true';
+    const mine = searchParams.get('mine') === 'true';
 
-    // Verify auth if checking saved posts (requires auth header)
+    // Verify auth if checking saved posts or own posts (requires auth header)
     let authenticatedUserId: string | undefined;
-    if (saved) {
+    if (saved || mine) {
         const authHeader = request.headers.get('Authorization');
         if (authHeader) {
             const token = authHeader.replace('Bearer ', '');
@@ -29,9 +30,11 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
         
-        const { fetchSavedPosts } = await import('@/lib/picks-db');
-        const posts = await fetchSavedPosts(authenticatedUserId);
-        return NextResponse.json({ posts, total: posts.length });
+        if (saved) {
+            const { fetchSavedPosts } = await import('@/lib/picks-db');
+            const posts = await fetchSavedPosts(authenticatedUserId);
+            return NextResponse.json({ posts, total: posts.length });
+        }
     }
 
     // Resolve picks user ID from auth ID for normal feed
@@ -46,6 +49,7 @@ export async function GET(request: NextRequest) {
         page,
         flair: flair && FLAIRS.includes(flair) ? flair : undefined,
         userId,
+        authorId: mine ? authenticatedUserId : undefined,
     });
 
     return NextResponse.json(result);

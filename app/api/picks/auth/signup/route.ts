@@ -4,7 +4,7 @@ import { checkRateLimit, isAllowedEmailDomain } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
     try {
-        const { email, password } = await request.json();
+        const { email, password, username } = await request.json();
 
         if (!email || !password) {
             return NextResponse.json(
@@ -48,6 +48,9 @@ export async function POST(request: NextRequest) {
             email,
             password,
             options: {
+                data: {
+                    username: username || '',
+                },
                 // Supabase will send a confirmation email with OTP
                 emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/picks`,
             },

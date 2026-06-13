@@ -53,7 +53,8 @@ export async function POST(request: NextRequest) {
         // Create or fetch picks_users profile
         let picksUser = await getPicksUserByAuthId(data.user.id);
         if (!picksUser) {
-            picksUser = await createPicksUser(data.user.id, email);
+            const customUsername = data.user.user_metadata?.username;
+            picksUser = await createPicksUser(data.user.id, email, customUsername);
         }
 
         // Return session info

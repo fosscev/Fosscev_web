@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { Users, Hash, Plus, ShieldCheck } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Users, Hash, Plus, ShieldCheck, Terminal } from 'lucide-react';
 import { FLAIRS, FLAIR_COLORS, type Flair } from '@/lib/picks-db';
 import { usePicksAuth } from './PicksAuthProvider';
 
@@ -23,66 +24,104 @@ export function Sidebar({ activeFlair, onFlairChange, onSubmitClick }: SidebarPr
     }, []);
 
     return (
-        <aside className="space-y-4">
+        <aside className="space-y-3">
             {/* Submit CTA */}
-            <button
+            <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={onSubmitClick}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                className="w-full py-2.5 rounded-xl text-sm font-semibold font-mono transition-all duration-200 flex items-center justify-center gap-2 relative overflow-hidden group"
                 style={{
-                    background: 'linear-gradient(135deg, #D85A30, #e06b3a)',
-                    color: '#fff',
-                    boxShadow: '0 4px 20px rgba(216, 90, 48, 0.2)',
+                    background: 'linear-gradient(135deg, rgba(0,230,118,0.15) 0%, rgba(0,168,84,0.1) 100%)',
+                    color: '#00e676',
+                    border: '1px solid rgba(0,230,118,0.25)',
+                    boxShadow: '0 0 20px rgba(0,230,118,0.08)',
                 }}
             >
-                <Plus size={16} strokeWidth={2.5} />
-                Submit a Pick
-            </button>
+                {/* Subtle shimmer */}
+                <span
+                    className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    style={{
+                        background: 'linear-gradient(135deg, rgba(0,230,118,0.05) 0%, rgba(0,230,118,0.12) 50%, rgba(0,230,118,0.05) 100%)',
+                    }}
+                />
+                <Plus size={15} strokeWidth={2.5} className="relative z-10" />
+                <span className="relative z-10">Submit a Pick</span>
+            </motion.button>
 
             {/* Community Stats */}
-            <div className="bg-[#0a0a0a]/80 border border-white/[0.06] rounded-xl p-4">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 font-mono">
+            <div
+                className="rounded-xl p-4"
+                style={{
+                    background: 'rgba(10,10,10,0.8)',
+                    border: '1px solid rgba(0,230,118,0.08)',
+                    backdropFilter: 'blur(8px)',
+                }}
+            >
+                <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3 font-mono flex items-center gap-1.5">
+                    <Terminal size={10} className="text-[#00e676]/60" />
                     Community
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
-                    <div className="text-center">
-                        <div className="flex items-center justify-center gap-1.5 mb-1">
-                            <Users size={13} className="text-[#D85A30]" />
+                    <div
+                        className="text-center py-2.5 rounded-lg"
+                        style={{ background: 'rgba(0,230,118,0.04)', border: '1px solid rgba(0,230,118,0.06)' }}
+                    >
+                        <div className="flex items-center justify-center gap-1 mb-0.5">
+                            <Users size={11} className="text-[#00e676]/60" />
                         </div>
-                        <p className="text-lg font-bold text-gray-100 font-mono">{stats.memberCount}</p>
-                        <p className="text-xs text-gray-500">Members</p>
+                        <p className="text-base font-bold text-gray-100 font-mono">{stats.memberCount}</p>
+                        <p className="text-[10px] text-gray-600 font-mono">members</p>
                     </div>
-                    <div className="text-center">
-                        <div className="flex items-center justify-center gap-1.5 mb-1">
-                            <Hash size={13} className="text-[#D85A30]" />
+                    <div
+                        className="text-center py-2.5 rounded-lg"
+                        style={{ background: 'rgba(0,230,118,0.04)', border: '1px solid rgba(0,230,118,0.06)' }}
+                    >
+                        <div className="flex items-center justify-center gap-1 mb-0.5">
+                            <Hash size={11} className="text-[#00e676]/60" />
                         </div>
-                        <p className="text-lg font-bold text-gray-100 font-mono">{stats.picksCount}</p>
-                        <p className="text-xs text-gray-500">Picks</p>
+                        <p className="text-base font-bold text-gray-100 font-mono">{stats.picksCount}</p>
+                        <p className="text-[10px] text-gray-600 font-mono">picks</p>
                     </div>
                 </div>
 
                 {user && (
-                    <div className="mt-3 pt-3 border-t border-white/[0.06]">
-                        <p className="text-xs text-gray-500">
-                            Signed in as <span className="text-[#D85A30] font-mono">{user.username}</span>
+                    <div
+                        className="mt-3 pt-3 flex items-center gap-2"
+                        style={{ borderTop: '1px solid rgba(0,230,118,0.06)' }}
+                    >
+                        <div
+                            className="w-1.5 h-1.5 rounded-full animate-pulse"
+                            style={{ background: '#00e676', boxShadow: '0 0 6px #00e676' }}
+                        />
+                        <p className="text-[11px] text-gray-500 font-mono">
+                            <span className="text-[#00e676]/80">{user.username}</span>
                         </p>
                     </div>
                 )}
             </div>
 
             {/* Browse by Flair */}
-            <div className="bg-[#0a0a0a]/80 border border-white/[0.06] rounded-xl p-4">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 font-mono">
+            <div
+                className="rounded-xl p-4"
+                style={{
+                    background: 'rgba(10,10,10,0.8)',
+                    border: '1px solid rgba(0,230,118,0.08)',
+                    backdropFilter: 'blur(8px)',
+                }}
+            >
+                <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3 font-mono">
                     Browse by Flair
                 </h3>
                 <div className="flex flex-wrap gap-1.5">
                     {/* All filter */}
                     <button
                         onClick={() => onFlairChange(null)}
-                        className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150"
+                        className="px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition-all duration-150"
                         style={{
-                            backgroundColor: activeFlair === null ? 'rgba(216, 90, 48, 0.15)' : 'rgba(255,255,255,0.04)',
-                            color: activeFlair === null ? '#D85A30' : '#6b7280',
-                            border: activeFlair === null ? '1px solid rgba(216, 90, 48, 0.3)' : '1px solid transparent',
+                            backgroundColor: activeFlair === null ? 'rgba(0,230,118,0.1)' : 'rgba(255,255,255,0.03)',
+                            color: activeFlair === null ? '#00e676' : '#525252',
+                            border: activeFlair === null ? '1px solid rgba(0,230,118,0.2)' : '1px solid rgba(255,255,255,0.05)',
                         }}
                     >
                         All
@@ -96,16 +135,16 @@ export function Sidebar({ activeFlair, onFlairChange, onSubmitClick }: SidebarPr
                             <button
                                 key={f}
                                 onClick={() => onFlairChange(isActive ? null : f)}
-                                className="px-2.5 py-1 rounded-lg text-xs font-medium transition-all duration-150 flex items-center gap-1"
+                                className="px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition-all duration-150 flex items-center gap-1"
                                 style={{
-                                    backgroundColor: isActive ? `${color}20` : 'rgba(255,255,255,0.04)',
-                                    color: isActive ? color : '#6b7280',
-                                    border: isActive ? `1px solid ${color}40` : '1px solid transparent',
+                                    backgroundColor: isActive ? `${color}14` : 'rgba(255,255,255,0.03)',
+                                    color: isActive ? color : '#525252',
+                                    border: isActive ? `1px solid ${color}30` : '1px solid rgba(255,255,255,0.05)',
                                 }}
                             >
                                 {f}
                                 {count > 0 && (
-                                    <span className="text-[10px] opacity-60">{count}</span>
+                                    <span className="text-[9px] opacity-50">{count}</span>
                                 )}
                             </button>
                         );
@@ -114,18 +153,41 @@ export function Sidebar({ activeFlair, onFlairChange, onSubmitClick }: SidebarPr
             </div>
 
             {/* Community Rules */}
-            <div className="bg-[#0a0a0a]/80 border border-white/[0.06] rounded-xl p-4">
-                <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 font-mono flex items-center gap-1.5">
-                    <ShieldCheck size={13} className="text-[#D85A30]" />
-                    Community Rules
+            <div
+                className="rounded-xl p-4"
+                style={{
+                    background: 'rgba(10,10,10,0.8)',
+                    border: '1px solid rgba(0,230,118,0.08)',
+                    backdropFilter: 'blur(8px)',
+                }}
+            >
+                <h3 className="text-[10px] font-semibold text-gray-500 uppercase tracking-widest mb-3 font-mono flex items-center gap-1.5">
+                    <ShieldCheck size={10} className="text-[#00e676]/60" />
+                    Rules
                 </h3>
-                <ol className="space-y-2 text-xs text-gray-400 list-decimal list-inside">
-                    <li>Only share <span className="text-gray-300">open-source</span> tools and software</li>
-                    <li>Include the <span className="text-gray-300">license type</span> in every post</li>
-                    <li>Be respectful and constructive in comments</li>
-                    <li>No self-promotion or commercial tools</li>
-                    <li>Use the <span className="text-gray-300">Question</span> flair for help requests</li>
-                    <li>Search before posting — avoid duplicates</li>
+                <ol className="space-y-2">
+                    {[
+                        <>Only share <span className="text-gray-300">open-source</span> tools</>,
+                        <>Include the <span className="text-gray-300">license type</span> in every post</>,
+                        <>Be respectful in comments</>,
+                        <>No self-promotion or commercial tools</>,
+                        <>Use <span className="text-gray-300">Question</span> flair for help</>,
+                        <>Search before posting — no duplicates</>,
+                    ].map((rule, i) => (
+                        <li key={i} className="flex items-start gap-2 text-[11px] text-gray-500 font-mono">
+                            <span
+                                className="flex-shrink-0 w-4 h-4 rounded flex items-center justify-center text-[9px] font-bold mt-0.5"
+                                style={{
+                                    background: 'rgba(0,230,118,0.06)',
+                                    color: '#00e676',
+                                    border: '1px solid rgba(0,230,118,0.1)',
+                                }}
+                            >
+                                {i + 1}
+                            </span>
+                            <span className="leading-relaxed">{rule}</span>
+                        </li>
+                    ))}
                 </ol>
             </div>
         </aside>
