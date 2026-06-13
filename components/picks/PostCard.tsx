@@ -28,7 +28,8 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
     const [currentScore, setCurrentScore] = useState(post.score);
     const [currentVote, setCurrentVote] = useState<number | null>(post.user_vote || null);
     const [showComments, setShowComments] = useState(false);
-    const [saved, setSaved] = useState(false);
+    const [saved, setSaved] = useState(post.is_saved || false);
+    const [isSaving, setIsSaving] = useState(false);
 
     const flairColor = FLAIR_COLORS[post.flair as Flair] || '#6B7280';
 
@@ -42,6 +43,37 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
             await navigator.clipboard.writeText(window.location.href);
         } catch {
             // Fallback — do nothing
+        }
+    };
+
+    const handleSave = async () => {
+        setIsSaving(true);
+        try {
+            const { supabase } = await import('@/lib/supabase');
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                onAuthRequired();
+                setIsSaving(false);
+                return;
+            }
+
+            const res = await fetch(`/api/picks/posts/${post.id}/save`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${session.access_token}`
+                }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setSaved(data.isSaved);
+            } else if (res.status === 401) {
+                onAuthRequired();
+            }
+        } catch {
+            // Silently fail
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -134,8 +166,9 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
                     </button>
 
                     <button
-                        onClick={() => setSaved(!saved)}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium transition-colors disabled:opacity-50"
                         style={{ color: saved ? '#D85A30' : '#6b7280' }}
                     >
                         <Bookmark size={14} fill={saved ? '#D85A30' : 'none'} />

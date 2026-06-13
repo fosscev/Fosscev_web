@@ -67,15 +67,22 @@ export default function PicksSignInPage() {
                 // Success — set session via Supabase client
                 const { supabase } = await import('@/lib/supabase');
                 if (data.session) {
-                    await supabase.auth.setSession({
-                        access_token: data.session.access_token,
-                        refresh_token: data.session.refresh_token,
-                    });
+                    try {
+                        // We don't strictly await this to prevent browser lock manager deadlocks 
+                        // from freezing the UI. Supabase will eventually sync the session.
+                        supabase.auth.setSession({
+                            access_token: data.session.access_token,
+                            refresh_token: data.session.refresh_token,
+                        }).catch(console.error);
+                    } catch (e) {
+                        console.error('Session sync error:', e);
+                    }
                 }
 
                 router.push('/picks');
             }
-        } catch {
+        } catch (err) {
+            console.error('Login error:', err);
             setError('Something went wrong. Please try again.');
         } finally {
             setLoading(false);
@@ -104,10 +111,11 @@ export default function PicksSignInPage() {
             // Set session
             const { supabase } = await import('@/lib/supabase');
             if (data.session) {
-                await supabase.auth.setSession({
+                // Non-blocking to avoid lock manager deadlocks
+                supabase.auth.setSession({
                     access_token: data.session.access_token,
                     refresh_token: data.session.refresh_token,
-                });
+                }).catch(console.error);
             }
 
             router.push('/picks');
@@ -182,6 +190,7 @@ export default function PicksSignInPage() {
                                             onChange={(e) => setEmail(e.target.value)}
                                             placeholder="you@cev.ac.in"
                                             required
+                                            suppressHydrationWarning
                                             className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
                                         />
                                     </div>
@@ -204,6 +213,7 @@ export default function PicksSignInPage() {
                                             placeholder="••••••••"
                                             required
                                             minLength={6}
+                                            suppressHydrationWarning
                                             className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
                                         />
                                     </div>
@@ -276,11 +286,11 @@ export default function PicksSignInPage() {
                                     <input
                                         type="text"
                                         value={otp}
-                                        onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                                        placeholder="000000"
+                                        onChange={(e) => setOtp(e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8))}
+                                        placeholder="00000000"
                                         required
-                                        maxLength={6}
-                                        className="w-full px-4 py-3 bg-white/[0.04] border border-white/8 rounded-lg text-center text-xl font-mono text-gray-200 tracking-[0.5em] placeholder-gray-700 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
+                                        maxLength={8}
+                                        className="w-full px-4 py-3 bg-white/[0.04] border border-white/8 rounded-lg text-center text-xl font-mono text-gray-200 tracking-[0.2em] placeholder-gray-700 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
                                         autoFocus
                                     />
                                     <p className="text-[11px] text-gray-600 mt-1.5">

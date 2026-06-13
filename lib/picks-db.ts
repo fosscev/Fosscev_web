@@ -55,6 +55,14 @@ export interface PicksPost {
     author?: PicksUser;
     comment_count?: number;
     user_vote?: number | null;
+    is_saved?: boolean;
+}
+
+export interface PicksSavedPost {
+    id: string;
+    user_id: string;
+    post_id: string;
+    created_at: string;
 }
 
 export interface PicksVote {
@@ -222,23 +230,26 @@ export async function fetchPosts(options: {
         });
     }
 
-    // If userId provided, fetch user's votes for these posts
+    // If userId provided, fetch user's votes and saved status for these posts
     if (userId && posts.length > 0) {
         const postIds = posts.map(p => p.id);
-        const { data: votes } = await supabase
-            .from('picks_votes')
-            .select('post_id, value')
-            .eq('user_id', userId)
-            .in('post_id', postIds);
+        
+        const [votesRes, savedRes] = await Promise.all([
+            supabase.from('picks_votes').select('post_id, value').eq('user_id', userId).in('post_id', postIds),
+            supabase.from('picks_saved_posts').select('post_id').eq('user_id', userId).in('post_id', postIds)
+        ]);
 
         const voteMap: Record<string, number> = {};
-        (votes || []).forEach((v: any) => {
+        (votesRes.data || []).forEach((v: any) => {
             voteMap[v.post_id] = v.value;
         });
+
+        const savedSet = new Set((savedRes.data || []).map((s: any) => s.post_id));
 
         posts = posts.map(p => ({
             ...p,
             user_vote: voteMap[p.id] || null,
+            is_saved: savedSet.has(p.id),
         }));
     }
 
@@ -281,4 +292,81 @@ export async function getCommunityStats() {
         picksCount: postsResult.count || 0,
         flairCounts,
     };
+}
+
+export async function toggleSavedPost(userId: string, postId: string): Promise<{ isSaved: boolean }> {
+    // Check if already saved
+    const { data } = await supabase
+        .from('picks_saved_posts')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('post_id', postId)
+        .single();
+
+    if (data) {
+        // Unsave
+        await supabase
+            .from('picks_saved_posts')
+            .delete()
+            .eq('user_id', userId)
+            .eq('post_id', postId);
+        return { isSaved: false };
+    } else {
+        // Save
+        await supabase
+            .from('picks_saved_posts')
+            .insert({ user_id: userId, post_id: postId });
+        return { isSaved: true };
+    }
+}
+
+export async function fetchSavedPosts(userId: string): Promise<PicksPost[]> {
+    const { data: savedPosts, error } = await supabase
+        .from('picks_saved_posts')
+        .select(`
+            post_id,
+            picks_posts (
+                *,
+                author:picks_users!author_id(id, username, email, created_at),
+                picks_comments(count)
+            )
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching saved posts:', error);
+        return [];
+    }
+
+    let posts: PicksPost[] = (savedPosts || [])
+        .filter((sp: any) => sp.picks_posts && !sp.picks_posts.is_removed)
+        .map((sp: any) => ({
+            ...sp.picks_posts,
+            author: sp.picks_posts.author,
+            comment_count: sp.picks_posts.picks_comments?.[0]?.count || 0,
+            is_saved: true,
+        }));
+
+    // Fetch user votes for these posts
+    if (posts.length > 0) {
+        const postIds = posts.map(p => p.id);
+        const { data: votes } = await supabase
+            .from('picks_votes')
+            .select('post_id, value')
+            .eq('user_id', userId)
+            .in('post_id', postIds);
+
+        const voteMap: Record<string, number> = {};
+        (votes || []).forEach((v: any) => {
+            voteMap[v.post_id] = v.value;
+        });
+
+        posts = posts.map(p => ({
+            ...p,
+            user_vote: voteMap[p.id] || null,
+        }));
+    }
+
+    return posts;
 }

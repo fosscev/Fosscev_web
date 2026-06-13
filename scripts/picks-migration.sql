@@ -79,32 +79,47 @@ ALTER TABLE picks_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE picks_user_flair_scores ENABLE ROW LEVEL SECURITY;
 
 -- picks_users: Anyone can read, only the user can insert their own profile
+DROP POLICY IF EXISTS "Anyone can read picks_users" ON picks_users;
 CREATE POLICY "Anyone can read picks_users" ON picks_users FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can insert own profile" ON picks_users;
 CREATE POLICY "Users can insert own profile" ON picks_users FOR INSERT WITH CHECK (auth.uid() = auth_id);
 
 -- picks_posts: Anyone can read non-removed posts, authenticated users can insert
+DROP POLICY IF EXISTS "Anyone can read non-removed posts" ON picks_posts;
 CREATE POLICY "Anyone can read non-removed posts" ON picks_posts FOR SELECT USING (is_removed = false);
+DROP POLICY IF EXISTS "Authenticated users can create posts" ON picks_posts;
 CREATE POLICY "Authenticated users can create posts" ON picks_posts FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Service role can do anything with posts" ON picks_posts;
 CREATE POLICY "Service role can do anything with posts" ON picks_posts FOR ALL USING (auth.role() = 'service_role');
 
 -- picks_votes: Anyone can read, users can manage their own votes
+DROP POLICY IF EXISTS "Anyone can read votes" ON picks_votes;
 CREATE POLICY "Anyone can read votes" ON picks_votes FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Users can manage own votes" ON picks_votes;
 CREATE POLICY "Users can manage own votes" ON picks_votes FOR ALL USING (
     user_id IN (SELECT id FROM picks_users WHERE auth_id = auth.uid())
 );
 
 -- picks_comments: Anyone can read non-removed comments, users can create
+DROP POLICY IF EXISTS "Anyone can read non-removed comments" ON picks_comments;
 CREATE POLICY "Anyone can read non-removed comments" ON picks_comments FOR SELECT USING (is_removed = false);
+DROP POLICY IF EXISTS "Authenticated users can create comments" ON picks_comments;
 CREATE POLICY "Authenticated users can create comments" ON picks_comments FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Service role can do anything with comments" ON picks_comments;
 CREATE POLICY "Service role can do anything with comments" ON picks_comments FOR ALL USING (auth.role() = 'service_role');
 
 -- picks_user_flair_scores: Users can manage their own scores
+DROP POLICY IF EXISTS "Users can read own flair scores" ON picks_user_flair_scores;
 CREATE POLICY "Users can read own flair scores" ON picks_user_flair_scores FOR SELECT USING (
     user_id IN (SELECT id FROM picks_users WHERE auth_id = auth.uid())
 );
+DROP POLICY IF EXISTS "Users can manage own flair scores" ON picks_user_flair_scores;
 CREATE POLICY "Users can manage own flair scores" ON picks_user_flair_scores FOR ALL USING (
     user_id IN (SELECT id FROM picks_users WHERE auth_id = auth.uid())
 );
+
+-- Notify PostgREST to reload schema cache
+NOTIFY pgrst, reload schema;
 
 -- ============================================================
 -- Allow service role full access (for admin API operations)

@@ -13,8 +13,6 @@ export default function AdminLayout({
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        let logoutTimer: NodeJS.Timeout;
-
         const checkSession = async () => {
             const {
                 data: { user },
@@ -27,27 +25,35 @@ export default function AdminLayout({
             }
         };
 
-        const resetTimer = () => {
-            clearTimeout(logoutTimer);
-            // Auto logout after 15 minutes of inactivity (900000 ms)
-            logoutTimer = setTimeout(async () => {
-                await supabase.auth.signOut();
-                router.push("/foss-manager");
-            }, 15 * 60 * 1000);
+        checkSession();
+
+        let lastActivity = Date.now();
+        const updateActivity = () => {
+            lastActivity = Date.now();
         };
 
-        checkSession();
-        resetTimer();
+        // Check for inactivity every 30 seconds
+        const interval = setInterval(async () => {
+            if (Date.now() - lastActivity > 15 * 60 * 1000) { // 15 mins
+                clearInterval(interval);
+                try {
+                    await supabase.auth.signOut();
+                } catch {
+                    // Ignore signout errors, just redirect
+                }
+                router.push("/foss-manager");
+            }
+        }, 30000);
 
-        window.addEventListener('mousemove', resetTimer);
-        window.addEventListener('keydown', resetTimer);
-        window.addEventListener('click', resetTimer);
+        window.addEventListener('mousemove', updateActivity, { passive: true });
+        window.addEventListener('keydown', updateActivity, { passive: true });
+        window.addEventListener('click', updateActivity, { passive: true });
 
         return () => {
-            clearTimeout(logoutTimer);
-            window.removeEventListener('mousemove', resetTimer);
-            window.removeEventListener('keydown', resetTimer);
-            window.removeEventListener('click', resetTimer);
+            clearInterval(interval);
+            window.removeEventListener('mousemove', updateActivity);
+            window.removeEventListener('keydown', updateActivity);
+            window.removeEventListener('click', updateActivity);
         };
     }, [router]);
 
