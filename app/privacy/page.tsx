@@ -48,13 +48,13 @@ export default function PrivacyPage() {
                                 <span className="text-primary">//</span> Authentication &amp; Security
                             </h2>
                             <p className="text-gray-300">
-                                Account authentication is handled by <strong className="text-white">Supabase Auth</strong> (an open-source platform). Your password is hashed using bcrypt and is <strong className="text-white">never stored in plain text</strong>.
+                                Account authentication is handled securely. Your password is encrypted and is <strong className="text-white">never stored in plain text</strong>.
                             </p>
                             <ul className="list-disc pl-6 space-y-1.5 text-gray-300 mt-3 marker:text-primary">
-                                <li>Email verification uses a <strong className="text-white">6-digit OTP</strong> with a 10-minute expiry, sent only during account creation</li>
-                                <li>Sessions use <strong className="text-white">HTTP-only cookies</strong> with the PKCE security flow to prevent token interception</li>
-                                <li>Rate limiting is applied to sign-in attempts, OTP requests, posts, comments, and votes to prevent abuse</li>
-                                <li>We accept registrations only from verified email domains (@cev.ac.in, @gmail.com, @outlook.com, @yahoo.com) to prevent spam</li>
+                                <li>Email verification uses a one-time passcode sent during account creation</li>
+                                <li>Sessions are protected using standard secure web authentication practices</li>
+                                <li>We employ mechanisms to prevent spam and abuse of our systems</li>
+                                <li>We accept registrations only from permitted email domains to prevent spam</li>
                             </ul>
                         </div>
 
@@ -63,7 +63,7 @@ export default function PrivacyPage() {
                                 <span className="text-primary">//</span> Data Storage
                             </h2>
                             <p className="text-gray-300">
-                                All user data is stored in a <strong className="text-white">Supabase-managed PostgreSQL database</strong> with Row Level Security (RLS) policies to ensure users can only access and modify their own data. Supabase servers are hosted on AWS infrastructure.
+                                All user data is stored securely with access controls to ensure users can only access and modify their own data.
                             </p>
                             <p className="text-gray-300 mt-2">
                                 We retain your data for as long as your account is active. You may request account deletion by contacting us, and all associated data (posts, comments, votes) will be permanently removed.
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
                                 FOSS CEV respects your privacy. We <strong className="text-white">do not</strong> use cookies for advertising, tracking, or marketing purposes.
                             </p>
                             <p className="text-gray-300 mt-2">
-                                We use <strong className="text-white">essential cookies only</strong>: authentication session tokens (HTTP-only, SameSite) for Open Source Picks login, and local storage for functional purposes like theme preferences. These are never shared with third parties.
+                                We use <strong className="text-white">essential cookies only</strong>: authentication session tokens for Open Source Picks login, and local storage for functional purposes like theme preferences. These are never shared with third parties.
                             </p>
                         </div>
 
@@ -90,8 +90,8 @@ export default function PrivacyPage() {
                                 We use the following third-party services:
                             </p>
                             <ul className="list-disc pl-6 space-y-1.5 text-gray-300 mt-3 marker:text-primary">
-                                <li><strong className="text-white">Supabase</strong> — database hosting, authentication, and email OTP delivery (<a href="https://supabase.com/privacy" target="_blank" className="text-primary hover:underline">Supabase Privacy Policy</a>)</li>
-                                <li><strong className="text-white">Google Fonts</strong> — typography (Inter, JetBrains Mono)</li>
+                                <li><strong className="text-white">Authentication &amp; Database Provider</strong> — secure infrastructure and email delivery</li>
+                                <li><strong className="text-white">Google Fonts</strong> — typography</li>
                             </ul>
                             <p className="text-gray-300 mt-3">
                                 Our website may also contain links to external sites (GitHub, LinkedIn, etc.). We are not responsible for the privacy practices of these external sites.

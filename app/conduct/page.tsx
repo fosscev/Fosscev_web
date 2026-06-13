@@ -76,7 +76,7 @@ export default function ConductPage() {
                             <li><strong className="text-white">Permanent ban</strong> — severe or persistent violations will result in permanent account removal</li>
                         </ul>
                         <p className="text-gray-300 mt-3">
-                            Posts with a community score below -3 are automatically flagged for admin review.
+                            Posts with highly negative community sentiment may be automatically flagged for admin review.
                         </p>
 
                         <h2 className="text-2xl font-bold text-white mt-8 mb-4 font-display text-primary">Enforcement</h2>
