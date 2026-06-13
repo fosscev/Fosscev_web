@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabase';
+import { getServiceClient } from '@/lib/picks-db';
 
 // Helper to check admin auth via Supabase service role
 async function isAdmin(request: NextRequest): Promise<boolean> {
@@ -9,10 +9,7 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
     if (!authHeader) return false;
 
     const token = authHeader.replace('Bearer ', '');
-    const serviceClient = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const serviceClient = getServiceClient();
 
     const { data: { user }, error } = await serviceClient.auth.getUser(token);
     if (error || !user) return false;
@@ -34,7 +31,9 @@ export async function GET(request: NextRequest) {
     const perPage = 20;
     const offset = (page - 1) * perPage;
 
-    let query = supabase
+    const serviceClient = getServiceClient();
+
+    let query = serviceClient
         .from('picks_posts')
         .select(`
             *,
@@ -78,8 +77,10 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: 'post_id and action are required' }, { status: 400 });
     }
 
+    const serviceClient = getServiceClient();
+
     if (action === 'remove') {
-        const { error } = await supabase
+        const { error } = await serviceClient
             .from('picks_posts')
             .update({ is_removed: true, removed_reason: reason || 'Removed by admin' })
             .eq('id', post_id);
@@ -91,7 +92,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (action === 'restore') {
-        const { error } = await supabase
+        const { error } = await serviceClient
             .from('picks_posts')
             .update({ is_removed: false, removed_reason: null })
             .eq('id', post_id);
@@ -104,7 +105,7 @@ export async function PATCH(request: NextRequest) {
 
     if (action === 'remove-comment') {
         const { comment_id } = await request.json();
-        const { error } = await supabase
+        const { error } = await serviceClient
             .from('picks_comments')
             .update({ is_removed: true })
             .eq('id', comment_id);

@@ -42,15 +42,16 @@ export interface PicksUser {
 export interface PicksPost {
     id: string;
     title: string;
-    description: string;
+    description: string | null;
     tool_name: string;
     flair: Flair;
-    license: string;
+    license: string | null;
     author_id: string;
     score: number;
     is_removed: boolean;
     removed_reason: string | null;
     created_at: string;
+    image_url?: string | null;
     // Joined fields
     author?: PicksUser;
     comment_count?: number;

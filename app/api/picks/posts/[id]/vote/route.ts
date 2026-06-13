@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { getPicksUserByAuthId } from '@/lib/picks-db';
-import { supabase } from '@/lib/supabase';
+import { getPicksUserByAuthId, getServiceClient } from '@/lib/picks-db';
 
 // POST /api/picks/posts/[id]/vote — Cast or toggle a vote
 export async function POST(
@@ -31,8 +30,10 @@ export async function POST(
             return NextResponse.json({ error: 'Voting too fast. Slow down.' }, { status: 429 });
         }
 
+        const serviceClient = getServiceClient();
+
         // Check existing vote
-        const { data: existingVote } = await supabase
+        const { data: existingVote } = await serviceClient
             .from('picks_votes')
             .select('*')
             .eq('post_id', postId)
@@ -44,14 +45,14 @@ export async function POST(
         if (existingVote) {
             if (existingVote.value === value) {
                 // Same vote again → toggle off (remove vote)
-                await supabase
+                await serviceClient
                     .from('picks_votes')
                     .delete()
                     .eq('id', existingVote.id);
                 scoreDelta = -value;
             } else {
                 // Switch vote direction
-                await supabase
+                await serviceClient
                     .from('picks_votes')
                     .update({ value })
                     .eq('id', existingVote.id);
@@ -59,7 +60,7 @@ export async function POST(
             }
         } else {
             // New vote
-            await supabase
+            await serviceClient
                 .from('picks_votes')
                 .insert({
                     post_id: postId,
@@ -70,7 +71,7 @@ export async function POST(
         }
 
         // Update post score
-        const { data: post } = await supabase
+        const { data: post } = await serviceClient
             .from('picks_posts')
             .select('score')
             .eq('id', postId)
@@ -78,13 +79,13 @@ export async function POST(
 
         const newScore = (post?.score || 0) + scoreDelta;
 
-        await supabase
+        await serviceClient
             .from('picks_posts')
             .update({ score: newScore })
             .eq('id', postId);
 
         // Update user flair affinity score
-        const { data: postData } = await supabase
+        const { data: postData } = await serviceClient
             .from('picks_posts')
             .select('flair')
             .eq('id', postId)
@@ -92,7 +93,7 @@ export async function POST(
 
         if (postData?.flair) {
             // Upsert flair score
-            const { data: existing } = await supabase
+            const { data: existing } = await serviceClient
                 .from('picks_user_flair_scores')
                 .select('score')
                 .eq('user_id', picksUser.id)
@@ -101,13 +102,13 @@ export async function POST(
 
             if (existing) {
                 const newFlairScore = existing.score + (existingVote && existingVote.value === value ? -value : value);
-                await supabase
+                await serviceClient
                     .from('picks_user_flair_scores')
                     .update({ score: newFlairScore })
                     .eq('user_id', picksUser.id)
                     .eq('flair', postData.flair);
             } else if (!existingVote || existingVote.value !== value) {
-                await supabase
+                await serviceClient
                     .from('picks_user_flair_scores')
                     .insert({
                         user_id: picksUser.id,
