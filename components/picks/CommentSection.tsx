@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send } from 'lucide-react';
+import { Send, Trash2 } from 'lucide-react';
 import { usePicksAuth } from './PicksAuthProvider';
 import type { PicksComment } from '@/lib/picks-db';
 
@@ -82,6 +82,32 @@ export function CommentSection({ postId, onAuthRequired }: CommentSectionProps) 
         }
     };
 
+    const handleDelete = async (commentId: string) => {
+        if (!authId || !user) return;
+        
+        // Optimistic UI update
+        const previousComments = [...comments];
+        setComments(prev => prev.filter(c => c.id !== commentId));
+        
+        try {
+            const res = await fetch(`/api/picks/posts/${postId}/comments/${commentId}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ auth_id: authId }),
+            });
+            
+            if (!res.ok) {
+                // Revert on failure
+                setComments(previousComments);
+                const data = await res.json();
+                setError(data.error || 'Failed to delete comment');
+            }
+        } catch {
+            setComments(previousComments);
+            setError('Failed to delete comment');
+        }
+    };
+
     return (
         <motion.div
             initial={{ height: 0, opacity: 0 }}
@@ -158,6 +184,17 @@ export function CommentSection({ postId, onAuthRequired }: CommentSectionProps) 
                                                 {comment.body}
                                             </p>
                                         </div>
+
+                                        {/* Delete button (only visible to author) */}
+                                        {user && user.id === comment.author_id && (
+                                            <button
+                                                onClick={() => handleDelete(comment.id)}
+                                                className="text-gray-600 hover:text-red-400 p-1.5 rounded-md transition-colors h-fit flex-shrink-0"
+                                                title="Delete comment"
+                                            >
+                                                <Trash2 size={13} />
+                                            </button>
+                                        )}
                                     </motion.div>
                                 );
                             })}

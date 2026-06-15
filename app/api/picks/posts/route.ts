@@ -11,12 +11,12 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const flair = searchParams.get('flair') as Flair | undefined;
     const authId = searchParams.get('auth_id') || undefined;
-    const saved = searchParams.get('saved') === 'true';
+    const liked = searchParams.get('liked') === 'true';
     const mine = searchParams.get('mine') === 'true';
 
-    // Verify auth if checking saved posts or own posts (requires auth header)
+    // Verify auth if checking liked posts or own posts (requires auth header)
     let authenticatedUserId: string | undefined;
-    if (saved || mine) {
+    if (liked || mine) {
         const authHeader = request.headers.get('Authorization');
         if (authHeader) {
             const token = authHeader.replace('Bearer ', '');
@@ -30,9 +30,9 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
         
-        if (saved) {
-            const { fetchSavedPosts } = await import('@/lib/picks-db');
-            const posts = await fetchSavedPosts(authenticatedUserId);
+        if (liked) {
+            const { fetchLikedPosts } = await import('@/lib/picks-db');
+            const posts = await fetchLikedPosts(authenticatedUserId);
             return NextResponse.json({ posts, total: posts.length });
         }
     }

@@ -79,6 +79,7 @@ export function PicksAuthProvider({ children }: { children: ReactNode }) {
                     setUser(null);
                     setAuthId(null);
                 }
+                setLoading(false);
             }
         );
 
