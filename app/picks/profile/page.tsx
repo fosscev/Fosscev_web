@@ -12,10 +12,10 @@ import type { PicksPost } from '@/lib/picks-db';
 export default function ProfilePage() {
     const router = useRouter();
     const { user, loading: authLoading } = usePicksAuth();
-    const [savedPosts, setSavedPosts] = useState<PicksPost[]>([]);
+    const [likedPosts, setLikedPosts] = useState<PicksPost[]>([]);
     const [myPosts, setMyPosts] = useState<PicksPost[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeTab, setActiveTab] = useState<'saved' | 'mine'>('saved');
+    const [activeTab, setActiveTab] = useState<'liked' | 'mine'>('liked');
 
     const fetchPosts = useCallback(async () => {
         if (!user) return;
@@ -27,14 +27,14 @@ export default function ProfilePage() {
 
             const headers = { 'Authorization': `Bearer ${session.access_token}` };
             
-            const [savedRes, mineRes] = await Promise.all([
-                fetch('/api/picks/posts?saved=true', { headers }),
+            const [likedRes, mineRes] = await Promise.all([
+                fetch('/api/picks/posts?liked=true', { headers }),
                 fetch('/api/picks/posts?mine=true', { headers })
             ]);
 
-            if (savedRes.ok) {
-                const data = await savedRes.json();
-                setSavedPosts(data.posts || []);
+            if (likedRes.ok) {
+                const data = await likedRes.json();
+                setLikedPosts(data.posts || []);
             }
             if (mineRes.ok) {
                 const data = await mineRes.json();
@@ -173,13 +173,13 @@ export default function ProfilePage() {
                 {/* Tabs */}
                 <div className="flex items-center gap-3 mb-6 border-b border-[rgba(0,230,118,0.1)] pb-px">
                     <button
-                        onClick={() => setActiveTab('saved')}
+                        onClick={() => setActiveTab('liked')}
                         className="flex items-center gap-1.5 px-4 py-2 font-mono text-sm relative transition-colors"
-                        style={{ color: activeTab === 'saved' ? '#00e676' : '#525252' }}
+                        style={{ color: activeTab === 'liked' ? '#00e676' : '#525252' }}
                     >
                         <Bookmark size={14} />
-                        Saved
-                        {activeTab === 'saved' && (
+                        Liked Picks
+                        {activeTab === 'liked' && (
                             <motion.div
                                 layoutId="activeTab"
                                 className="absolute bottom-0 left-0 right-0 h-0.5"
@@ -217,13 +217,13 @@ export default function ProfilePage() {
                     </div>
                 ) : (
                     <div className="space-y-3">
-                        {activeTab === 'saved' && (
-                            savedPosts.length === 0 ? (
+                        {activeTab === 'liked' && (
+                            likedPosts.length === 0 ? (
                                 <div className="text-center py-20 rounded-2xl" style={{ border: '1px dashed rgba(0,230,118,0.1)' }}>
-                                    <p className="text-gray-500 font-mono text-sm">no saved picks yet</p>
+                                    <p className="text-gray-500 font-mono text-sm">no liked picks yet</p>
                                 </div>
                             ) : (
-                                savedPosts.map((post, i) => (
+                                likedPosts.map((post, i) => (
                                     <motion.div
                                         key={post.id}
                                         initial={{ opacity: 0, y: 16 }}

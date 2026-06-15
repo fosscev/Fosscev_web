@@ -29,8 +29,6 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
     const [currentScore, setCurrentScore] = useState(post.score);
     const [currentVote, setCurrentVote] = useState<number | null>(post.user_vote || null);
     const [showComments, setShowComments] = useState(false);
-    const [saved, setSaved] = useState(post.is_saved || false);
-    const [isSaving, setIsSaving] = useState(false);
     const [selectedImage, setSelectedImage] = useState<string | null>(null);
     const [shareCopied, setShareCopied] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -56,34 +54,6 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
         }
     };
 
-    const handleSave = async () => {
-        setIsSaving(true);
-        try {
-            const { supabase } = await import('@/lib/supabase');
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                onAuthRequired();
-                setIsSaving(false);
-                return;
-            }
-
-            const res = await fetch(`/api/picks/posts/${post.id}/save`, {
-                method: 'POST',
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                setSaved(data.isSaved);
-            } else if (res.status === 401) {
-                onAuthRequired();
-            }
-        } catch {
-            // Silently fail
-        } finally {
-            setIsSaving(false);
-        }
-    };
 
     // Generate avatar color from username
     const username = post.author?.username || '?';
@@ -267,26 +237,6 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
                         <span>{shareCopied ? 'Copied!' : 'Share'}</span>
                     </button>
 
-                    <button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150 disabled:opacity-40"
-                        style={{
-                            color: saved ? '#00e676' : '#525252',
-                            background: saved ? 'rgba(0,230,118,0.06)' : 'transparent',
-                        }}
-                        onMouseEnter={e => {
-                            if (!saved) (e.currentTarget as HTMLElement).style.color = '#a3a3a3';
-                            (e.currentTarget as HTMLElement).style.background = saved ? 'rgba(0,230,118,0.06)' : 'rgba(255,255,255,0.03)';
-                        }}
-                        onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.color = saved ? '#00e676' : '#525252';
-                            (e.currentTarget as HTMLElement).style.background = saved ? 'rgba(0,230,118,0.06)' : 'transparent';
-                        }}
-                    >
-                        <Bookmark size={13} fill={saved ? '#00e676' : 'none'} />
-                        <span>{saved ? 'Saved' : 'Save'}</span>
-                    </button>
 
                     {user?.id === post.author_id && (
                         <button

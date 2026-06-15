@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, ArrowLeft, ShieldCheck, KeyRound, Terminal } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 type Mode = 'signin' | 'signup';
 type Step = 'credentials' | 'otp';
@@ -21,6 +22,19 @@ export default function PicksSignInPage() {
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
 
+    // Ensure picks_user profile exists (needs service role on server)
+    const ensureProfile = async (authId: string, userEmail: string, userUsername?: string) => {
+        try {
+            await fetch('/api/picks/auth/ensure-profile', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ auth_id: authId, email: userEmail, username: userUsername }),
+            });
+        } catch {
+            // Non-critical — profile may already exist
+        }
+    };
+
     const handleCredentials = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
@@ -29,44 +43,70 @@ export default function PicksSignInPage() {
 
         try {
             if (mode === 'signup') {
+                // Sign-up: use API route for rate limiting + OTP sending
                 const res = await fetch('/api/picks/auth/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password, username }),
                 });
                 const data = await res.json();
-                if (!res.ok) { setError(data.error); return; }
-                setMessage('Check your email for a 6-digit verification code');
-                setStep('otp');
-            } else {
-                const res = await fetch('/api/picks/auth/signin', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password }),
-                });
-                const data = await res.json();
                 if (!res.ok) {
-                    if (data.error?.includes('not confirmed') || data.error?.includes('Email not confirmed')) {
-                        setMessage('Your email is not verified yet. Check your email for the verification code.');
-                        setStep('otp');
-                        return;
-                    }
                     setError(data.error);
+                    setLoading(false);
                     return;
                 }
-                const { supabase } = await import('@/lib/supabase');
-                if (data.session) {
-                    supabase.auth.setSession({
-                        access_token: data.session.access_token,
-                        refresh_token: data.session.refresh_token,
-                    }).catch(console.error);
+                setMessage('Check your email for a 6-digit verification code');
+                setStep('otp');
+                setLoading(false);
+            } else {
+                // Sign-in: authenticate directly with the browser Supabase client
+                let finalEmail = email;
+
+                // If input doesn't contain '@', treat it as a username and lookup the email
+                if (!email.includes('@')) {
+                    const lookupRes = await fetch(`/api/picks/auth/lookup-email?username=${encodeURIComponent(email)}`);
+                    if (!lookupRes.ok) {
+                        setError('Invalid username or password');
+                        setLoading(false);
+                        return;
+                    }
+                    const lookupData = await lookupRes.json();
+                    finalEmail = lookupData.email;
                 }
+
+                const { data, error: authError } = await supabase.auth.signInWithPassword({
+                    email: finalEmail,
+                    password,
+                });
+
+                if (authError) {
+                    if (authError.message?.includes('not confirmed') || authError.message?.includes('Email not confirmed')) {
+                        setMessage('Your email is not verified yet. Check your email for the verification code.');
+                        setStep('otp');
+                        setLoading(false);
+                        return;
+                    }
+                    setError(authError.message || 'Invalid email or password');
+                    setLoading(false);
+                    return;
+                }
+
+                if (!data.user || !data.session) {
+                    setError('Sign-in failed. Please try again.');
+                    setLoading(false);
+                    return;
+                }
+
+                // Ensure picks_user profile exists
+                await ensureProfile(data.user.id, email);
+
+                // Use Next.js client-side navigation to prevent full-page reload loops
                 router.push('/picks');
+                router.refresh();
             }
         } catch (err) {
             console.error('Login error:', err);
             setError('Something went wrong. Please try again.');
-        } finally {
             setLoading(false);
         }
     };
@@ -77,25 +117,34 @@ export default function PicksSignInPage() {
         setError(null);
 
         try {
-            const res = await fetch('/api/picks/auth/verify', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, token: otp }),
+            // Verify OTP directly with the browser Supabase client
+            const { data, error: verifyError } = await supabase.auth.verifyOtp({
+                email,
+                token: otp,
+                type: 'signup',
             });
-            const data = await res.json();
-            if (!res.ok) { setError(data.error); return; }
 
-            const { supabase } = await import('@/lib/supabase');
-            if (data.session) {
-                supabase.auth.setSession({
-                    access_token: data.session.access_token,
-                    refresh_token: data.session.refresh_token,
-                }).catch(console.error);
+            if (verifyError) {
+                setError('Invalid or expired verification code. Please try again.');
+                setLoading(false);
+                return;
             }
+
+            if (!data.user) {
+                setError('Verification failed. Please try signing up again.');
+                setLoading(false);
+                return;
+            }
+
+            // Ensure picks_user profile exists
+            const customUsername = data.user.user_metadata?.username;
+            await ensureProfile(data.user.id, email, customUsername);
+
+            // Use Next.js client-side navigation to prevent full-page reload loops
             router.push('/picks');
+            router.refresh();
         } catch {
             setError('Something went wrong. Please try again.');
-        } finally {
             setLoading(false);
         }
     };
@@ -163,7 +212,7 @@ export default function PicksSignInPage() {
                         <h1 className="text-xl font-bold text-white font-mono mb-1">
                             {step === 'otp' ? 'Verify Email' : mode === 'signup' ? 'Create Account' : 'Welcome Back'}
                         </h1>
-                        <p className="text-xs text-gray-600 font-mono">
+                        <p className="text-sm text-gray-400 font-mono">
                             <span className="text-[#00e676]/40">//</span>{' '}
                             {step === 'otp'
                                 ? 'enter the 6-digit code sent to your email'
@@ -184,19 +233,19 @@ export default function PicksSignInPage() {
                             >
                                 {/* Email */}
                                 <div>
-                                    <label className="block text-[10px] font-semibold text-gray-600 font-mono uppercase tracking-widest mb-1.5">
-                                        Email Address
+                                    <label className="block text-xs font-semibold text-gray-300 font-mono uppercase tracking-widest mb-1.5">
+                                        {mode === 'signup' ? 'Email Address' : 'Email or Username'}
                                     </label>
                                     <div className="relative">
                                         <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
                                         <input
-                                            type="email"
+                                            type="text"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            placeholder="you@cev.ac.in"
+                                            placeholder={mode === 'signup' ? "you@cev.ac.in" : "you@cev.ac.in or handle"}
                                             required
                                             suppressHydrationWarning
-                                            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-gray-300 placeholder-gray-700 font-mono focus:outline-none transition-all"
+                                            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-base text-gray-100 placeholder-gray-500 font-mono focus:outline-none transition-all"
                                             style={inputStyle}
                                             onFocus={e => {
                                                 (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.25)';
@@ -208,7 +257,7 @@ export default function PicksSignInPage() {
                                             }}
                                         />
                                     </div>
-                                    <p className="text-[10px] text-gray-700 font-mono mt-1">
+                                    <p className="text-xs text-gray-500 font-mono mt-1">
                                         @cev.ac.in · @gmail.com · @outlook.com · @yahoo.com
                                     </p>
                                 </div>
@@ -216,7 +265,7 @@ export default function PicksSignInPage() {
                                 {/* Username (Signup Only) */}
                                 {mode === 'signup' && (
                                     <div>
-                                        <label className="block text-[10px] font-semibold text-gray-600 font-mono uppercase tracking-widest mb-1.5">
+                                        <label className="block text-xs font-semibold text-gray-300 font-mono uppercase tracking-widest mb-1.5">
                                             Username (Optional)
                                         </label>
                                         <div className="relative">
@@ -226,7 +275,7 @@ export default function PicksSignInPage() {
                                                 value={username}
                                                 onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                                                 placeholder="your_handle"
-                                                className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-gray-300 placeholder-gray-700 font-mono focus:outline-none transition-all"
+                                                className="w-full pl-9 pr-4 py-2.5 rounded-xl text-base text-gray-100 placeholder-gray-500 font-mono focus:outline-none transition-all"
                                                 style={inputStyle}
                                                 onFocus={e => {
                                                     (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.25)';
@@ -243,7 +292,7 @@ export default function PicksSignInPage() {
 
                                 {/* Password */}
                                 <div>
-                                    <label className="block text-[10px] font-semibold text-gray-600 font-mono uppercase tracking-widest mb-1.5">
+                                    <label className="block text-xs font-semibold text-gray-300 font-mono uppercase tracking-widest mb-1.5">
                                         Password
                                     </label>
                                     <div className="relative">
@@ -256,7 +305,7 @@ export default function PicksSignInPage() {
                                             required
                                             minLength={6}
                                             suppressHydrationWarning
-                                            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-gray-300 placeholder-gray-700 font-mono focus:outline-none transition-all"
+                                            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-base text-gray-100 placeholder-gray-500 font-mono focus:outline-none transition-all"
                                             style={inputStyle}
                                             onFocus={e => {
                                                 (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.25)';
@@ -269,7 +318,7 @@ export default function PicksSignInPage() {
                                         />
                                     </div>
                                     {mode === 'signup' && (
-                                        <p className="text-[10px] text-gray-700 font-mono mt-1">Minimum 6 characters</p>
+                                        <p className="text-xs text-gray-500 font-mono mt-1">Minimum 6 characters</p>
                                     )}
                                 </div>
 
@@ -315,7 +364,7 @@ export default function PicksSignInPage() {
                                     <button
                                         type="button"
                                         onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null); }}
-                                        className="text-xs text-gray-600 font-mono transition-colors hover:text-[#00e676]"
+                                        className="text-sm text-gray-400 font-mono transition-colors hover:text-[#00e676]"
                                     >
                                         {mode === 'signin'
                                             ? "Don't have an account? Sign up →"
@@ -343,7 +392,7 @@ export default function PicksSignInPage() {
                                 )}
 
                                 <div>
-                                    <label className="block text-[10px] font-semibold text-gray-600 font-mono uppercase tracking-widest mb-1.5">
+                                    <label className="block text-xs font-semibold text-gray-300 font-mono uppercase tracking-widest mb-1.5">
                                         Verification Code
                                     </label>
                                     <input
@@ -369,8 +418,8 @@ export default function PicksSignInPage() {
                                             (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.04)';
                                         }}
                                     />
-                                    <p className="text-[10px] text-gray-700 font-mono mt-1.5">
-                                        Sent to <span className="text-gray-500">{email}</span> · expires in 10 min
+                                    <p className="text-xs text-gray-400 font-mono mt-1.5">
+                                        Sent to <span className="text-gray-200">{email}</span> · expires in 10 min
                                     </p>
                                 </div>
 
@@ -416,7 +465,7 @@ export default function PicksSignInPage() {
                                     <button
                                         type="button"
                                         onClick={() => { setStep('credentials'); setOtp(''); setError(null); setMessage(null); }}
-                                        className="text-xs text-gray-600 font-mono transition-colors hover:text-[#00e676]"
+                                        className="text-sm text-gray-400 font-mono transition-colors hover:text-[#00e676]"
                                     >
                                         ← Back to credentials
                                     </button>
@@ -431,8 +480,8 @@ export default function PicksSignInPage() {
                         style={{ borderTop: '1px solid rgba(0,230,118,0.06)' }}
                     >
                         <div className="flex items-start gap-2">
-                            <ShieldCheck size={12} className="text-[#00e676]/40 mt-0.5 flex-shrink-0" />
-                            <p className="text-[10px] text-gray-700 leading-relaxed font-mono">
+                            <ShieldCheck size={12} className="text-[#00e676]/60 mt-0.5 flex-shrink-0" />
+                            <p className="text-xs text-gray-500 leading-relaxed font-mono">
                                 Protected by Supabase Auth · PKCE flow · rate limited · encrypted sessions
                             </p>
                         </div>
