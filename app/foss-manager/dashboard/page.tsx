@@ -5,9 +5,11 @@ import AdminTeamList from '@/components/admin/AdminTeamList';
 import AdminEventList from '@/components/admin/AdminEventList';
 import AdminContentList from '@/components/admin/AdminContentList';
 import AdminGalleryList from '@/components/admin/AdminGalleryList';
+import AdminFinanceList from '@/components/admin/AdminFinanceList';
+import AdminPicksList from '@/components/admin/AdminPicksList';
 
 export default function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState<'events' | 'team' | 'content' | 'gallery'>('events');
+    const [activeTab, setActiveTab] = useState<'events' | 'team' | 'content' | 'gallery' | 'finances' | 'picks'>('events');
 
     return (
         <div className="space-y-6">
@@ -55,6 +57,24 @@ export default function AdminDashboard() {
                 >
                     Gallery
                 </button>
+                <button
+                    onClick={() => setActiveTab('finances')}
+                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'finances'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-gray-400 hover:text-white'
+                        }`}
+                >
+                    Finances
+                </button>
+                <button
+                    onClick={() => setActiveTab('picks')}
+                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'picks'
+                        ? 'border-[#D85A30] text-[#D85A30]'
+                        : 'border-transparent text-gray-400 hover:text-white'
+                        }`}
+                >
+                    Picks
+                </button>
             </div>
 
             <div className="mt-8">
@@ -62,6 +82,8 @@ export default function AdminDashboard() {
                 {activeTab === 'team' && <AdminTeamList />}
                 {activeTab === 'content' && <AdminContentList />}
                 {activeTab === 'gallery' && <AdminGalleryList />}
+                {activeTab === 'finances' && <AdminFinanceList />}
+                {activeTab === 'picks' && <AdminPicksList />}
             </div>
         </div>
     );

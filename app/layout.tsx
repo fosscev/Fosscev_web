@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SmoothScroll } from "@/components/SmoothScroll";
-import { LoadingScreen } from "@/components/LoadingScreen";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-body" });
 const jetbrainsMono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-display" });
@@ -69,7 +68,6 @@ export default function RootLayout({
           enableSystem={false}
           disableTransitionOnChange
         >
-          <LoadingScreen />
           <SmoothScroll>
             {/* Global Minimalistic Background - optimized for Chrome */}
             <div className="fixed inset-0 pointer-events-none z-0 bg-[#0a0a0a]" style={{ contain: 'strict' }}>

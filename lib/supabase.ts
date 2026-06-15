@@ -18,11 +18,13 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 if (typeof window !== 'undefined') {
     // Catch unhandled background refresh errors from Supabase Auth (e.g., stale tokens)
+    // Only clear session for token refresh failures, not for general auth errors during sign-in
     window.addEventListener('unhandledrejection', (event) => {
-        if (event.reason && (event.reason.name === 'AuthApiError' || event.reason.message?.includes('Auth'))) {
-            console.warn('Caught unhandled Supabase Auth error, clearing stale session...');
-            event.preventDefault(); // Prevent Next.js Error Overlay
-            supabase.auth.signOut().catch(() => { }); // Clear the bad session
+        const reason = event.reason;
+        if (reason && reason.name === 'AuthRetryableFetchError') {
+            console.warn('Caught unhandled Supabase Auth refresh error, clearing stale session...');
+            event.preventDefault();
+            supabase.auth.signOut().catch(() => { });
         }
     });
 }
@@ -57,6 +59,26 @@ export interface Event {
     image_url?: string | null;
     poster_url?: string | null;
     link?: string | null;
+    created_at?: string;
+    updated_at?: string;
+}
+
+export interface FinanceDetail {
+    item: string;
+    amount: number;
+}
+
+export interface FinancialReport {
+    id?: string;
+    title: string;
+    type: 'Yearly' | 'Event';
+    income: number;
+    expenses: number;
+    balance: number;
+    income_details?: FinanceDetail[] | null;
+    expense_details?: FinanceDetail[] | null;
+    report_url?: string | null;
+    date: string;
     created_at?: string;
     updated_at?: string;
 }
