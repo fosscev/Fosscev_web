@@ -43,6 +43,21 @@ export default function PicksSignInPage() {
 
         try {
             if (mode === 'signup') {
+                // Client-side email domain validation before hitting server
+                const allowedDomains = ['cev.ac.in', 'gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com'];
+                const emailDomain = email.split('@')[1]?.toLowerCase();
+                if (!emailDomain || !allowedDomains.includes(emailDomain)) {
+                    setError('Please use a valid email address (@cev.ac.in, @gmail.com, @outlook.com, or @yahoo.com)');
+                    setLoading(false);
+                    return;
+                }
+
+                if (password.length < 6) {
+                    setError('Password must be at least 6 characters');
+                    setLoading(false);
+                    return;
+                }
+
                 // Sign-up: use API route for rate limiting + OTP sending
                 const res = await fetch('/api/picks/auth/signup', {
                     method: 'POST',

@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isAdminEmail } from './lib/admin-config';
 
 export async function proxy(request: NextRequest) {
     let response = NextResponse.next({
@@ -36,16 +37,18 @@ export async function proxy(request: NextRequest) {
 
     const pathname = request.nextUrl.pathname;
 
-    // 1. Protect the dashboard: Redirect to login if NOT authenticated
-    if (!user && pathname.startsWith('/foss-manager/dashboard')) {
-        const redirectUrl = request.nextUrl.clone();
-        redirectUrl.pathname = '/foss-manager';
-        return NextResponse.redirect(redirectUrl);
+    // 1. Protect the dashboard: Redirect to login if NOT an admin
+    //    This catches both unauthenticated users AND picks users who aren't admins.
+    if (pathname.startsWith('/foss-manager/dashboard')) {
+        if (!user || !isAdminEmail(user.email)) {
+            const redirectUrl = request.nextUrl.clone();
+            redirectUrl.pathname = '/foss-manager';
+            return NextResponse.redirect(redirectUrl);
+        }
     }
 
-    // 2. Protect the login page: Redirect to dashboard if ALREADY authenticated
-    // Only redirect if specifically on the login root, not its sub-assets
-    if (user && pathname === '/foss-manager') {
+    // 2. Auto-redirect from login page to dashboard if ALREADY authenticated as admin
+    if (user && isAdminEmail(user.email) && pathname === '/foss-manager') {
         const redirectUrl = request.nextUrl.clone();
         redirectUrl.pathname = '/foss-manager/dashboard';
         return NextResponse.redirect(redirectUrl);

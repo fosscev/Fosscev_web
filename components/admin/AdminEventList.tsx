@@ -15,16 +15,16 @@ import ImageUploader from './ImageUploader';
 
 // Zod schema for event form validation
 const eventFormSchema = z.object({
-    title: z.string().min(5, 'Title must be at least 5 characters'),
-    date: z.string().min(1, 'Date is required'),
-    time: z.string().min(1, 'Time is required'),
-    location: z.string().min(1, 'Location is required'),
-    description: z.string().min(1, 'Description is required'),
-    type: z.enum(['Workshop', 'Hackathon', 'Talk', 'Meetup']),
-    attendees: z.string(),
-    status: z.enum(['Upcoming', 'Registration Open', 'Completed']),
-    poster_url: z.string(),
-    link: z.string(),
+    title: z.coerce.string().min(3, 'Title is required'),
+    date: z.coerce.string().min(1, 'Date is required'),
+    time: z.coerce.string().min(1, 'Time is required'),
+    location: z.coerce.string().min(1, 'Location is required'),
+    description: z.coerce.string().min(1, 'Description is required'),
+    type: z.coerce.string().optional().nullable(),
+    attendees: z.coerce.string().optional().nullable(),
+    status: z.coerce.string().optional().nullable(),
+    poster_url: z.coerce.string().optional().nullable(),
+    link: z.coerce.string().optional().nullable(),
 });
 
 const MAX_POSTER_SIZE = 2 * 1024 * 1024; // 2MB in bytes
@@ -77,7 +77,13 @@ export default function AdminEventList() {
                 const field = issue.path[0] as string;
                 errors[field] = issue.message;
             });
+            console.log("Form validation failed:", errors);
             setFormErrors(errors);
+            
+            // Alert user about validation failure so it doesn't just fail silently
+            const errorMessages = Object.entries(errors).map(([field, msg]) => `${field}: ${msg}`).join('\n');
+            alert(`Please fix the following errors:\n${errorMessages}`);
+            
             return false;
         }
         setFormErrors({});
@@ -151,15 +157,31 @@ export default function AdminEventList() {
 
     const openEditModal = (event: any) => {
         setIsEditing(event.id);
+        
+        let formattedDate = '';
+        if (event.date) {
+            try {
+                // Handle standard ISO and other valid date formats
+                const d = new Date(event.date);
+                if (!isNaN(d.getTime())) {
+                    formattedDate = d.toISOString().split('T')[0];
+                } else {
+                    formattedDate = String(event.date).split('T')[0];
+                }
+            } catch (e) {
+                formattedDate = String(event.date).split('T')[0];
+            }
+        }
+        
         setFormData({
-            title: event.title,
-            date: event.date,
-            time: event.time,
-            location: event.location,
+            title: event.title || '',
+            date: formattedDate,
+            time: event.time || '',
+            location: event.location || '',
             description: event.description || '',
-            type: event.type,
+            type: event.type || 'Workshop',
             attendees: event.attendees || '0+',
-            status: event.status,
+            status: event.status || 'Upcoming',
             poster_url: event.poster_url || event.image_url || '',
             link: event.link || ''
         });
@@ -351,7 +373,7 @@ export default function AdminEventList() {
                             <button
                                 onClick={handleSaveEvent}
                                 className="px-4 py-2 bg-primary text-black font-bold rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={!formData.title || !formData.date || isSubmitting}
+                                disabled={isSubmitting}
                             >
                                 {isSubmitting ? 'Saving...' : (isEditing ? 'Update Event' : 'Create Event')}
                             </button>

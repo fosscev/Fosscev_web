@@ -1,63 +1,64 @@
 "use client";
 
 import { motion } from 'framer-motion';
-import { Flame, TrendingUp, Clock, HelpCircle, Sparkles } from 'lucide-react';
+import { Star, Circle, Edit3 } from 'lucide-react';
 import type { SortMode } from '@/lib/picks-db';
 
 interface SortTabsProps {
     activeSort: SortMode;
     onSortChange: (sort: SortMode) => void;
     isLoggedIn: boolean;
+    onSubmitClick: () => void;
 }
 
-const TABS: { key: SortMode; label: string; icon: React.ReactNode; requiresAuth?: boolean }[] = [
-    { key: 'hot', label: 'Hot', icon: <Flame size={13} /> },
-    { key: 'top', label: 'Top', icon: <TrendingUp size={13} /> },
-    { key: 'new', label: 'New', icon: <Clock size={13} /> },
-    { key: 'questions', label: 'Questions', icon: <HelpCircle size={13} /> },
-    { key: 'foryou', label: 'For You', icon: <Sparkles size={13} />, requiresAuth: true },
+const TABS: { key: SortMode; label: string; icon: React.ReactNode }[] = [
+    { 
+        key: 'hot', 
+        label: 'Most Popular', 
+        icon: <div className="w-5 h-5 rounded-full border border-[#00e676] flex items-center justify-center bg-transparent"><Star size={10} className="text-[#00e676] fill-[#00e676]" /></div> 
+    },
+    { 
+        key: 'top', 
+        label: 'Highest Votes', 
+        icon: <div className="w-5 h-5 rounded-full bg-[#1f9349] flex items-center justify-center"></div> 
+    },
+    { 
+        key: 'new', 
+        label: 'Latest Thread', 
+        icon: <div className="w-5 h-5 rounded-full bg-[#1f9349] flex items-center justify-center"></div> 
+    },
 ];
 
-export function SortTabs({ activeSort, onSortChange, isLoggedIn }: SortTabsProps) {
+export function SortTabs({ activeSort, onSortChange, onSubmitClick }: SortTabsProps) {
     return (
-        <div
-            className="flex items-center gap-1 rounded-xl p-1.5 mb-4 overflow-x-auto no-scrollbar"
-            style={{
-                background: 'rgba(10,10,10,0.8)',
-                border: '1px solid rgba(0,230,118,0.08)',
-                backdropFilter: 'blur(12px)',
-            }}
-        >
-            {TABS.map(tab => {
-                if (tab.requiresAuth && !isLoggedIn) return null;
-                const isActive = activeSort === tab.key;
-
-                return (
-                    <button
-                        key={tab.key}
-                        onClick={() => onSortChange(tab.key)}
-                        className="relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors duration-150 font-mono"
-                        style={{ color: isActive ? '#00e676' : '#525252' }}
-                    >
-                        {isActive && (
-                            <motion.span
-                                layoutId="sort-pill"
-                                className="absolute inset-0 rounded-lg"
-                                style={{
-                                    background: 'rgba(0, 230, 118, 0.08)',
-                                    border: '1px solid rgba(0, 230, 118, 0.2)',
-                                    boxShadow: '0 0 12px rgba(0,230,118,0.05)',
-                                }}
-                                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                            />
-                        )}
-                        <span className="relative z-10 flex items-center gap-1.5">
-                            {tab.icon}
-                            {tab.label}
-                        </span>
-                    </button>
-                );
-            })}
+        <div className="flex items-center justify-between mb-8 w-full">
+            <div className="flex items-center gap-3 overflow-x-auto no-scrollbar">
+                {TABS.map(tab => {
+                    const isActive = activeSort === tab.key;
+                    return (
+                        <button
+                            key={tab.key}
+                            onClick={() => onSortChange(tab.key)}
+                            className={`relative flex items-center gap-2 px-4 py-1.5 rounded-full border text-sm font-semibold whitespace-nowrap transition-colors duration-150 ${
+                                isActive ? 'border-white text-white' : 'border-white/20 text-gray-400 hover:text-white'
+                            }`}
+                        >
+                            <span className="relative z-10 flex items-center gap-2">
+                                {tab.icon}
+                                {tab.label}
+                            </span>
+                        </button>
+                    );
+                })}
+            </div>
+            
+            <button 
+                onClick={onSubmitClick}
+                className="flex items-center gap-2 bg-[#1f9349] hover:bg-[#1a7f3f] text-white px-5 py-2 rounded-full font-bold transition-colors shadow-lg"
+            >
+                <Edit3 size={18} />
+                Write New Thread
+            </button>
         </div>
     );
 }

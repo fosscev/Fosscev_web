@@ -14,6 +14,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const { isAdminEmail } = await import('@/lib/admin-config');
+        if (isAdminEmail(email)) {
+            return NextResponse.json(
+                { error: 'Admin accounts cannot be used to sign into the community portal. Please use a regular user account.' },
+                { status: 403 }
+            );
+        }
+
         // Rate limit sign-in attempts
         const ip = request.headers.get('x-forwarded-for') || 'unknown';
         const rateCheck = checkRateLimit(ip, 'signin');
