@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import { isAdminEmail } from "@/lib/admin-config";
 
 export default function AdminLayout({
     children,
@@ -14,27 +15,31 @@ export default function AdminLayout({
 
     useEffect(() => {
         const checkSession = async () => {
-            const {
-                data: { user },
-            } = await supabase.auth.getUser();
+            // getSession() is a local-only call — reads from browser storage, no network request.
+            // The heavy auth validation is already handled by proxy.ts on the server.
+            const { data: { session } } = await supabase.auth.getSession();
+            const user = session?.user;
 
-            if (!user) {
+            if (!user || !isAdminEmail(user.email)) {
+                // Not admin — redirect to login (proxy.ts should have caught this,
+                // but this is a client-side safety net)
                 router.push("/foss-manager");
-            } else {
-                setIsLoading(false);
+                return;
             }
+
+            setIsLoading(false);
         };
 
         checkSession();
 
+        // Inactivity auto-logout (15 minutes)
         let lastActivity = Date.now();
         const updateActivity = () => {
             lastActivity = Date.now();
         };
 
-        // Check for inactivity every 30 seconds
         const interval = setInterval(async () => {
-            if (Date.now() - lastActivity > 15 * 60 * 1000) { // 15 mins
+            if (Date.now() - lastActivity > 15 * 60 * 1000) {
                 clearInterval(interval);
                 try {
                     await supabase.auth.signOut();
@@ -59,8 +64,18 @@ export default function AdminLayout({
 
     if (isLoading) {
         return (
-            <div className="flex h-screen w-full items-center justify-center bg-background text-white">
-                <div className="text-xl">Loading Admin Panel...</div>
+            <div className="flex h-screen w-full items-center justify-center bg-[#050505] text-white">
+                <div className="flex flex-col items-center gap-3">
+                    <div
+                        className="w-8 h-8 rounded-full"
+                        style={{
+                            border: '2px solid rgba(0,230,118,0.15)',
+                            borderTopColor: '#00e676',
+                            animation: 'spin 0.8s linear infinite',
+                        }}
+                    />
+                    <span className="text-sm font-mono text-gray-400">Loading Admin Panel...</span>
+                </div>
             </div>
         );
     }

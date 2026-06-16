@@ -89,49 +89,47 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="group flex gap-3 rounded-xl p-4 transition-all duration-200"
-            style={{
-                background: 'rgba(10,10,10,0.7)',
-                border: '1px solid rgba(255,255,255,0.05)',
-                backdropFilter: 'blur(8px)',
-            }}
-            onMouseEnter={e => {
-                (e.currentTarget as HTMLElement).style.border = '1px solid rgba(0,230,118,0.12)';
-                (e.currentTarget as HTMLElement).style.background = 'rgba(12,12,12,0.85)';
-            }}
-            onMouseLeave={e => {
-                (e.currentTarget as HTMLElement).style.border = '1px solid rgba(255,255,255,0.05)';
-                (e.currentTarget as HTMLElement).style.background = 'rgba(10,10,10,0.7)';
-            }}
+            className="group flex flex-col gap-3 rounded-2xl p-5 transition-all duration-200 bg-transparent border border-white/10 hover:border-white/30"
         >
-            {/* Content column */}
-            <div className="flex-1 min-w-0">
-                {/* Flair + Tool Name */}
-                <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span
-                        className="px-2 py-0.5 rounded-md text-[11px] font-mono font-semibold tracking-wide"
+            {/* Meta row: Avatar, Name, Timestamp */}
+            <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-3">
+                    <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
                         style={{
-                            backgroundColor: `${flairColor}14`,
-                            color: flairColor,
-                            border: `1px solid ${flairColor}25`,
+                            background: `hsl(${avatarHue}, 40%, 20%)`,
+                            color: `hsl(${avatarHue}, 60%, 70%)`,
                         }}
                     >
-                        {post.flair}
-                    </span>
-                    <span className="text-[11px] text-gray-500 font-mono flex items-center gap-1">
-                        <span className="text-[#00e676]/40">›</span>
-                        <span className="text-gray-400">{post.tool_name}</span>
-                    </span>
+                        {username[0].toUpperCase()}
+                    </div>
+                    <div>
+                        <span className="text-white font-semibold">{post.author?.username || 'anonymous'}</span>
+                        <div className="text-xs text-gray-400 mt-0.5">{timeAgo(post.created_at)}</div>
+                    </div>
                 </div>
+                {/* Flair */}
+                <span
+                    className="px-3 py-1 rounded-full text-xs font-semibold tracking-wide border border-white/20"
+                    style={{
+                        backgroundColor: `${flairColor}10`,
+                        color: flairColor,
+                        borderColor: `${flairColor}30`,
+                    }}
+                >
+                    {post.flair}
+                </span>
+            </div>
 
+            <div className="ml-13 mt-2 pl-13"> {/* Adjusting layout to have title below avatar slightly aligned or full width */}
                 {/* Title */}
-                <h3 className="text-base md:text-lg font-semibold text-gray-100 mb-1.5 leading-snug group-hover:text-white transition-colors">
+                <h3 className="text-lg md:text-xl font-bold text-white mb-2 leading-snug">
                     {post.title}
                 </h3>
 
                 {/* Description */}
                 {post.description && (
-                    <p className="text-sm md:text-base text-gray-400 leading-relaxed mb-3 break-words">
+                    <p className="text-sm text-gray-300 leading-relaxed mb-4 break-words line-clamp-3">
                         {post.description}
                     </p>
                 )}
@@ -139,11 +137,7 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
                 {/* Post Image */}
                 {post.image_url && (
                     <div
-                        className="relative mt-2 mb-3 rounded-xl overflow-hidden max-h-80 flex items-center justify-center cursor-zoom-in"
-                        style={{
-                            border: '1px solid rgba(0,230,118,0.08)',
-                            background: 'rgba(0,0,0,0.4)',
-                        }}
+                        className="relative mt-2 mb-4 rounded-xl overflow-hidden max-h-80 flex items-center justify-center cursor-zoom-in bg-black/40 border border-white/10"
                     >
                         <img
                             src={post.image_url}
@@ -153,42 +147,13 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
                             onClick={() => setSelectedImage(post.image_url || null)}
                         />
                         <div
-                            className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center"
-                            style={{ background: 'rgba(0,0,0,0.3)' }}
+                            className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center bg-black/30"
                         >
                             <ExternalLink size={20} className="text-white/70" />
                         </div>
                     </div>
                 )}
-
-                {/* Meta row */}
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-3 flex-wrap font-mono">
-                    {/* Avatar + username */}
-                    <span className="flex items-center gap-1.5">
-                        <div
-                            className="w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
-                            style={{
-                                background: `hsl(${avatarHue}, 40%, 20%)`,
-                                color: `hsl(${avatarHue}, 60%, 70%)`,
-                                border: `1px solid hsl(${avatarHue}, 40%, 30%)`,
-                            }}
-                        >
-                            {username[0].toUpperCase()}
-                        </div>
-                        <span className="text-gray-400">{post.author?.username || 'anonymous'}</span>
-                    </span>
-                    <span className="text-gray-600">·</span>
-                    <span>{timeAgo(post.created_at)}</span>
-                    {post.license && (
-                        <>
-                            <span className="text-gray-600">·</span>
-                            <span className="flex items-center gap-1 text-gray-500">
-                                <Scale size={11} />
-                                {post.license}
-                            </span>
-                        </>
-                    )}
-                </div>
+            </div>
 
                 {/* Actions row */}
                 <div className="flex items-center gap-0.5 -ml-1.5">
@@ -268,7 +233,6 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
                         />
                     )}
                 </AnimatePresence>
-            </div>
 
             {/* Image Lightbox Modal */}
             <AnimatePresence>

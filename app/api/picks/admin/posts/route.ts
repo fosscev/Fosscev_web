@@ -15,8 +15,8 @@ async function isAdmin(request: NextRequest): Promise<boolean> {
     if (error || !user) return false;
 
     // Check if user email matches admin email (same as foss-manager)
-    const adminEmail = 'fossclubcev@cev.ac.in';
-    return user.email === adminEmail;
+    const adminEmails = ['fossclubcev@cev.ac.in', 'admin@fosscev.org'];
+    return user.email ? adminEmails.includes(user.email) : false;
 }
 
 // GET /api/picks/admin/posts — Fetch all posts (including removed) for admin

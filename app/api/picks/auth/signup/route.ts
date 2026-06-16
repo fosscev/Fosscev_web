@@ -20,6 +20,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        const { isAdminEmail } = await import('@/lib/admin-config');
+        if (isAdminEmail(email)) {
+            return NextResponse.json(
+                { error: 'Admin accounts cannot be used to sign up for the community portal. Please use a regular user account.' },
+                { status: 403 }
+            );
+        }
+
         // Validate email domain
         if (!isAllowedEmailDomain(email)) {
             return NextResponse.json(
