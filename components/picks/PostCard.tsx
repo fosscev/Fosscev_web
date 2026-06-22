@@ -2,15 +2,19 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Share2, Bookmark, Scale, X, ExternalLink, Trash2 } from 'lucide-react';
+import { MessageCircle, Scale, ChevronDown, AlertTriangle, Flag } from 'lucide-react';
 import { VoteButtons } from './VoteButtons';
 import { CommentSection } from './CommentSection';
+import { ReportModal } from './ReportModal';
+import { useRouter } from 'next/navigation';
+import { FLAIR_COLORS, FLAIRS, type PicksPost, type Flair } from '@/lib/picks-db';
 import { usePicksAuth } from './PicksAuthProvider';
-import { FLAIR_COLORS, type PicksPost, type Flair } from '@/lib/picks-db';
 
 interface PostCardProps {
     post: PicksPost;
     onAuthRequired: () => void;
+    onPostUpdated?: () => void;
+    isDetailedView?: boolean;
 }
 
 function timeAgo(dateStr: string): string {
@@ -25,16 +29,101 @@ function timeAgo(dateStr: string): string {
     return new Date(dateStr).toLocaleDateString();
 }
 
-export function PostCard({ post, onAuthRequired }: PostCardProps) {
+export function PostCard({ post, onAuthRequired, onPostUpdated, isDetailedView = false }: PostCardProps) {
+    const { user, session } = usePicksAuth();
+    const router = useRouter();
+
     const [currentScore, setCurrentScore] = useState(post.score);
     const [currentVote, setCurrentVote] = useState<number | null>(post.user_vote || null);
-    const [showComments, setShowComments] = useState(false);
-    const [selectedImage, setSelectedImage] = useState<string | null>(null);
-    const [shareCopied, setShareCopied] = useState(false);
-    const [isDeleting, setIsDeleting] = useState(false);
-    const [isDeleted, setIsDeleted] = useState(false);
+    const [showComments, setShowComments] = useState(isDetailedView);
+    const [showReportModal, setShowReportModal] = useState(false);
 
-    const { user } = usePicksAuth();
+    // Editing states
+    const [isEditing, setIsEditing] = useState(false);
+    const [title, setTitle] = useState(post.title);
+    const [description, setDescription] = useState(post.description);
+    const [toolName, setToolName] = useState(post.tool_name);
+    const [flair, setFlair] = useState<Flair>(post.flair);
+    const [license, setLicense] = useState(post.license);
+    const [editSubmitting, setEditSubmitting] = useState(false);
+    const [editError, setEditError] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (editSubmitting) return;
+
+        setEditSubmitting(true);
+        setEditError(null);
+
+        try {
+            const token = session?.access_token;
+            
+            const headers: HeadersInit = {
+                'Content-Type': 'application/json',
+            };
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const res = await fetch(`/api/picks/posts/${post.id}`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({
+                    title: title.trim(),
+                    description: description.trim(),
+                    tool_name: toolName.trim(),
+                    flair,
+                    license: license.trim(),
+                }),
+            });
+
+            if (res.ok) {
+                setIsEditing(false);
+                if (onPostUpdated) {
+                    onPostUpdated();
+                }
+            } else {
+                const data = await res.json();
+                setEditError(data.error || 'Failed to update post');
+            }
+        } catch {
+            setEditError('Something went wrong. Please try again.');
+        } finally {
+            setEditSubmitting(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm("Are you sure you want to delete this pick?")) return;
+        setIsDeleting(true);
+        try {
+            const token = session?.access_token;
+            
+            const headers: HeadersInit = {};
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const res = await fetch(`/api/picks/posts/${post.id}`, {
+                method: 'DELETE',
+                headers,
+            });
+
+            if (res.ok) {
+                if (onPostUpdated) {
+                    onPostUpdated();
+                }
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Failed to delete post');
+            }
+        } catch {
+            alert('Failed to delete post');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     const flairColor = FLAIR_COLORS[post.flair as Flair] || '#6B7280';
 
@@ -43,231 +132,276 @@ export function PostCard({ post, onAuthRequired }: PostCardProps) {
         setCurrentVote(newVote);
     };
 
-    const handleShare = async () => {
-        try {
-            const shareUrl = `${window.location.origin}/picks?post=${post.id}`;
-            await navigator.clipboard.writeText(shareUrl);
-            setShareCopied(true);
-            setTimeout(() => setShareCopied(false), 2000);
-        } catch {
-            // Fallback
-        }
-    };
 
-
-    // Generate avatar color from username
-    const username = post.author?.username || '?';
-    const avatarHue = (username.charCodeAt(0) * 37) % 360;
-
-    const handleDelete = async () => {
-        if (!confirm('Are you sure you want to delete this pick?')) return;
-        setIsDeleting(true);
-        try {
-            const { supabase } = await import('@/lib/supabase');
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) return;
-
-            const res = await fetch(`/api/picks/posts/${post.id}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${session.access_token}` }
-            });
-
-            if (res.ok) {
-                setIsDeleted(true);
-            }
-        } catch (e) {
-            console.error('Failed to delete', e);
-        } finally {
-            setIsDeleting(false);
-        }
-    };
-
-    if (isDeleted) return null;
 
     return (
         <motion.article
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className="group flex flex-col gap-3 rounded-2xl p-5 transition-all duration-200 bg-transparent border border-white/10 hover:border-white/30"
+            onClick={(e) => {
+                if (isDetailedView) return;
+                // Don't navigate if clicking on buttons, inputs, links, etc.
+                const target = e.target as HTMLElement;
+                if (target.closest('button, a, input, select, textarea, form')) return;
+                router.push(`/picks/${post.id}`);
+            }}
+            className={`group flex gap-3 bg-[#0a0a0a]/80 border border-white/[0.06] rounded-xl p-4 transition-all duration-200 ${
+                !isDetailedView ? 'cursor-pointer hover:border-white/[0.1] hover:bg-[#0e0e0e]/80' : ''
+            }`}
         >
-            {/* Meta row: Avatar, Name, Timestamp */}
-            <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3">
-                    <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0"
-                        style={{
-                            background: `hsl(${avatarHue}, 40%, 20%)`,
-                            color: `hsl(${avatarHue}, 60%, 70%)`,
-                        }}
-                    >
-                        {username[0].toUpperCase()}
-                    </div>
-                    <div>
-                        <span className="text-white font-semibold">{post.author?.username || 'anonymous'}</span>
-                        <div className="text-xs text-gray-400 mt-0.5">{timeAgo(post.created_at)}</div>
-                    </div>
-                </div>
-                {/* Flair */}
-                <span
-                    className="px-3 py-1 rounded-full text-xs font-semibold tracking-wide border border-white/20"
-                    style={{
-                        backgroundColor: `${flairColor}10`,
-                        color: flairColor,
-                        borderColor: `${flairColor}30`,
-                    }}
-                >
-                    {post.flair}
-                </span>
+            {/* Vote column */}
+            <div className="flex-shrink-0 pt-1">
+                <VoteButtons
+                    postId={post.id}
+                    score={currentScore}
+                    userVote={currentVote}
+                    onAuthRequired={onAuthRequired}
+                    onVoteChange={handleVoteChange}
+                />
             </div>
 
-            <div className="ml-13 mt-2 pl-13"> {/* Adjusting layout to have title below avatar slightly aligned or full width */}
-                {/* Title */}
-                <h3 className="text-lg md:text-xl font-bold text-white mb-2 leading-snug">
-                    {post.title}
-                </h3>
+            {/* Content column */}
+            <div className="flex-1 min-w-0">
+                {isEditing ? (
+                    <form onSubmit={handleEditSubmit} className="space-y-3">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {/* Tool Name */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                    Tool Name *
+                                </label>
+                                <input
+                                    type="text"
+                                    value={toolName}
+                                    onChange={(e) => setToolName(e.target.value)}
+                                    maxLength={100}
+                                    required
+                                    className="w-full px-3 py-1.5 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
+                                />
+                            </div>
 
-                {/* Description */}
-                {post.description && (
-                    <p className="text-sm text-gray-300 leading-relaxed mb-4 break-words line-clamp-3">
-                        {post.description}
-                    </p>
-                )}
-
-                {/* Post Image */}
-                {post.image_url && (
-                    <div
-                        className="relative mt-2 mb-4 rounded-xl overflow-hidden max-h-80 flex items-center justify-center cursor-zoom-in bg-black/40 border border-white/10"
-                    >
-                        <img
-                            src={post.image_url}
-                            alt={post.title}
-                            className="max-h-80 object-contain w-auto h-auto transition-transform duration-300 hover:scale-[1.02]"
-                            loading="lazy"
-                            onClick={() => setSelectedImage(post.image_url || null)}
-                        />
-                        <div
-                            className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-200 flex items-center justify-center bg-black/30"
-                        >
-                            <ExternalLink size={20} className="text-white/70" />
+                            {/* Category/Flair */}
+                            <div>
+                                <label className="block text-xs font-medium text-gray-400 mb-1">
+                                    Category *
+                                </label>
+                                <div className="relative">
+                                    <select
+                                        value={flair}
+                                        onChange={(e) => setFlair(e.target.value as Flair)}
+                                        className="w-full px-3 py-1.5 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 appearance-none focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all cursor-pointer"
+                                    >
+                                        {FLAIRS.map(f => (
+                                            <option key={f} value={f} className="bg-[#1a1a1a] text-gray-200">{f}</option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                                </div>
+                            </div>
                         </div>
-                    </div>
+
+                        {/* Title */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">
+                                Post Title *
+                            </label>
+                            <input
+                                type="text"
+                                value={title}
+                                onChange={(e) => setTitle(e.target.value)}
+                                maxLength={200}
+                                required
+                                className="w-full px-3 py-1.5 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
+                            />
+                        </div>
+
+                        {/* License */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">
+                                License *
+                            </label>
+                            <input
+                                type="text"
+                                value={license}
+                                onChange={(e) => setLicense(e.target.value)}
+                                maxLength={50}
+                                required
+                                className="w-full px-3 py-1.5 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
+                            />
+                        </div>
+
+                        {/* Description */}
+                        <div>
+                            <label className="block text-xs font-medium text-gray-400 mb-1">
+                                Description * <span className="text-gray-600">({description.length}/300)</span>
+                            </label>
+                            <textarea
+                                value={description}
+                                onChange={(e) => setDescription(e.target.value.slice(0, 300))}
+                                maxLength={300}
+                                rows={3}
+                                required
+                                className="w-full px-3 py-1.5 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all resize-none"
+                            />
+                        </div>
+
+                        {editError && (
+                            <div className="px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                <p className="text-xs text-red-400">{editError}</p>
+                            </div>
+                        )}
+
+                        <div className="flex items-center justify-end gap-2 pt-1">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsEditing(false);
+                                    // Reset values
+                                    setTitle(post.title);
+                                    setDescription(post.description);
+                                    setToolName(post.tool_name);
+                                    setFlair(post.flair);
+                                    setLicense(post.license);
+                                    setEditError(null);
+                                }}
+                                className="px-3 py-1.5 text-xs text-gray-400 hover:text-gray-200 transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                disabled={editSubmitting || !title.trim() || !toolName.trim() || !description.trim() || !license.trim()}
+                                className="px-4 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+                                style={{
+                                    background: 'linear-gradient(135deg, #D85A30, #e06b3a)',
+                                    color: '#fff',
+                                }}
+                            >
+                                {editSubmitting ? 'Saving...' : 'Save'}
+                            </button>
+                        </div>
+                    </form>
+                ) : (
+                    <>
+                        {/* Flair + Tool Name */}
+                        <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            <span
+                                className="px-2 py-0.5 rounded text-xs font-mono font-semibold"
+                                style={{
+                                    backgroundColor: `${flairColor}18`,
+                                    color: flairColor,
+                                    border: `1px solid ${flairColor}30`,
+                                }}
+                            >
+                                {flair}
+                            </span>
+                            <span className="text-xs text-gray-500 font-mono flex items-center gap-1">
+                                🛠 {toolName}
+                            </span>
+                            {post.report_count ? (
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-[10px] uppercase font-bold rounded tracking-wide ml-auto sm:ml-0" title={`${post.report_count} user report(s)`}>
+                                    <AlertTriangle size={10} />
+                                    Reported
+                                </span>
+                            ) : null}
+                        </div>
+
+                        {/* Title */}
+                        <h3 className="text-base font-semibold text-gray-100 mb-1 leading-snug">
+                            {title}
+                        </h3>
+
+                        {/* Description */}
+                        <p className="text-sm text-gray-400 leading-relaxed mb-3 break-words">
+                            {description}
+                        </p>
+
+                        {/* Meta row */}
+                        <div className="flex items-center gap-3 text-xs text-gray-500 mb-2 flex-wrap">
+                            <span className="flex items-center gap-1">
+                                <div
+                                    className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold"
+                                    style={{
+                                        background: `hsl(${(post.author?.username || '').charCodeAt(0) * 37 % 360}, 50%, 25%)`,
+                                        color: `hsl(${(post.author?.username || '').charCodeAt(0) * 37 % 360}, 70%, 75%)`,
+                                    }}
+                                >
+                                    {(post.author?.username || '?')[0].toUpperCase()}
+                                </div>
+                                <span className="text-gray-400 font-medium">{post.author?.username || 'anonymous'}</span>
+                            </span>
+                            <span>·</span>
+                            <span>{timeAgo(post.created_at)}</span>
+                            <span>·</span>
+                            <span className="flex items-center gap-1">
+                                <Scale size={11} />
+                                {license}
+                            </span>
+                        </div>
+
+                        {/* Actions row */}
+                        <div className="flex items-center gap-1 -ml-2">
+                            <button
+                                onClick={() => setShowComments(!showComments)}
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] transition-colors"
+                            >
+                                <MessageCircle size={14} />
+                                <span>Comments{post.comment_count ? ` (${post.comment_count})` : ''}</span>
+                            </button>
+
+                            {user && user.id === post.author_id && (
+                                <>
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-gray-300 hover:bg-white/[0.04] transition-colors"
+                                    >
+                                        <span>Edit</span>
+                                    </button>
+                                    <button
+                                        onClick={handleDelete}
+                                        disabled={isDeleting}
+                                        className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-red-500 hover:text-red-400 hover:bg-red-500/[0.04] transition-colors disabled:opacity-50"
+                                    >
+                                        <span>Delete</span>
+                                    </button>
+                                </>
+                            )}
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    user ? setShowReportModal(true) : onAuthRequired();
+                                }}
+                                className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium text-gray-500 hover:text-red-400 hover:bg-red-500/[0.04] transition-colors"
+                            >
+                                <Flag size={14} />
+                                <span>Flag/Report</span>
+                            </button>
+                        </div>
+
+                        {/* Inline comments */}
+                        <AnimatePresence>
+                            {showComments && (
+                                <CommentSection
+                                    postId={post.id}
+                                    onAuthRequired={onAuthRequired}
+                                />
+                            )}
+                        </AnimatePresence>
+                        
+                        <AnimatePresence>
+                            {showReportModal && (
+                                <ReportModal
+                                    isOpen={showReportModal}
+                                    onClose={() => setShowReportModal(false)}
+                                    postId={post.id}
+                                />
+                            )}
+                        </AnimatePresence>
+                    </>
                 )}
             </div>
-
-                {/* Actions row */}
-                <div className="flex items-center gap-0.5 -ml-1.5">
-                    <VoteButtons
-                        postId={post.id}
-                        score={currentScore}
-                        userVote={currentVote}
-                        onAuthRequired={onAuthRequired}
-                        onVoteChange={handleVoteChange}
-                    />
-
-                    <button
-                        onClick={() => setShowComments(!showComments)}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150"
-                        style={{
-                            color: showComments ? '#00e676' : '#525252',
-                            background: showComments ? 'rgba(0,230,118,0.06)' : 'transparent',
-                        }}
-                        onMouseEnter={e => {
-                            if (!showComments) (e.currentTarget as HTMLElement).style.color = '#a3a3a3';
-                            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
-                        }}
-                        onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.color = showComments ? '#00e676' : '#525252';
-                            (e.currentTarget as HTMLElement).style.background = showComments ? 'rgba(0,230,118,0.06)' : 'transparent';
-                        }}
-                    >
-                        <MessageCircle size={13} />
-                        <span>{post.comment_count ? `${post.comment_count}` : 'Comment'}</span>
-                    </button>
-
-                    <button
-                        onClick={handleShare}
-                        className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150"
-                        style={{ color: shareCopied ? '#00e676' : '#525252' }}
-                        onMouseEnter={e => {
-                            if (!shareCopied) (e.currentTarget as HTMLElement).style.color = '#a3a3a3';
-                            (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.03)';
-                        }}
-                        onMouseLeave={e => {
-                            (e.currentTarget as HTMLElement).style.color = shareCopied ? '#00e676' : '#525252';
-                            (e.currentTarget as HTMLElement).style.background = 'transparent';
-                        }}
-                    >
-                        <Share2 size={13} />
-                        <span>{shareCopied ? 'Copied!' : 'Share'}</span>
-                    </button>
-
-
-                    {user?.id === post.author_id && (
-                        <button
-                            onClick={handleDelete}
-                            disabled={isDeleting}
-                            className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150 ml-auto disabled:opacity-40"
-                            style={{ color: '#525252' }}
-                            onMouseEnter={e => {
-                                (e.currentTarget as HTMLElement).style.color = '#ef4444';
-                                (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.08)';
-                            }}
-                            onMouseLeave={e => {
-                                (e.currentTarget as HTMLElement).style.color = '#525252';
-                                (e.currentTarget as HTMLElement).style.background = 'transparent';
-                            }}
-                        >
-                            <Trash2 size={13} />
-                            <span className="hidden sm:inline">Delete</span>
-                        </button>
-                    )}
-                </div>
-
-                {/* Inline comments */}
-                <AnimatePresence>
-                    {showComments && (
-                        <CommentSection
-                            postId={post.id}
-                            onAuthRequired={onAuthRequired}
-                        />
-                    )}
-                </AnimatePresence>
-
-            {/* Image Lightbox Modal */}
-            <AnimatePresence>
-                {selectedImage && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        onClick={() => setSelectedImage(null)}
-                        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 cursor-zoom-out"
-                        style={{ background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(8px)' }}
-                    >
-                        <button
-                            onClick={() => setSelectedImage(null)}
-                            className="absolute top-6 right-6 p-2 rounded-xl transition-colors"
-                            style={{
-                                background: 'rgba(0,230,118,0.1)',
-                                border: '1px solid rgba(0,230,118,0.2)',
-                                color: '#00e676',
-                            }}
-                        >
-                            <X size={18} />
-                        </button>
-                        <motion.img
-                            initial={{ scale: 0.94 }}
-                            animate={{ scale: 1 }}
-                            exit={{ scale: 0.94 }}
-                            src={selectedImage}
-                            alt="Zoomed pick image"
-                            className="max-w-full max-h-[90vh] object-contain rounded-xl shadow-2xl"
-                            style={{ boxShadow: '0 0 60px rgba(0,230,118,0.05)' }}
-                        />
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </motion.article>
     );
 }

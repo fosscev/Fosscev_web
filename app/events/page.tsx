@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Calendar, ArrowRight, Clock, Users, ExternalLink } from "lucide-react";
@@ -39,6 +40,7 @@ export default function EventsPage() {
     const [pastEvents, setPastEvents] = useState<Event[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
+    const router = useRouter();
     // Fetch from Supabase
     useEffect(() => {
         async function fetchEvents() {
@@ -308,7 +310,13 @@ export default function EventsPage() {
                                         </div>
 
                                         {/* Click indicator */}
-                                        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
+                                        <div
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                router.push(`/events/${event.id}`);
+                                            }}
+                                            className="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block"
+                                        >
                                             <span className="text-xs text-primary font-mono whitespace-nowrap flex items-center gap-1">
                                                 Click to view details <ArrowRight className="w-3 h-3" />
                                             </span>

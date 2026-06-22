@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit, sanitizeText } from '@/lib/rate-limit';
 import { fetchPosts, getPicksUserByAuthId, getServiceClient, FLAIRS, type Flair, type SortMode } from '@/lib/picks-db';
-import { supabase } from '@/lib/supabase';
 
 // GET /api/picks/posts — Fetch posts with sorting, filtering, pagination
 export async function GET(request: NextRequest) {
@@ -11,33 +9,8 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1', 10);
     const flair = searchParams.get('flair') as Flair | undefined;
     const authId = searchParams.get('auth_id') || undefined;
-    const liked = searchParams.get('liked') === 'true';
-    const mine = searchParams.get('mine') === 'true';
 
-    // Verify auth if checking liked posts or own posts (requires auth header)
-    let authenticatedUserId: string | undefined;
-    if (liked || mine) {
-        const authHeader = request.headers.get('Authorization');
-        if (authHeader) {
-            const token = authHeader.replace('Bearer ', '');
-            const { data: { user } } = await supabase.auth.getUser(token);
-            if (user) {
-                const picksUser = await getPicksUserByAuthId(user.id);
-                authenticatedUserId = picksUser?.id;
-            }
-        }
-        if (!authenticatedUserId) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-        }
-        
-        if (liked) {
-            const { fetchLikedPosts } = await import('@/lib/picks-db');
-            const posts = await fetchLikedPosts(authenticatedUserId);
-            return NextResponse.json({ posts, total: posts.length });
-        }
-    }
-
-    // Resolve picks user ID from auth ID for normal feed
+    // Resolve picks user ID from auth ID
     let userId: string | undefined;
     if (authId) {
         const user = await getPicksUserByAuthId(authId);
@@ -49,7 +22,6 @@ export async function GET(request: NextRequest) {
         page,
         flair: flair && FLAIRS.includes(flair) ? flair : undefined,
         userId,
-        authorId: mine ? authenticatedUserId : undefined,
     });
 
     return NextResponse.json(result);
@@ -59,14 +31,23 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { title, description, tool_name, flair, license, auth_id, image_url } = body;
+        const { title, description, tool_name, flair, license } = body;
 
-        // Auth check
-        if (!auth_id) {
+        // Auth check via Bearer token (Supabase client stores session in localStorage, not cookies)
+        const authHeader = request.headers.get('authorization');
+        if (!authHeader) {
             return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
         }
 
-        const picksUser = await getPicksUserByAuthId(auth_id);
+        const token = authHeader.replace('Bearer ', '');
+        const serviceClient = getServiceClient();
+
+        const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Invalid or expired session. Please sign in again.' }, { status: 401 });
+        }
+
+        const picksUser = await getPicksUserByAuthId(user.id);
         if (!picksUser) {
             return NextResponse.json({ error: 'User profile not found' }, { status: 401 });
         }
@@ -81,8 +62,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Validate
-        if (!title || !tool_name || !flair) {
-            return NextResponse.json({ error: 'Title, tool name, and category are required' }, { status: 400 });
+        if (!title || !description || !tool_name || !flair || !license) {
+            return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
         }
 
         if (!FLAIRS.includes(flair)) {
@@ -90,16 +71,13 @@ export async function POST(request: NextRequest) {
         }
 
         const cleanTitle = sanitizeText(title).slice(0, 200);
-        const cleanDesc = description ? sanitizeText(description) : null;
+        const cleanDesc = sanitizeText(description).slice(0, 300);
         const cleanTool = sanitizeText(tool_name).slice(0, 100);
-        const cleanLicense = license ? sanitizeText(license).slice(0, 50) : null;
-        const cleanImageUrl = image_url ? sanitizeText(image_url) : null;
+        const cleanLicense = sanitizeText(license).slice(0, 50);
 
         if (cleanTitle.length < 3) {
             return NextResponse.json({ error: 'Title must be at least 3 characters' }, { status: 400 });
         }
-
-        const serviceClient = getServiceClient();
 
         // Duplicate check — same title + tool in 24h
         const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
@@ -130,7 +108,6 @@ export async function POST(request: NextRequest) {
                 author_id: picksUser.id,
                 score: 0,
                 is_removed: false,
-                image_url: cleanImageUrl,
             })
             .select(`
                 *,

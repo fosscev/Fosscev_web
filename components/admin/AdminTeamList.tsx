@@ -10,8 +10,10 @@ import {
     X
 } from 'lucide-react';
 import ImageUploader from './ImageUploader';
+import { useAdminAuth } from './AdminAuthProvider';
 
 export default function AdminTeamList() {
+    const { session } = useAdminAuth();
     const [teamData, setTeamData] = useState<any[]>([]);
     const [isEditing, setIsEditing] = useState<string | null>(null);
     const [editForm, setEditForm] = useState<any>({});
@@ -37,7 +39,6 @@ export default function AdminTeamList() {
                 const fileExt = selectedFile.name.split('.').pop();
                 const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-                const { data: { session } } = await supabase.auth.getSession();
                 if (!session) {
                     alert('Session expired. Please log in again.');
                     setIsSubmitting(false);
@@ -93,8 +94,10 @@ export default function AdminTeamList() {
     };
 
     useEffect(() => {
-        loadData();
-    }, []);
+        if (session) {
+            loadData();
+        }
+    }, [session]);
 
     const handleEdit = (id: string, member: any) => {
         setIsEditing(id);

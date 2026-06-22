@@ -42,23 +42,21 @@ export interface PicksUser {
 export interface PicksPost {
     id: string;
     title: string;
-    description: string | null;
+    description: string;
     tool_name: string;
     flair: Flair;
-    license: string | null;
+    license: string;
     author_id: string;
     score: number;
     is_removed: boolean;
     removed_reason: string | null;
     created_at: string;
-    image_url?: string | null;
     // Joined fields
     author?: PicksUser;
     comment_count?: number;
+    report_count?: number;
     user_vote?: number | null;
-    is_saved?: boolean;
 }
-
 
 export interface PicksVote {
     id: string;
@@ -90,25 +88,21 @@ export async function getPicksUserByAuthId(authId: string): Promise<PicksUser | 
     return data;
 }
 
-export async function createPicksUser(authId: string, email: string, customUsername?: string): Promise<PicksUser | null> {
-    const baseUsername = customUsername 
-        ? customUsername.toLowerCase().replace(/[^a-z0-9_]/g, '_')
-        : email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
-
-    const serviceClient = getServiceClient();
+export async function createPicksUser(authId: string, email: string): Promise<PicksUser | null> {
+    const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
 
     // Check if username exists, append random digits if so
-    const { data: existing } = await serviceClient
+    const { data: existing } = await supabase
         .from('picks_users')
         .select('id')
-        .eq('username', baseUsername)
-        .maybeSingle();
+        .eq('username', username)
+        .single();
 
     const finalUsername = existing
-        ? `${baseUsername}_${Math.floor(Math.random() * 9999)}`
-        : baseUsername;
+        ? `${username}_${Math.floor(Math.random() * 9999)}`
+        : username;
 
-    const { data, error } = await serviceClient
+    const { data, error } = await supabase
         .from('picks_users')
         .insert({ auth_id: authId, email, username: finalUsername })
         .select()
@@ -128,10 +122,9 @@ export async function fetchPosts(options: {
     page: number;
     flair?: Flair;
     userId?: string;
-    authorId?: string;
     perPage?: number;
 }): Promise<{ posts: PicksPost[]; total: number }> {
-    const { sort, page, flair, userId, authorId, perPage = 20 } = options;
+    const { sort, page, flair, userId, perPage = 20 } = options;
     const offset = (page - 1) * perPage;
 
     let query = supabase
@@ -139,18 +132,14 @@ export async function fetchPosts(options: {
         .select(`
             *,
             author:picks_users!author_id(id, username, email, created_at),
-            picks_comments(count)
+            picks_comments(count),
+            picks_reports(count)
         `, { count: 'exact' })
         .eq('is_removed', false);
 
     // Flair filter
     if (flair) {
         query = query.eq('flair', flair);
-    }
-
-    // Author filter
-    if (authorId) {
-        query = query.eq('author_id', authorId);
     }
 
     // Sort-specific filters
@@ -188,6 +177,7 @@ export async function fetchPosts(options: {
         ...p,
         author: p.author,
         comment_count: p.picks_comments?.[0]?.count || 0,
+        report_count: p.picks_reports?.[0]?.count || 0,
     }));
 
     // Hot sort: score / (hours + 2)^1.5
@@ -235,16 +225,17 @@ export async function fetchPosts(options: {
         });
     }
 
-    // If userId provided, fetch user's votes and saved status for these posts
+    // If userId provided, fetch user's votes for these posts
     if (userId && posts.length > 0) {
         const postIds = posts.map(p => p.id);
-        
-        const [votesRes] = await Promise.all([
-            supabase.from('picks_votes').select('post_id, value').eq('user_id', userId).in('post_id', postIds)
-        ]);
+        const { data: votes } = await supabase
+            .from('picks_votes')
+            .select('post_id, value')
+            .eq('user_id', userId)
+            .in('post_id', postIds);
 
         const voteMap: Record<string, number> = {};
-        (votesRes.data || []).forEach((v: any) => {
+        (votes || []).forEach((v: any) => {
             voteMap[v.post_id] = v.value;
         });
 
@@ -293,36 +284,4 @@ export async function getCommunityStats() {
         picksCount: postsResult.count || 0,
         flairCounts,
     };
-}
-
-export async function fetchLikedPosts(userId: string): Promise<PicksPost[]> {
-    const { data: likedPosts, error } = await supabase
-        .from('picks_votes')
-        .select(`
-            post_id,
-            picks_posts (
-                *,
-                author:picks_users!author_id(id, username, email, created_at),
-                picks_comments(count)
-            )
-        `)
-        .eq('user_id', userId)
-        .eq('value', 1)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error('Error fetching liked posts:', error);
-        return [];
-    }
-
-    let posts: PicksPost[] = (likedPosts || [])
-        .filter((lp: any) => lp.picks_posts && !lp.picks_posts.is_removed)
-        .map((lp: any) => ({
-            ...lp.picks_posts,
-            author: lp.picks_posts.author,
-            comment_count: lp.picks_posts.picks_comments?.[0]?.count || 0,
-            user_vote: 1, // They liked it
-        }));
-
-    return posts;
 }

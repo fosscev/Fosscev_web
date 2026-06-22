@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Loader2, Terminal } from 'lucide-react';
+import { Loader2, PenTool } from 'lucide-react';
 import { usePicksAuth } from '@/components/picks/PicksAuthProvider';
 import { PostCard } from '@/components/picks/PostCard';
 import { SortTabs } from '@/components/picks/SortTabs';
@@ -10,16 +10,32 @@ import { Sidebar } from '@/components/picks/Sidebar';
 import { SubmitForm } from '@/components/picks/SubmitForm';
 import { Pagination } from '@/components/picks/Pagination';
 import { AuthModal } from '@/components/picks/AuthModal';
-import { SecondaryNav } from '@/components/picks/SecondaryNav';
-import { TrendingCarousel } from '@/components/picks/TrendingCarousel';
+import { NotificationBanner } from '@/components/picks/NotificationBanner';
+import { useRouter, useSearchParams } from 'next/navigation';
 import type { PicksPost, SortMode, Flair } from '@/lib/picks-db';
 
 export default function PicksPage() {
-    const { user, authId, loading: authLoading, signOut } = usePicksAuth();
+    const { user, authId } = usePicksAuth();
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const hasHandledWriteRef = useRef(false);
+
+    useEffect(() => {
+        if (!user) return;
+        if (hasHandledWriteRef.current) return;
+
+        const shouldOpenWrite = searchParams.get("write") === "true";
+
+        if (shouldOpenWrite) {
+            hasHandledWriteRef.current = true;
+            setShowSubmit(true);
+            router.replace("/picks");
+        }
+    }, [user, searchParams, router]);
 
     const [posts, setPosts] = useState<PicksPost[]>([]);
     const [loading, setLoading] = useState(true);
-    const [sort, setSort] = useState<SortMode>('hot');
+    const [sort, setSort] = useState<SortMode>('top');
     const [flair, setFlair] = useState<Flair | null>(null);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -64,152 +80,144 @@ export default function PicksPage() {
     };
 
     const handleSubmitClick = () => {
-        if (!user) {
-            setShowAuthModal(true);
-        } else {
-            setShowSubmit(true);
-        }
+        // Always go to sign-in page first, which will handle the "continue as" logic
+        router.push('/picks/signin?redirect=write');
     };
 
     const handleAuthRequired = () => {
         setShowAuthModal(true);
     };
 
+    // Map SortMode to filter labels
+    const getSortLabel = (sortMode: SortMode): string => {
+        switch (sortMode) {
+            case 'new': return 'Latest Picks';
+            case 'top': return 'Most Popular';
+            default: return 'Most Popular';
+        }
+    };
+
     return (
         <>
-            <section className="pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto">
-                <div className="bg-gradient-to-b from-[#09241b] to-[#04120e] rounded-[32px] border border-white/10 p-8 md:p-12 shadow-2xl relative overflow-hidden">
-                    
-                    {/* Header */}
-                    <motion.div
-                        initial={{ opacity: 0, y: -16 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5 }}
-                        className="mb-8 text-center"
-                    >
-                        <h1 className="text-3xl md:text-4xl font-bold mb-8 text-white">
-                            Open Source Picks
-                        </h1>
-                        <SecondaryNav onLoginClick={handleAuthRequired} />
-                    </motion.div>
+            <section className="pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto relative min-h-screen">
+                {/* HEADER */}
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-12"
+                >
+                    <h1 className="text-5xl md:text-6xl font-display font-black text-white mb-2">
+                        Open Source Picks
+                    </h1>
+                    <p className="text-lg md:text-xl text-gray-400 max-w-2xl mt-4 leading-relaxed">
+                        Discover experiences from the community about how open source tools solved problems, inspired projects, and made a difference.
+                    </p>
+                </motion.div>
 
-                    <TrendingCarousel />
 
-                    {/* Main grid */}
-                    <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 mt-8">
-                        {/* Feed column */}
-                        <div className="flex-1 min-w-0 xl:mr-8">
-                            
-                            <SortTabs
-                                activeSort={sort}
-                                onSortChange={handleSortChange}
-                                isLoggedIn={!!user}
-                                onSubmitClick={handleSubmitClick}
+
+                {/* FILTER BUTTONS */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex flex-wrap gap-3 mb-12 items-center justify-between"
+                >
+                    <div className="flex flex-wrap gap-3">
+                        {(['top', 'new'] as const).map((mode) => (
+                            <motion.button
+                                key={mode}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleSortChange(mode)}
+                                className={`px-6 py-2 rounded-full font-display font-bold text-sm transition-all duration-300 border backdrop-blur-md ${
+                                    sort === mode
+                                        ? 'bg-primary text-black border-primary shadow-lg shadow-primary/30'
+                                        : 'bg-surface/40 text-gray-300 border-white/10 hover:border-primary/40 hover:text-primary'
+                                }`}
+                            >
+                                {getSortLabel(mode)}
+                            </motion.button>
+                        ))}
+                    </div>
+                </motion.div>
+
+                {/* MAIN CONTENT AREA */}
+                <div className="flex flex-col lg:flex-row gap-8 items-start">
+                    {/* Main content area */}
+                    <div className="flex-1 min-w-0 w-full max-w-4xl mx-auto">
+                        {/* Section Title */}
+                        <h2 className="text-2xl font-display font-bold text-white mb-8">Picks And Discussion</h2>
+
+                        <NotificationBanner />
+
+                        {/* Inline submit form */}
+                        <AnimatePresence>
+                            {showSubmit && !!user && (
+                                <SubmitForm
+                                    onClose={() => setShowSubmit(false)}
+                                    onPostCreated={fetchFeed}
+                                    onAuthRequired={handleAuthRequired}
+                                />
+                            )}
+                        </AnimatePresence>
+
+                        {/* Posts list or empty state */}
+                        {loading ? (
+                            <div className="flex flex-col items-center justify-center py-20 gap-3">
+                                <Loader2 size={32} className="text-primary animate-spin" />
+                                <p className="text-sm text-gray-400 font-mono">Loading picks...</p>
+                            </div>
+                        ) : posts.length === 0 ? (
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                className="flex flex-col items-center justify-center py-32 px-6 bg-surface/40 backdrop-blur-lg rounded-2xl border border-white/10"
+                            >
+                                <div className="w-16 h-16 rounded-full bg-primary/20 border border-primary/40 flex items-center justify-center mb-6">
+                                    <PenTool className="w-8 h-8 text-primary" />
+                                </div>
+                                <h3 className="text-2xl font-display font-bold text-white mb-3">No Picks Yet</h3>
+                                <p className="text-center text-gray-400 max-w-sm leading-relaxed">
+                                    No picks have been published yet.
+                                </p>
+                            </motion.div>
+                        ) : (
+                            <div className="space-y-4">
+                                {posts.map((post, i) => (
+                                    <motion.div
+                                        key={post.id}
+                                        initial={{ opacity: 0, y: 16 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: i * 0.03 }}
+                                    >
+                                        <PostCard
+                                            post={post}
+                                            onAuthRequired={handleAuthRequired}
+                                            onPostUpdated={fetchFeed}
+                                        />
+                                    </motion.div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Pagination */}
+                        {!loading && posts.length > 0 && (
+                            <Pagination
+                                currentPage={page}
+                                totalPages={totalPages}
+                                onPageChange={setPage}
                             />
+                        )}
+                    </div>
 
-                            <h2 className="text-2xl font-bold mb-6 text-white">Threads And Discussion</h2>
-
-                            {/* Inline submit form */}
-                            <AnimatePresence>
-                                {showSubmit && (
-                                    <SubmitForm
-                                        onClose={() => setShowSubmit(false)}
-                                        onPostCreated={fetchFeed}
-                                        onAuthRequired={handleAuthRequired}
-                                    />
-                                )}
-                            </AnimatePresence>
-
-                            {/* Posts list */}
-                            {loading ? (
-                                <div className="flex flex-col items-center justify-center py-24 gap-4">
-                                    <div className="relative">
-                                        <div
-                                            className="w-10 h-10 rounded-full"
-                                            style={{
-                                                border: '2px solid rgba(0,230,118,0.1)',
-                                                borderTopColor: '#00e676',
-                                                animation: 'spin 0.8s linear infinite',
-                                            }}
-                                        />
-                                        <div
-                                            className="absolute inset-0 rounded-full blur-md opacity-40"
-                                            style={{ background: '#00e676' }}
-                                        />
-                                    </div>
-                                </div>
-                            ) : posts.length === 0 ? (
-                                <motion.div
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    className="text-center py-24 border border-white/[0.05] rounded-2xl bg-[#0a0a0a]/50"
-                                >
-                                    <div
-                                        className="w-12 h-12 rounded-xl mx-auto mb-4 flex items-center justify-center"
-                                        style={{
-                                            background: 'rgba(0,230,118,0.08)',
-                                            border: '1px solid rgba(0,230,118,0.15)',
-                                        }}
-                                    >
-                                        <Terminal size={20} className="text-[#00e676]" />
-                                    </div>
-                                    <p className="text-base text-gray-300 font-semibold mb-1">No picks yet</p>
-                                    <p className="text-sm text-gray-500 mb-5">
-                                        {flair
-                                            ? `No posts with the "${flair}" flair yet.`
-                                            : 'Be the first to share an open-source tool!'}
-                                    </p>
-                                    <motion.button
-                                        whileHover={{ scale: 1.03 }}
-                                        whileTap={{ scale: 0.97 }}
-                                        onClick={handleSubmitClick}
-                                        className="px-5 py-2 rounded-xl text-sm font-semibold"
-                                        style={{
-                                            background: 'rgba(0, 230, 118, 0.12)',
-                                            color: '#00e676',
-                                            border: '1px solid rgba(0, 230, 118, 0.25)',
-                                        }}
-                                    >
-                                        Submit the first pick →
-                                    </motion.button>
-                                </motion.div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {posts.map((post, i) => (
-                                        <motion.div
-                                            key={post.id}
-                                            initial={{ opacity: 0, y: 16 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            transition={{ delay: i * 0.03, duration: 0.3 }}
-                                        >
-                                            <PostCard
-                                                post={post}
-                                                onAuthRequired={handleAuthRequired}
-                                            />
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            )}
-
-                            {/* Pagination */}
-                            {!loading && posts.length > 0 && (
-                                <div className="mt-8">
-                                    <Pagination
-                                        currentPage={page}
-                                        totalPages={totalPages}
-                                        onPageChange={setPage}
-                                    />
-                                </div>
-                            )}
+                    {/* Sidebar — containing only Write a Pick button */}
+                    <div className="w-full lg:w-72 flex-shrink-0 order-first lg:order-last">
+                        <div className="lg:hidden mb-4">
+                            <Sidebar onSubmitClick={handleSubmitClick} />
                         </div>
-
-                        {/* Sidebar — Top Trending Topics */}
-                        <div className="w-full lg:w-72 flex-shrink-0 order-first lg:order-last">
-                            <Sidebar
-                                activeFlair={flair}
-                                onFlairChange={handleFlairChange}
-                                onSubmitClick={handleSubmitClick}
-                            />
+                        <div className="hidden lg:block sticky top-24">
+                            <Sidebar onSubmitClick={handleSubmitClick} />
                         </div>
                     </div>
                 </div>

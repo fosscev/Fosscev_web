@@ -1,19 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+<<<<<<< HEAD
 import { supabase } from "@/lib/supabase";
 import { isAdminEmail } from "@/lib/admin-config";
+=======
+import { AdminAuthProvider, useAdminAuth } from "@/components/admin/AdminAuthProvider";
+>>>>>>> 448d8de (feat: enhance picks system and event details)
 
-export default function AdminLayout({
+function AdminLayoutContent({
     children,
 }: {
     children: React.ReactNode;
 }) {
     const router = useRouter();
-    const [isLoading, setIsLoading] = useState(true);
+    const { session, authLoading, signOut } = useAdminAuth();
+    const isSigningOutRef = useRef(false);
 
     useEffect(() => {
+        if (!authLoading && !session) {
+            router.push("/foss-manager");
+        }
+    }, [session, authLoading, router]);
+
+    useEffect(() => {
+<<<<<<< HEAD
         const checkSession = async () => {
             // getSession() is a local-only call — reads from browser storage, no network request.
             // The heavy auth validation is already handled by proxy.ts on the server.
@@ -31,6 +43,28 @@ export default function AdminLayout({
         };
 
         checkSession();
+=======
+        let logoutTimer: NodeJS.Timeout;
+
+        const resetTimer = () => {
+            clearTimeout(logoutTimer);
+            // Auto logout after 15 minutes of inactivity (900000 ms)
+            logoutTimer = setTimeout(async () => {
+                if (isSigningOutRef.current) return;
+                isSigningOutRef.current = true;
+                try {
+                    await signOut();
+                    router.push("/foss-manager");
+                } catch (error) {
+                    console.error('Auto-logout error:', error);
+                } finally {
+                    isSigningOutRef.current = false;
+                }
+            }, 15 * 60 * 1000);
+        };
+
+        resetTimer();
+>>>>>>> 448d8de (feat: enhance picks system and event details)
 
         // Inactivity auto-logout (15 minutes)
         let lastActivity = Date.now();
@@ -60,6 +94,7 @@ export default function AdminLayout({
             window.removeEventListener('keydown', updateActivity);
             window.removeEventListener('click', updateActivity);
         };
+<<<<<<< HEAD
     }, [router]);
 
     if (isLoading) {
@@ -79,6 +114,9 @@ export default function AdminLayout({
             </div>
         );
     }
+=======
+    }, [router, signOut]);
+>>>>>>> 448d8de (feat: enhance picks system and event details)
 
     return (
         <div className="min-h-screen bg-gray-900 text-white">
@@ -87,8 +125,16 @@ export default function AdminLayout({
                     <h1 className="text-xl font-bold text-primary">FOSS Manager</h1>
                     <button
                         onClick={async () => {
-                            await supabase.auth.signOut();
-                            router.push("/foss-manager");
+                            if (isSigningOutRef.current) return;
+                            isSigningOutRef.current = true;
+                            try {
+                                await signOut();
+                                router.push("/foss-manager");
+                            } catch (error) {
+                                console.error('Sign out error:', error);
+                            } finally {
+                                isSigningOutRef.current = false;
+                            }
                         }}
                         className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
                     >
@@ -98,5 +144,17 @@ export default function AdminLayout({
             </nav>
             <main className="container mx-auto p-4">{children}</main>
         </div>
+    );
+}
+
+export default function AdminLayout({
+    children,
+}: {
+    children: React.ReactNode;
+}) {
+    return (
+        <AdminAuthProvider>
+            <AdminLayoutContent>{children}</AdminLayoutContent>
+        </AdminAuthProvider>
     );
 }

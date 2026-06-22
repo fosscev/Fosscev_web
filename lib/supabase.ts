@@ -14,6 +14,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create a single supabase client for interacting with your database
 // Using createBrowserClient from @supabase/ssr to ensure cookies are 
 // correctly shared between client and server (middleware/proxy).
+<<<<<<< HEAD
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey);
 
 if (typeof window !== 'undefined') {
@@ -25,9 +26,15 @@ if (typeof window !== 'undefined') {
             console.warn('Caught unhandled Supabase Auth refresh error, clearing stale session...');
             event.preventDefault();
             supabase.auth.signOut().catch(() => { });
+=======
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+        lock: async (key, acquireTimeout, fn) => {
+            return fn();
+>>>>>>> 448d8de (feat: enhance picks system and event details)
         }
-    });
-}
+    }
+});
 
 // Database types
 export interface TeamMember {

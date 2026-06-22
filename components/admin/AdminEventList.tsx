@@ -12,6 +12,7 @@ import {
     AlertCircle
 } from 'lucide-react';
 import ImageUploader from './ImageUploader';
+import { useAdminAuth } from './AdminAuthProvider';
 
 // Zod schema for event form validation
 const eventFormSchema = z.object({
@@ -30,6 +31,7 @@ const eventFormSchema = z.object({
 const MAX_POSTER_SIZE = 2 * 1024 * 1024; // 2MB in bytes
 
 export default function AdminEventList() {
+    const { session } = useAdminAuth();
     const [events, setEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
@@ -66,8 +68,10 @@ export default function AdminEventList() {
     };
 
     useEffect(() => {
-        loadData();
-    }, []);
+        if (session) {
+            loadData();
+        }
+    }, [session]);
 
     const validateForm = (): boolean => {
         const result = eventFormSchema.safeParse(formData);
@@ -101,7 +105,6 @@ export default function AdminEventList() {
                 const fileExt = selectedFile.name.split('.').pop();
                 const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-                const { data: { session } } = await supabase.auth.getSession();
                 if (!session) {
                     alert('Session expired. Please log in again.');
                     setIsSubmitting(false);

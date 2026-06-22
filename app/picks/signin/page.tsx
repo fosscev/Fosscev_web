@@ -1,39 +1,50 @@
 "use client";
 
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, ArrowLeft, ShieldCheck, KeyRound, Terminal } from 'lucide-react';
+import { useState, Suspense, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { Mail, Lock, ArrowLeft, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { usePicksAuth } from '@/components/picks/PicksAuthProvider';
 
 type Mode = 'signin' | 'signup';
-type Step = 'credentials' | 'otp';
 
-export default function PicksSignInPage() {
+const ALLOWED_EMAIL_DOMAINS = [
+    'cev.ac.in',
+    'gmail.com',
+    'outlook.com',
+    'yahoo.com',
+    'hotmail.com',
+];
+
+function isAllowedEmailDomain(email: string) {
+    const domain = email.split('@')[1]?.toLowerCase();
+    return ALLOWED_EMAIL_DOMAINS.includes(domain);
+}
+
+function PicksSignInPageContent() {
     const router = useRouter();
+    const searchParams = useSearchParams();
+    const modeParam = searchParams.get('mode');
+    const { user, session } = usePicksAuth();
+    
     const [mode, setMode] = useState<Mode>('signin');
-    const [step, setStep] = useState<Step>('credentials');
     const [email, setEmail] = useState('');
-    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [otp, setOtp] = useState('');
+    const [showOtp, setShowOtp] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
 
-    // Ensure picks_user profile exists (needs service role on server)
-    const ensureProfile = async (authId: string, userEmail: string, userUsername?: string) => {
-        try {
-            await fetch('/api/picks/auth/ensure-profile', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ auth_id: authId, email: userEmail, username: userUsername }),
-            });
-        } catch {
-            // Non-critical — profile may already exist
+    useEffect(() => {
+        if (modeParam === 'signup') {
+            setMode('signup');
+        } else if (modeParam === 'signin') {
+            setMode('signin');
         }
-    };
+    }, [modeParam]);
 
     const handleCredentials = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,85 +54,53 @@ export default function PicksSignInPage() {
 
         try {
             if (mode === 'signup') {
-                // Client-side email domain validation before hitting server
-                const allowedDomains = ['cev.ac.in', 'gmail.com', 'outlook.com', 'yahoo.com', 'hotmail.com'];
-                const emailDomain = email.split('@')[1]?.toLowerCase();
-                if (!emailDomain || !allowedDomains.includes(emailDomain)) {
-                    setError('Please use a valid email address (@cev.ac.in, @gmail.com, @outlook.com, or @yahoo.com)');
+                if (!isAllowedEmailDomain(email)) {
+                    setError('Please use a valid email address (@cev.ac.in, @gmail.com, @outlook.com, @yahoo.com, or @hotmail.com)');
                     setLoading(false);
                     return;
                 }
 
-                if (password.length < 6) {
-                    setError('Password must be at least 6 characters');
-                    setLoading(false);
-                    return;
-                }
-
-                // Sign-up: use API route for rate limiting + OTP sending
-                const res = await fetch('/api/picks/auth/signup', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password, username }),
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    setError(data.error);
-                    setLoading(false);
-                    return;
-                }
-                setMessage('Check your email for a 6-digit verification code');
-                setStep('otp');
-                setLoading(false);
-            } else {
-                // Sign-in: authenticate directly with the browser Supabase client
-                let finalEmail = email;
-
-                // If input doesn't contain '@', treat it as a username and lookup the email
-                if (!email.includes('@')) {
-                    const lookupRes = await fetch(`/api/picks/auth/lookup-email?username=${encodeURIComponent(email)}`);
-                    if (!lookupRes.ok) {
-                        setError('Invalid username or password');
-                        setLoading(false);
-                        return;
-                    }
-                    const lookupData = await lookupRes.json();
-                    finalEmail = lookupData.email;
-                }
-
-                const { data, error: authError } = await supabase.auth.signInWithPassword({
-                    email: finalEmail,
+                const { data, error: signUpError } = await supabase.auth.signUp({
+                    email,
                     password,
                 });
 
-                if (authError) {
-                    if (authError.message?.includes('not confirmed') || authError.message?.includes('Email not confirmed')) {
-                        setMessage('Your email is not verified yet. Check your email for the verification code.');
-                        setStep('otp');
-                        setLoading(false);
-                        return;
-                    }
-                    setError(authError.message || 'Invalid email or password');
+                if (signUpError) {
+                    setError(signUpError.message);
                     setLoading(false);
                     return;
                 }
 
-                if (!data.user || !data.session) {
-                    setError('Sign-in failed. Please try again.');
+                if (data?.session) {
+                    // Redirect immediately using replace to avoid redirect loops
+                    router.replace('/picks?write=true');
+                } else if (data?.user) {
+                    setShowOtp(true);
+                    setMessage('Sign up successful! Please enter the verification code (OTP) sent to your email.');
+                    setError(null);
+                } else {
+                    setMessage('Sign up successful! Please check your email to confirm your account.');
+                    setError(null);
+                }
+            } else {
+                // Sign in
+                const { data, error: signInError } = await supabase.auth.signInWithPassword({
+                    email,
+                    password,
+                });
+
+                if (signInError) {
+                    setError(signInError.message);
                     setLoading(false);
                     return;
                 }
 
-                // Ensure picks_user profile exists
-                await ensureProfile(data.user.id, email);
-
-                // Use Next.js client-side navigation to prevent full-page reload loops
-                router.push('/picks');
-                router.refresh();
+                // Redirect immediately using replace to avoid redirect loops
+                router.replace('/picks?write=true');
             }
         } catch (err) {
-            console.error('Login error:', err);
             setError('Something went wrong. Please try again.');
+        } finally {
             setLoading(false);
         }
     };
@@ -130,9 +109,9 @@ export default function PicksSignInPage() {
         e.preventDefault();
         setLoading(true);
         setError(null);
+        setMessage(null);
 
         try {
-            // Verify OTP directly with the browser Supabase client
             const { data, error: verifyError } = await supabase.auth.verifyOtp({
                 email,
                 token: otp,
@@ -140,33 +119,51 @@ export default function PicksSignInPage() {
             });
 
             if (verifyError) {
-                setError('Invalid or expired verification code. Please try again.');
+                setError(verifyError.message);
                 setLoading(false);
                 return;
             }
 
-            if (!data.user) {
-                setError('Verification failed. Please try signing up again.');
-                setLoading(false);
-                return;
-            }
-
-            // Ensure picks_user profile exists
-            const customUsername = data.user.user_metadata?.username;
-            await ensureProfile(data.user.id, email, customUsername);
-
-            // Use Next.js client-side navigation to prevent full-page reload loops
-            router.push('/picks');
-            router.refresh();
-        } catch {
-            setError('Something went wrong. Please try again.');
+            setMessage('Email verified successfully! Redirecting...');
+            router.replace('/picks?write=true');
+        } catch (err) {
+            setError('Failed to verify OTP. Please try again.');
+        } finally {
             setLoading(false);
         }
     };
 
-    const inputStyle = {
-        background: 'rgba(0,230,118,0.03)',
-        border: '1px solid rgba(0,230,118,0.08)',
+    const handleResendOtp = async () => {
+        setLoading(true);
+        setError(null);
+        setMessage(null);
+
+        try {
+            const { error: resendError } = await supabase.auth.resend({
+                type: 'signup',
+                email: email,
+            });
+
+            if (resendError) {
+                setError(resendError.message);
+                setLoading(false);
+                return;
+            }
+
+            setMessage('Verification code (OTP) resent successfully! Please check your inbox.');
+        } catch (err) {
+            setError('Failed to resend OTP. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        if (showOtp) {
+            handleVerifyOtp(e);
+        } else {
+            handleCredentials(e);
+        }
     };
 
     return (
@@ -180,329 +177,218 @@ export default function PicksSignInPage() {
                 {/* Back link */}
                 <Link
                     href="/picks"
-                    className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-[#00e676] transition-colors mb-6 font-mono group"
+                    className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-300 transition-colors mb-6"
                 >
-                    <ArrowLeft size={12} className="group-hover:-translate-x-0.5 transition-transform" />
-                    cd ../picks
+                    <ArrowLeft size={14} />
+                    Back to Picks
                 </Link>
 
-                {/* Card */}
-                <div
-                    className="rounded-2xl p-6 md:p-8 relative overflow-hidden"
-                    style={{
-                        background: 'rgba(8,8,8,0.96)',
-                        border: '1px solid rgba(0,230,118,0.1)',
-                        backdropFilter: 'blur(20px)',
-                        boxShadow: '0 0 60px rgba(0,230,118,0.05), 0 25px 60px rgba(0,0,0,0.6)',
-                    }}
-                >
-                    {/* Top green line */}
-                    <div
-                        className="absolute top-0 left-0 right-0 h-px"
-                        style={{ background: 'linear-gradient(90deg, transparent, rgba(0,230,118,0.4), transparent)' }}
-                    />
-                    {/* Background glow */}
-                    <div
-                        className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 pointer-events-none"
-                        style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,230,118,0.06) 0%, transparent 70%)' }}
-                    />
-
+                <div className="bg-[#0a0a0a]/90 border border-white/[0.08] rounded-2xl p-6 md:p-8 shadow-2xl">
                     {/* Header */}
-                    <div className="text-center mb-8 relative z-10">
-                        <div
-                            className="w-12 h-12 rounded-xl mx-auto mb-4 flex items-center justify-center"
+                    <div className="text-center mb-6">
+                        <div className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center"
                             style={{
-                                background: 'rgba(0,230,118,0.08)',
-                                border: '1px solid rgba(0,230,118,0.15)',
-                                boxShadow: '0 0 20px rgba(0,230,118,0.08)',
-                            }}
-                        >
-                            {step === 'otp' ? (
-                                <KeyRound size={20} className="text-[#00e676]" />
-                            ) : (
-                                <Terminal size={20} className="text-[#00e676]" />
-                            )}
+                                background: 'linear-gradient(135deg, rgba(216, 90, 48, 0.2), rgba(216, 90, 48, 0.05))',
+                                border: '1px solid rgba(216, 90, 48, 0.2)',
+                            }}>
+                            <ShieldCheck size={22} className="text-[#D85A30]" />
                         </div>
-
-                        <h1 className="text-xl font-bold text-white font-mono mb-1">
-                            {step === 'otp' ? 'Verify Email' : mode === 'signup' ? 'Create Account' : 'Welcome Back'}
+                        <h1 className="text-2xl font-bold text-white font-display mb-1">
+                            {showOtp ? 'Verify OTP' : mode === 'signup' ? 'Create Account' : 'Welcome Back'}
                         </h1>
-                        <p className="text-sm text-gray-400 font-mono">
-                            <span className="text-[#00e676]/40">//</span>{' '}
-                            {step === 'otp'
-                                ? 'enter the 6-digit code sent to your email'
-                                : 'join the FOSS CEV community'}
+                        <p className="text-sm text-gray-500">
+                            {showOtp ? 'Confirm email code' : mode === 'signup' ? 'Join the FOSS CEV community' : 'Sign in to your account'}
                         </p>
                     </div>
 
-                    <AnimatePresence mode="wait">
-                        {step === 'credentials' ? (
-                            <motion.form
-                                key="credentials"
-                                initial={{ opacity: 0, x: -16 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: 16 }}
-                                transition={{ duration: 0.2 }}
-                                onSubmit={handleCredentials}
-                                className="space-y-4 relative z-10"
-                            >
-                                {/* Email */}
+
+
+                    <form
+                        onSubmit={handleSubmit}
+                        className="space-y-4"
+                    >
+                        {showOtp ? (
+                            <>
+                                {/* Email Address (Disabled) */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-300 font-mono uppercase tracking-widest mb-1.5">
-                                        {mode === 'signup' ? 'Email Address' : 'Email or Username'}
+                                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                                        Email Address
                                     </label>
                                     <div className="relative">
-                                        <Mail size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                                        <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
                                         <input
-                                            type="text"
+                                            type="email"
                                             value={email}
-                                            onChange={(e) => setEmail(e.target.value)}
-                                            placeholder={mode === 'signup' ? "you@cev.ac.in" : "you@cev.ac.in or handle"}
-                                            required
-                                            suppressHydrationWarning
-                                            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-base text-gray-100 placeholder-gray-500 font-mono focus:outline-none transition-all"
-                                            style={inputStyle}
-                                            onFocus={e => {
-                                                (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.25)';
-                                                (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.05)';
-                                            }}
-                                            onBlur={e => {
-                                                (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.08)';
-                                                (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.03)';
-                                            }}
+                                            disabled
+                                            className="w-full pl-10 pr-4 py-2.5 bg-white/[0.02] border border-white/8 rounded-lg text-sm text-gray-500 focus:outline-none"
                                         />
                                     </div>
-                                    <p className="text-xs text-gray-500 font-mono mt-1">
-                                        @cev.ac.in · @gmail.com · @outlook.com · @yahoo.com
+                                </div>
+
+                                {/* OTP Code Input */}
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                                        Verification Code (OTP)
+                                    </label>
+                                    <div className="relative">
+                                        <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                                        <input
+                                            type="text"
+                                            value={otp}
+                                            onChange={(e) => setOtp(e.target.value)}
+                                            placeholder="123456"
+                                            required
+                                            className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
+                                        />
+                                    </div>
+                                    <p className="text-[11px] text-gray-600 mt-1">
+                                        Enter the verification code sent to your email.
+                                    </p>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* Email */}
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
+                                        Email Address
+                                    </label>
+                                    <div className="relative">
+                                        <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                                        <input
+                                            type="email"
+                                            value={email}
+                                            onChange={(e) => setEmail(e.target.value)}
+                                            placeholder="name@gmail.com"
+                                            required
+                                            className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
+                                        />
+                                    </div>
+                                    <p className="text-[11px] text-gray-600 mt-1">
+                                        Accepts @gmail.com, @outlook.com, @yahoo.com, @hotmail.com, and approved domains
                                     </p>
                                 </div>
 
-                                {/* Username (Signup Only) */}
-                                {mode === 'signup' && (
-                                    <div>
-                                        <label className="block text-xs font-semibold text-gray-300 font-mono uppercase tracking-widest mb-1.5">
-                                            Username (Optional)
-                                        </label>
-                                        <div className="relative">
-                                            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 font-mono">@</span>
-                                            <input
-                                                type="text"
-                                                value={username}
-                                                onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                                                placeholder="your_handle"
-                                                className="w-full pl-9 pr-4 py-2.5 rounded-xl text-base text-gray-100 placeholder-gray-500 font-mono focus:outline-none transition-all"
-                                                style={inputStyle}
-                                                onFocus={e => {
-                                                    (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.25)';
-                                                    (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.05)';
-                                                }}
-                                                onBlur={e => {
-                                                    (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.08)';
-                                                    (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.03)';
-                                                }}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
                                 {/* Password */}
                                 <div>
-                                    <label className="block text-xs font-semibold text-gray-300 font-mono uppercase tracking-widest mb-1.5">
+                                    <label className="block text-xs font-medium text-gray-400 mb-1.5">
                                         Password
                                     </label>
                                     <div className="relative">
-                                        <Lock size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
+                                        <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600" />
                                         <input
                                             type="password"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             placeholder="••••••••"
                                             required
-                                            minLength={6}
-                                            suppressHydrationWarning
-                                            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-base text-gray-100 placeholder-gray-500 font-mono focus:outline-none transition-all"
-                                            style={inputStyle}
-                                            onFocus={e => {
-                                                (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.25)';
-                                                (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.05)';
-                                            }}
-                                            onBlur={e => {
-                                                (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.08)';
-                                                (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.03)';
-                                            }}
+                                            className="w-full pl-10 pr-4 py-2.5 bg-white/[0.04] border border-white/8 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-[#D85A30]/40 focus:ring-1 focus:ring-[#D85A30]/20 transition-all"
                                         />
                                     </div>
                                     {mode === 'signup' && (
-                                        <p className="text-xs text-gray-500 font-mono mt-1">Minimum 6 characters</p>
+                                        <p className="text-[11px] text-gray-600 mt-1">Minimum 6 characters</p>
                                     )}
                                 </div>
-
-                                {error && (
-                                    <div
-                                        className="px-3 py-2.5 rounded-xl"
-                                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}
-                                    >
-                                        <p className="text-xs text-red-400 font-mono">{error}</p>
-                                    </div>
-                                )}
-
-                                <motion.button
-                                    whileTap={{ scale: 0.98 }}
-                                    type="submit"
-                                    disabled={loading}
-                                    className="w-full py-2.5 rounded-xl text-sm font-semibold font-mono transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2"
-                                    style={{
-                                        background: 'linear-gradient(135deg, rgba(0,230,118,0.15) 0%, rgba(0,168,84,0.1) 100%)',
-                                        color: '#00e676',
-                                        border: '1px solid rgba(0,230,118,0.25)',
-                                        boxShadow: '0 0 20px rgba(0,230,118,0.08)',
-                                    }}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div
-                                                className="w-3.5 h-3.5 rounded-full"
-                                                style={{
-                                                    border: '2px solid rgba(0,230,118,0.2)',
-                                                    borderTopColor: '#00e676',
-                                                    animation: 'spin 0.8s linear infinite',
-                                                }}
-                                            />
-                                            {mode === 'signup' ? 'Creating account...' : 'Signing in...'}
-                                        </>
-                                    ) : (
-                                        mode === 'signup' ? 'Create Account & Send Code' : 'Sign In →'
-                                    )}
-                                </motion.button>
-
-                                <div className="text-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => { setMode(mode === 'signin' ? 'signup' : 'signin'); setError(null); }}
-                                        className="text-sm text-gray-400 font-mono transition-colors hover:text-[#00e676]"
-                                    >
-                                        {mode === 'signin'
-                                            ? "Don't have an account? Sign up →"
-                                            : '← Already have an account? Sign in'}
-                                    </button>
-                                </div>
-                            </motion.form>
-                        ) : (
-                            <motion.form
-                                key="otp"
-                                initial={{ opacity: 0, x: 16 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -16 }}
-                                transition={{ duration: 0.2 }}
-                                onSubmit={handleVerifyOtp}
-                                className="space-y-4 relative z-10"
-                            >
-                                {message && (
-                                    <div
-                                        className="px-3 py-2.5 rounded-xl"
-                                        style={{ background: 'rgba(0,230,118,0.06)', border: '1px solid rgba(0,230,118,0.15)' }}
-                                    >
-                                        <p className="text-xs text-[#00e676]/80 font-mono">{message}</p>
-                                    </div>
-                                )}
-
-                                <div>
-                                    <label className="block text-xs font-semibold text-gray-300 font-mono uppercase tracking-widest mb-1.5">
-                                        Verification Code
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={otp}
-                                        onChange={(e) => setOtp(e.target.value.replace(/[^a-zA-Z0-9]/g, '').slice(0, 8))}
-                                        placeholder="00000000"
-                                        required
-                                        maxLength={8}
-                                        autoFocus
-                                        className="w-full px-4 py-3.5 rounded-xl text-center text-2xl font-mono text-[#00e676] tracking-[0.3em] placeholder-gray-700 focus:outline-none transition-all"
-                                        style={{
-                                            background: 'rgba(0,230,118,0.04)',
-                                            border: '1px solid rgba(0,230,118,0.12)',
-                                            textShadow: '0 0 20px rgba(0,230,118,0.3)',
-                                        }}
-                                        onFocus={e => {
-                                            (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.3)';
-                                            (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.06)';
-                                        }}
-                                        onBlur={e => {
-                                            (e.target as HTMLElement).style.border = '1px solid rgba(0,230,118,0.12)';
-                                            (e.target as HTMLElement).style.background = 'rgba(0,230,118,0.04)';
-                                        }}
-                                    />
-                                    <p className="text-xs text-gray-400 font-mono mt-1.5">
-                                        Sent to <span className="text-gray-200">{email}</span> · expires in 10 min
-                                    </p>
-                                </div>
-
-                                {error && (
-                                    <div
-                                        className="px-3 py-2.5 rounded-xl"
-                                        style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.15)' }}
-                                    >
-                                        <p className="text-xs text-red-400 font-mono">{error}</p>
-                                    </div>
-                                )}
-
-                                <motion.button
-                                    whileTap={{ scale: 0.98 }}
-                                    type="submit"
-                                    disabled={loading || otp.length < 6}
-                                    className="w-full py-2.5 rounded-xl text-sm font-semibold font-mono transition-all duration-200 disabled:opacity-40 flex items-center justify-center gap-2"
-                                    style={{
-                                        background: 'linear-gradient(135deg, rgba(0,230,118,0.15) 0%, rgba(0,168,84,0.1) 100%)',
-                                        color: '#00e676',
-                                        border: '1px solid rgba(0,230,118,0.25)',
-                                        boxShadow: '0 0 20px rgba(0,230,118,0.08)',
-                                    }}
-                                >
-                                    {loading ? (
-                                        <>
-                                            <div
-                                                className="w-3.5 h-3.5 rounded-full"
-                                                style={{
-                                                    border: '2px solid rgba(0,230,118,0.2)',
-                                                    borderTopColor: '#00e676',
-                                                    animation: 'spin 0.8s linear infinite',
-                                                }}
-                                            />
-                                            Verifying...
-                                        </>
-                                    ) : (
-                                        'Verify & Enter →'
-                                    )}
-                                </motion.button>
-
-                                <div className="text-center">
-                                    <button
-                                        type="button"
-                                        onClick={() => { setStep('credentials'); setOtp(''); setError(null); setMessage(null); }}
-                                        className="text-sm text-gray-400 font-mono transition-colors hover:text-[#00e676]"
-                                    >
-                                        ← Back to credentials
-                                    </button>
-                                </div>
-                            </motion.form>
+                            </>
                         )}
-                    </AnimatePresence>
+
+                        {error && (
+                            <div className="px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-lg">
+                                <p className="text-xs text-red-400">{error}</p>
+                            </div>
+                        )}
+
+                        {message && (
+                            <div className="px-3 py-2 bg-[#D85A30]/10 border border-[#D85A30]/20 rounded-lg">
+                                <p className="text-xs text-[#D85A30]">{message}</p>
+                            </div>
+                        )}
+
+                        <motion.button
+                            whileTap={{ scale: 0.97 }}
+                            type="submit"
+                            disabled={loading}
+                            className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 disabled:opacity-50"
+                            style={{
+                                background: 'linear-gradient(135deg, #D85A30, #e06b3a)',
+                                color: '#fff',
+                                boxShadow: '0 4px 20px rgba(216, 90, 48, 0.2)',
+                            }}
+                        >
+                            {loading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    {showOtp ? 'Verifying...' : mode === 'signup' ? 'Creating account...' : 'Signing in...'}
+                                </span>
+                            ) : (
+                                showOtp ? 'Verify Code' : mode === 'signup' ? 'Create Account' : 'Sign In'
+                            )}
+                        </motion.button>
+
+                        <div className="text-center">
+                            {showOtp ? (
+                                <div className="flex flex-col gap-2.5 items-center">
+                                    <button
+                                        type="button"
+                                        disabled={loading}
+                                        onClick={handleResendOtp}
+                                        className="text-xs text-[#D85A30] hover:underline disabled:opacity-50 font-medium"
+                                    >
+                                        Resend OTP Code
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setShowOtp(false);
+                                            setError(null);
+                                            setMessage(null);
+                                        }}
+                                        className="text-xs text-gray-500 hover:text-[#D85A30] transition-colors"
+                                    >
+                                        Back to Sign Up
+                                    </button>
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setMode(mode === 'signin' ? 'signup' : 'signin');
+                                        setError(null);
+                                        setMessage(null);
+                                    }}
+                                    className="text-xs text-gray-500 hover:text-[#D85A30] transition-colors"
+                                >
+                                    {mode === 'signin'
+                                        ? "Don't have an account? Sign up"
+                                        : 'Already have an account? Sign in'}
+                                </button>
+                            )}
+                        </div>
+                    </form>
 
                     {/* Security note */}
-                    <div
-                        className="mt-6 pt-4 relative z-10"
-                        style={{ borderTop: '1px solid rgba(0,230,118,0.06)' }}
-                    >
+                    <div className="mt-6 pt-4 border-t border-white/[0.06]">
                         <div className="flex items-start gap-2">
-                            <ShieldCheck size={12} className="text-[#00e676]/60 mt-0.5 flex-shrink-0" />
-                            <p className="text-xs text-gray-500 leading-relaxed font-mono">
-                                Protected by Supabase Auth · PKCE flow · rate limited · encrypted sessions
+                            <ShieldCheck size={14} className="text-gray-600 mt-0.5 flex-shrink-0" />
+                            <p className="text-[11px] text-gray-600 leading-relaxed">
+                                Protected by Supabase Auth with PKCE flow, rate limiting, and encrypted sessions. Your password is never stored in plain text.
                             </p>
                         </div>
                     </div>
                 </div>
             </motion.div>
         </section>
+    );
+}
+
+export default function PicksSignInPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="w-8 h-8 border-2 border-[#D85A30] border-t-white rounded-full animate-spin" />
+            </div>
+        }>
+            <PicksSignInPageContent />
+        </Suspense>
     );
 }

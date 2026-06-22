@@ -1,58 +1,42 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { FLAIRS, FLAIR_COLORS, type Flair } from '@/lib/picks-db';
+import { Plus } from 'lucide-react';
 
 interface SidebarProps {
-    activeFlair: Flair | null;
-    onFlairChange: (flair: Flair | null) => void;
     onSubmitClick: () => void;
+    activeFlair?: any;
+    onFlairChange?: any;
 }
 
-export function Sidebar({ activeFlair, onFlairChange, onSubmitClick }: SidebarProps) {
-    const [stats, setStats] = useState({ flairCounts: {} as Record<string, number> });
-
-    useEffect(() => {
-        fetch('/api/picks/stats')
-            .then(res => res.json())
-            .then(setStats)
-            .catch(() => { });
-    }, []);
-
+export function Sidebar({ onSubmitClick }: SidebarProps) {
     return (
-        <aside className="w-full">
-            <div className="border border-white/20 rounded-2xl p-6 bg-transparent">
-                <h3 className="text-sm font-bold text-white mb-6">
-                    Top Trending Topics
-                </h3>
-                <div className="flex flex-col gap-3">
-                    <button
-                        onClick={() => onFlairChange(null)}
-                        className={`w-full py-2 px-4 rounded-full border text-left text-sm transition-all duration-150 ${
-                            activeFlair === null 
-                                ? 'border-[#00e676] text-[#00e676] bg-[#00e676]/10' 
-                                : 'border-white/20 text-gray-400 hover:border-white/50 hover:text-white bg-transparent'
-                        }`}
-                    >
-                        All Topics
-                    </button>
-                    {FLAIRS.slice(0, 5).map(f => {
-                        const isActive = activeFlair === f;
-                        return (
-                            <button
-                                key={f}
-                                onClick={() => onFlairChange(isActive ? null : f)}
-                                className={`w-full py-2 px-4 rounded-full border text-left text-sm transition-all duration-150 ${
-                                    isActive 
-                                        ? 'border-[#00e676] text-[#00e676] bg-[#00e676]/10' 
-                                        : 'border-white/20 text-gray-400 hover:border-white/50 hover:text-white bg-transparent'
-                                }`}
-                            >
-                                {f}
-                            </button>
-                        );
-                    })}
-                </div>
+        <aside className="space-y-4">
+            {/* Submit CTA */}
+            <button
+                onClick={onSubmitClick}
+                className="w-full py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                style={{
+                    background: 'linear-gradient(135deg, #D85A30, #e06b3a)',
+                    color: '#fff',
+                    boxShadow: '0 4px 20px rgba(216, 90, 48, 0.2)',
+                }}
+            >
+                <Plus size={16} strokeWidth={2.5} />
+                Write a Pick
+            </button>
+
+            {/* Guidelines Box */}
+            <div className="bg-surface/40 backdrop-blur-md border border-white/10 rounded-xl p-5">
+                <h3 className="text-white font-bold font-display mb-3">Guidelines</h3>
+                <ul className="text-sm text-gray-400 space-y-2 list-disc pl-4 marker:text-primary/70">
+                    <li>Share real experiences with open source tools.</li>
+                    <li>Choose the correct category for your post.</li>
+                    <li>Keep content relevant and respectful.</li>
+                    <li>No spam, hate speech, or misleading information.</li>
+                    <li>Respect privacy and avoid sharing sensitive data.</li>
+                    <li>Flag content that violates these guidelines.</li>
+                    <li>Flagged posts may be reviewed by administrators.</li>
+                </ul>
             </div>
         </aside>
     );

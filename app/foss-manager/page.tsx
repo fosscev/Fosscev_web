@@ -3,14 +3,33 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+<<<<<<< HEAD
 import { isAdminEmail } from '@/lib/admin-config';
+=======
+import { AdminAuthProvider, useAdminAuth } from '@/components/admin/AdminAuthProvider';
+>>>>>>> 448d8de (feat: enhance picks system and event details)
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
     const router = useRouter();
+    const { user, authLoading } = useAdminAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+<<<<<<< HEAD
+=======
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    useEffect(() => {
+        if (mounted && !authLoading && user) {
+            router.push('/foss-manager/dashboard');
+        }
+    }, [mounted, authLoading, user, router]);
+>>>>>>> 448d8de (feat: enhance picks system and event details)
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -53,6 +72,18 @@ export default function AdminLoginPage() {
         }
     };
 
+<<<<<<< HEAD
+=======
+    // Show loading state during SSR / before mount / while checking session
+    if (!mounted || authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-[#050505] text-white">
+                <div className="text-xl font-mono animate-pulse">Initializing...</div>
+            </div>
+        );
+    }
+
+>>>>>>> 448d8de (feat: enhance picks system and event details)
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#050505] p-4">
             <div
@@ -219,5 +250,13 @@ export default function AdminLoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function AdminLoginPage() {
+    return (
+        <AdminAuthProvider>
+            <AdminLoginForm />
+        </AdminAuthProvider>
     );
 }

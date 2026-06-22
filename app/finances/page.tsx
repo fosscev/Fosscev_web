@@ -22,7 +22,10 @@ export default async function FinancesPage() {
     }
 
     const yearlyReports = (reports as FinancialReport[] | null)?.filter(r => r.type === 'Yearly') || [];
+<<<<<<< HEAD
     const eventReports = (reports as FinancialReport[] | null)?.filter(r => r.type === 'Event') || [];
+=======
+>>>>>>> 448d8de (feat: enhance picks system and event details)
 
     const renderReportCard = (report: FinancialReport) => {
         const isPositive = report.balance >= 0;
@@ -188,6 +191,7 @@ export default async function FinancesPage() {
                         )}
                     </section>
 
+<<<<<<< HEAD
                     {/* Event Reports Section */}
                     <section>
                         <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-8 flex items-center gap-3">
@@ -205,6 +209,9 @@ export default async function FinancesPage() {
                             </div>
                         )}
                     </section>
+=======
+
+>>>>>>> 448d8de (feat: enhance picks system and event details)
                 </div>
                     </div>
                 </main>
