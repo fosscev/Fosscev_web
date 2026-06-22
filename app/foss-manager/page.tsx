@@ -1,13 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-<<<<<<< HEAD
 import { isAdminEmail } from '@/lib/admin-config';
-=======
 import { AdminAuthProvider, useAdminAuth } from '@/components/admin/AdminAuthProvider';
->>>>>>> 448d8de (feat: enhance picks system and event details)
 
 function AdminLoginForm() {
     const router = useRouter();
@@ -16,8 +13,6 @@ function AdminLoginForm() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-<<<<<<< HEAD
-=======
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -29,7 +24,6 @@ function AdminLoginForm() {
             router.push('/foss-manager/dashboard');
         }
     }, [mounted, authLoading, user, router]);
->>>>>>> 448d8de (feat: enhance picks system and event details)
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -72,8 +66,6 @@ function AdminLoginForm() {
         }
     };
 
-<<<<<<< HEAD
-=======
     // Show loading state during SSR / before mount / while checking session
     if (!mounted || authLoading) {
         return (
@@ -82,8 +74,6 @@ function AdminLoginForm() {
             </div>
         );
     }
-
->>>>>>> 448d8de (feat: enhance picks system and event details)
     return (
         <div className="min-h-screen flex items-center justify-center bg-[#050505] p-4">
             <div

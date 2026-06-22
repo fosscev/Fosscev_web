@@ -2,12 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-<<<<<<< HEAD
-import { supabase } from "@/lib/supabase";
-import { isAdminEmail } from "@/lib/admin-config";
-=======
 import { AdminAuthProvider, useAdminAuth } from "@/components/admin/AdminAuthProvider";
->>>>>>> 448d8de (feat: enhance picks system and event details)
 
 function AdminLayoutContent({
     children,
@@ -25,25 +20,6 @@ function AdminLayoutContent({
     }, [session, authLoading, router]);
 
     useEffect(() => {
-<<<<<<< HEAD
-        const checkSession = async () => {
-            // getSession() is a local-only call — reads from browser storage, no network request.
-            // The heavy auth validation is already handled by proxy.ts on the server.
-            const { data: { session } } = await supabase.auth.getSession();
-            const user = session?.user;
-
-            if (!user || !isAdminEmail(user.email)) {
-                // Not admin — redirect to login (proxy.ts should have caught this,
-                // but this is a client-side safety net)
-                router.push("/foss-manager");
-                return;
-            }
-
-            setIsLoading(false);
-        };
-
-        checkSession();
-=======
         let logoutTimer: NodeJS.Timeout;
 
         const resetTimer = () => {
@@ -64,40 +40,24 @@ function AdminLayoutContent({
         };
 
         resetTimer();
->>>>>>> 448d8de (feat: enhance picks system and event details)
 
-        // Inactivity auto-logout (15 minutes)
-        let lastActivity = Date.now();
         const updateActivity = () => {
-            lastActivity = Date.now();
+            resetTimer();
         };
-
-        const interval = setInterval(async () => {
-            if (Date.now() - lastActivity > 15 * 60 * 1000) {
-                clearInterval(interval);
-                try {
-                    await supabase.auth.signOut();
-                } catch {
-                    // Ignore signout errors, just redirect
-                }
-                router.push("/foss-manager");
-            }
-        }, 30000);
 
         window.addEventListener('mousemove', updateActivity, { passive: true });
         window.addEventListener('keydown', updateActivity, { passive: true });
         window.addEventListener('click', updateActivity, { passive: true });
 
         return () => {
-            clearInterval(interval);
+            clearTimeout(logoutTimer);
             window.removeEventListener('mousemove', updateActivity);
             window.removeEventListener('keydown', updateActivity);
             window.removeEventListener('click', updateActivity);
         };
-<<<<<<< HEAD
-    }, [router]);
+    }, [router, signOut]);
 
-    if (isLoading) {
+    if (authLoading) {
         return (
             <div className="flex h-screen w-full items-center justify-center bg-[#050505] text-white">
                 <div className="flex flex-col items-center gap-3">
@@ -114,9 +74,6 @@ function AdminLayoutContent({
             </div>
         );
     }
-=======
-    }, [router, signOut]);
->>>>>>> 448d8de (feat: enhance picks system and event details)
 
     return (
         <div className="min-h-screen bg-gray-900 text-white">

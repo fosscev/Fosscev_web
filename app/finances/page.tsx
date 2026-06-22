@@ -22,10 +22,7 @@ export default async function FinancesPage() {
     }
 
     const yearlyReports = (reports as FinancialReport[] | null)?.filter(r => r.type === 'Yearly') || [];
-<<<<<<< HEAD
-    const eventReports = (reports as FinancialReport[] | null)?.filter(r => r.type === 'Event') || [];
-=======
->>>>>>> 448d8de (feat: enhance picks system and event details)
+
 
     const renderReportCard = (report: FinancialReport) => {
         const isPositive = report.balance >= 0;
@@ -191,27 +188,7 @@ export default async function FinancesPage() {
                         )}
                     </section>
 
-<<<<<<< HEAD
-                    {/* Event Reports Section */}
-                    <section>
-                        <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-8 flex items-center gap-3">
-                            <span className="w-8 h-1 bg-primary rounded-full"></span>
-                            Event Reports
-                        </h2>
-                        
-                        {eventReports.length > 0 ? (
-                            <div className="space-y-6">
-                                {eventReports.map(renderReportCard)}
-                            </div>
-                        ) : (
-                            <div className="text-center py-12 bg-surface/30 border border-white/5 rounded-2xl">
-                                <p className="text-gray-400">No event reports available yet.</p>
-                            </div>
-                        )}
-                    </section>
-=======
 
->>>>>>> 448d8de (feat: enhance picks system and event details)
                 </div>
                     </div>
                 </main>

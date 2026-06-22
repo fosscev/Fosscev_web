@@ -88,19 +88,19 @@ export async function getPicksUserByAuthId(authId: string): Promise<PicksUser | 
     return data;
 }
 
-export async function createPicksUser(authId: string, email: string): Promise<PicksUser | null> {
-    const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
+export async function createPicksUser(authId: string, email: string, username?: string): Promise<PicksUser | null> {
+    const baseUsername = username || email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
 
     // Check if username exists, append random digits if so
     const { data: existing } = await supabase
         .from('picks_users')
         .select('id')
-        .eq('username', username)
+        .eq('username', baseUsername)
         .single();
 
     const finalUsername = existing
-        ? `${username}_${Math.floor(Math.random() * 9999)}`
-        : username;
+        ? `${baseUsername}_${Math.floor(Math.random() * 9999)}`
+        : baseUsername;
 
     const { data, error } = await supabase
         .from('picks_users')
