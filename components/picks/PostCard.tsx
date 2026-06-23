@@ -1,14 +1,15 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Scale, ChevronDown, AlertTriangle, Flag } from 'lucide-react';
+import { MessageCircle, Scale, ChevronDown, AlertTriangle, Flag, LogOut } from 'lucide-react';
 import { VoteButtons } from './VoteButtons';
 import { CommentSection } from './CommentSection';
 import { ReportModal } from './ReportModal';
 import { useRouter } from 'next/navigation';
 import { FLAIR_COLORS, FLAIRS, type PicksPost, type Flair } from '@/lib/picks-db';
 import { usePicksAuth } from './PicksAuthProvider';
+import { supabase } from '@/lib/supabase';
 
 interface PostCardProps {
     post: PicksPost;
@@ -30,8 +31,55 @@ function timeAgo(dateStr: string): string {
 }
 
 export function PostCard({ post, onAuthRequired, onPostUpdated, isDetailedView = false }: PostCardProps) {
-    const { user, session } = usePicksAuth();
+    const { user, session, signOut } = usePicksAuth();
     const router = useRouter();
+
+    console.log('PostCard auth state:', { user, session });
+
+    const [profileCardOpen, setProfileCardOpen] = useState(false);
+    const profileRef = useRef<HTMLDivElement>(null);
+    const [hasSession, setHasSession] = useState(false);
+
+    useEffect(() => {
+        const checkSession = async () => {
+            const { data } = await supabase.auth.getSession();
+            setHasSession(!!data?.session);
+        };
+        checkSession();
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
+            setHasSession(!!currentSession);
+        });
+
+        return () => {
+            subscription.unsubscribe();
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
+                setProfileCardOpen(false);
+            }
+        };
+        if (profileCardOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [profileCardOpen]);
+
+    const authorName = post.author?.username || 'anonymous';
+    const initial = authorName[0].toUpperCase();
+    const hue = authorName.charCodeAt(0) * 37 % 360;
+
+    const joinDate = post.author?.created_at
+        ? new Date(post.author.created_at).toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'long',
+          })
+        : null;
 
     const [currentScore, setCurrentScore] = useState(post.score);
     const [currentVote, setCurrentVote] = useState<number | null>(post.user_vote || null);
@@ -150,8 +198,102 @@ export function PostCard({ post, onAuthRequired, onPostUpdated, isDetailedView =
                 !isDetailedView ? 'cursor-pointer hover:border-white/[0.1] hover:bg-[#0e0e0e]/80' : ''
             }`}
         >
-            {/* Vote column */}
-            <div className="flex-shrink-0 pt-1">
+            {/* Left column: Avatar + Vote buttons */}
+            <div className="flex flex-col items-center gap-3.5 flex-shrink-0 pt-1 select-none">
+                {/* Avatar with Popover */}
+                <div className="relative" ref={profileRef}>
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setProfileCardOpen(!profileCardOpen);
+                        }}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold font-mono transition-transform hover:scale-105 active:scale-95 border"
+                        style={{
+                            background: `hsl(${hue}, 40%, 20%)`,
+                            color: `hsl(${hue}, 60%, 70%)`,
+                            borderColor: `hsl(${hue}, 40%, 30%)`,
+                        }}
+                        aria-label="View author profile"
+                    >
+                        {initial}
+                    </button>
+
+                    <AnimatePresence>
+                        {profileCardOpen && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                                transition={{ duration: 0.15 }}
+                                className="absolute left-0 top-full mt-2 w-56 sm:w-64 rounded-xl p-4 z-50 text-left cursor-default"
+                                onClick={(e) => e.stopPropagation()}
+                                style={{
+                                    background: 'rgba(10, 10, 10, 0.98)',
+                                    border: '1px solid rgba(216, 90, 48, 0.2)',
+                                    backdropFilter: 'blur(16px)',
+                                    boxShadow: '0 16px 40px rgba(0,0,0,0.6), 0 0 20px rgba(216, 90, 48, 0.05)',
+                                }}
+                            >
+                                <div className="flex items-center gap-3 pb-3 border-b border-white/[0.06]">
+                                    <div
+                                        className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold font-mono border"
+                                        style={{
+                                            background: `hsl(${hue}, 40%, 20%)`,
+                                            color: `hsl(${hue}, 60%, 70%)`,
+                                            borderColor: `hsl(${hue}, 40%, 30%)`,
+                                        }}
+                                    >
+                                        {initial}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="text-sm font-bold text-gray-200 font-mono truncate" title={authorName}>{authorName}</p>
+                                        {post.author?.email && (
+                                            <p className="text-[11px] text-gray-500 font-mono truncate mt-0.5" title={post.author.email}>{post.author.email}</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {joinDate && (
+                                    <div className="pt-3 text-[11px] text-gray-400 font-mono flex items-center gap-1.5">
+                                        <span className="text-gray-500 font-medium">Joined:</span>
+                                        <span className="text-gray-300">{joinDate}</span>
+                                    </div>
+                                )}
+
+                                {hasSession && (
+                                    <button
+                                        type="button"
+                                        onClick={async (e) => {
+                                            e.stopPropagation();
+                                            setProfileCardOpen(false);
+                                            await signOut();
+                                            router.refresh();
+                                        }}
+                                        className="w-full mt-3.5 flex items-center justify-center gap-2 px-3 py-2 text-xs font-mono rounded-lg transition-all duration-150 border"
+                                        style={{
+                                            borderColor: 'rgba(239, 68, 68, 0.2)',
+                                            background: 'rgba(239, 68, 68, 0.05)',
+                                            color: '#f87171',
+                                        }}
+                                        onMouseEnter={e => {
+                                            (e.currentTarget as HTMLElement).style.background = 'rgba(239, 68, 68, 0.15)';
+                                            (e.currentTarget as HTMLElement).style.color = '#fca5a5';
+                                        }}
+                                        onMouseLeave={e => {
+                                            (e.currentTarget as HTMLElement).style.background = 'rgba(239, 68, 68, 0.05)';
+                                            (e.currentTarget as HTMLElement).style.color = '#f87171';
+                                        }}
+                                    >
+                                        <LogOut size={13} />
+                                        Logout
+                                    </button>
+                                )}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                </div>
+
                 <VoteButtons
                     postId={post.id}
                     score={currentScore}
