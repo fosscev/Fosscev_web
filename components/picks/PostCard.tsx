@@ -2,14 +2,13 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MessageCircle, Scale, ChevronDown, AlertTriangle, Flag, LogOut } from 'lucide-react';
+import { MessageCircle, Scale, ChevronDown, AlertTriangle, Flag } from 'lucide-react';
 import { VoteButtons } from './VoteButtons';
 import { CommentSection } from './CommentSection';
 import { ReportModal } from './ReportModal';
 import { useRouter } from 'next/navigation';
 import { FLAIR_COLORS, FLAIRS, type PicksPost, type Flair } from '@/lib/picks-db';
 import { usePicksAuth } from './PicksAuthProvider';
-import { supabase } from '@/lib/supabase';
 
 interface PostCardProps {
     post: PicksPost;
@@ -31,30 +30,14 @@ function timeAgo(dateStr: string): string {
 }
 
 export function PostCard({ post, onAuthRequired, onPostUpdated, isDetailedView = false }: PostCardProps) {
-    const { user, session, signOut } = usePicksAuth();
+    const { user, session } = usePicksAuth();
     const router = useRouter();
 
     console.log('PostCard auth state:', { user, session });
 
     const [profileCardOpen, setProfileCardOpen] = useState(false);
     const profileRef = useRef<HTMLDivElement>(null);
-    const [hasSession, setHasSession] = useState(false);
 
-    useEffect(() => {
-        const checkSession = async () => {
-            const { data } = await supabase.auth.getSession();
-            setHasSession(!!data?.session);
-        };
-        checkSession();
-
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, currentSession) => {
-            setHasSession(!!currentSession);
-        });
-
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, []);
 
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
@@ -261,34 +244,7 @@ export function PostCard({ post, onAuthRequired, onPostUpdated, isDetailedView =
                                     </div>
                                 )}
 
-                                {hasSession && (
-                                    <button
-                                        type="button"
-                                        onClick={async (e) => {
-                                            e.stopPropagation();
-                                            setProfileCardOpen(false);
-                                            await signOut();
-                                            router.refresh();
-                                        }}
-                                        className="w-full mt-3.5 flex items-center justify-center gap-2 px-3 py-2 text-xs font-mono rounded-lg transition-all duration-150 border"
-                                        style={{
-                                            borderColor: 'rgba(239, 68, 68, 0.2)',
-                                            background: 'rgba(239, 68, 68, 0.05)',
-                                            color: '#f87171',
-                                        }}
-                                        onMouseEnter={e => {
-                                            (e.currentTarget as HTMLElement).style.background = 'rgba(239, 68, 68, 0.15)';
-                                            (e.currentTarget as HTMLElement).style.color = '#fca5a5';
-                                        }}
-                                        onMouseLeave={e => {
-                                            (e.currentTarget as HTMLElement).style.background = 'rgba(239, 68, 68, 0.05)';
-                                            (e.currentTarget as HTMLElement).style.color = '#f87171';
-                                        }}
-                                    >
-                                        <LogOut size={13} />
-                                        Logout
-                                    </button>
-                                )}
+
                             </motion.div>
                         )}
                     </AnimatePresence>

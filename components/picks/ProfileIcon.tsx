@@ -28,6 +28,13 @@ export function ProfileIcon() {
     const initial = (user.username || '?')[0].toUpperCase();
     const hue = (user.username || '').charCodeAt(0) * 37 % 360;
 
+    const joinDate = user.created_at
+        ? new Date(user.created_at).toLocaleDateString(undefined, {
+            year: 'numeric',
+            month: 'long',
+          })
+        : null;
+
     return (
         <div className="relative" ref={dropdownRef}>
             <button
@@ -97,6 +104,11 @@ export function ProfileIcon() {
                                 <p className="text-xs font-semibold text-gray-200 font-mono truncate">{user.username}</p>
                             </div>
                             <p className="text-[10px] text-gray-600 font-mono truncate">{user.email}</p>
+                            {joinDate && (
+                                <p className="text-[9px] text-gray-500 font-mono mt-1 truncate">
+                                    Joined: {joinDate}
+                                </p>
+                            )}
                         </div>
 
                         <div className="px-1">

@@ -11,6 +11,7 @@ import { SubmitForm } from '@/components/picks/SubmitForm';
 import { Pagination } from '@/components/picks/Pagination';
 import { AuthModal } from '@/components/picks/AuthModal';
 import { NotificationBanner } from '@/components/picks/NotificationBanner';
+import { ProfileIcon } from '@/components/picks/ProfileIcon';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { PicksPost, SortMode, Flair } from '@/lib/picks-db';
 
@@ -101,18 +102,30 @@ export default function PicksPage() {
         <>
             <section className="pt-24 pb-20 px-4 md:px-8 max-w-7xl mx-auto relative min-h-screen">
                 {/* HEADER */}
-                <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-12"
-                >
-                    <h1 className="text-5xl md:text-6xl font-display font-black text-white mb-2">
-                        Open Source Picks
-                    </h1>
-                    <p className="text-lg md:text-xl text-gray-400 max-w-2xl mt-4 leading-relaxed">
-                        Discover experiences from the community about how open source tools solved problems, inspired projects, and made a difference.
-                    </p>
-                </motion.div>
+                <div className="flex justify-between items-start gap-4 mb-12">
+                    <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex-1"
+                    >
+                        <h1 className="text-5xl md:text-6xl font-display font-black text-white mb-2">
+                            Open Source Picks
+                        </h1>
+                        <p className="text-lg md:text-xl text-gray-400 max-w-2xl mt-4 leading-relaxed">
+                            Discover experiences from the community about how open source tools solved problems, inspired projects, and made a difference.
+                        </p>
+                    </motion.div>
+
+                    {user && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex-shrink-0 pt-2"
+                        >
+                            <ProfileIcon />
+                        </motion.div>
+                    )}
+                </div>
 
 
 
