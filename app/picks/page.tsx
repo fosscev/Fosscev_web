@@ -22,7 +22,10 @@ export default function PicksPage() {
     const hasHandledWriteRef = useRef(false);
 
     useEffect(() => {
-        if (!user) return;
+        if (!user) {
+            hasHandledWriteRef.current = false;
+            return;
+        }
         if (hasHandledWriteRef.current) return;
 
         const shouldOpenWrite = searchParams.get("write") === "true";
@@ -81,8 +84,11 @@ export default function PicksPage() {
     };
 
     const handleSubmitClick = () => {
-        // Always go to sign-in page first, which will handle the "continue as" logic
-        router.push('/picks/signin?redirect=write');
+        if (user) {
+            setShowSubmit(true);
+        } else {
+            router.push('/picks/signin?redirect=write');
+        }
     };
 
     const handleAuthRequired = () => {

@@ -29,6 +29,18 @@ function PicksSignInPageContent() {
     const modeParam = searchParams.get('mode');
     const { user, session } = usePicksAuth();
     
+    // Redirect authenticated users immediately
+    useEffect(() => {
+        if (user) {
+            const redirect = searchParams.get('redirect');
+            if (redirect === 'write') {
+                router.replace('/picks?write=true');
+            } else {
+                router.replace('/picks');
+            }
+        }
+    }, [user, router, searchParams]);
+    
     const [mode, setMode] = useState<Mode>('signin');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
