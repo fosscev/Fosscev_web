@@ -12,6 +12,8 @@ import { Pagination } from '@/components/picks/Pagination';
 import { AuthModal } from '@/components/picks/AuthModal';
 import { NotificationBanner } from '@/components/picks/NotificationBanner';
 import { ProfileIcon } from '@/components/picks/ProfileIcon';
+import { PicksSkeleton } from '@/components/skeletons/PicksSkeleton';
+import { FetchError } from '@/components/FetchError';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { PicksPost, SortMode, Flair } from '@/lib/picks-db';
 
@@ -24,30 +26,21 @@ export default function PicksPage() {
     useEffect(() => {
         if (!user) {
             hasHandledWriteRef.current = false;
-            return;
         }
-        if (hasHandledWriteRef.current) return;
-
-        const shouldOpenWrite = searchParams.get("write") === "true";
-
-        if (shouldOpenWrite) {
-            hasHandledWriteRef.current = true;
-            setShowSubmit(true);
-            router.replace("/picks");
-        }
-    }, [user, searchParams, router]);
+    }, [user]);
 
     const [posts, setPosts] = useState<PicksPost[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
     const [sort, setSort] = useState<SortMode>('top');
     const [flair, setFlair] = useState<Flair | null>(null);
     const [page, setPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
-    const [showSubmit, setShowSubmit] = useState(false);
     const [showAuthModal, setShowAuthModal] = useState(false);
 
     const fetchFeed = useCallback(async () => {
         setLoading(true);
+        setError(false);
         try {
             const params = new URLSearchParams({
                 sort,
@@ -61,9 +54,11 @@ export default function PicksPage() {
                 const data = await res.json();
                 setPosts(data.posts);
                 setTotalPages(Math.max(1, Math.ceil(data.total / 20)));
+            } else {
+                setError(true);
             }
         } catch {
-            // Silently fail
+            setError(true);
         } finally {
             setLoading(false);
         }
@@ -85,7 +80,7 @@ export default function PicksPage() {
 
     const handleSubmitClick = () => {
         if (user) {
-            setShowSubmit(true);
+            router.push('/picks/write');
         } else {
             router.push('/picks/signin?redirect=write');
         }
@@ -122,13 +117,31 @@ export default function PicksPage() {
                         </p>
                     </motion.div>
 
-                    {user && (
+                    {user ? (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             className="flex-shrink-0 pt-2"
                         >
                             <ProfileIcon />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex-shrink-0 pt-2"
+                        >
+                            <button
+                                onClick={() => router.push('/picks/signin')}
+                                className="px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                                style={{
+                                    background: 'linear-gradient(135deg, #D85A30, #e06b3a)',
+                                    color: '#fff',
+                                    boxShadow: '0 4px 20px rgba(216, 90, 48, 0.2)',
+                                }}
+                            >
+                                Log In
+                            </button>
                         </motion.div>
                     )}
                 </div>
@@ -170,22 +183,16 @@ export default function PicksPage() {
 
                         <NotificationBanner />
 
-                        {/* Inline submit form */}
-                        <AnimatePresence>
-                            {showSubmit && !!user && (
-                                <SubmitForm
-                                    onClose={() => setShowSubmit(false)}
-                                    onPostCreated={fetchFeed}
-                                    onAuthRequired={handleAuthRequired}
-                                />
-                            )}
-                        </AnimatePresence>
+                        {/* Inline submit form removed */}
 
                         {/* Posts list or empty state */}
                         {loading ? (
-                            <div className="flex flex-col items-center justify-center py-20 gap-3">
-                                <Loader2 size={32} className="text-primary animate-spin" />
-                                <p className="text-sm text-gray-400 font-mono">Loading picks...</p>
+                            <div className="py-8">
+                                <PicksSkeleton />
+                            </div>
+                        ) : error ? (
+                            <div className="py-8">
+                                <FetchError onRetry={fetchFeed} />
                             </div>
                         ) : posts.length === 0 ? (
                             <motion.div

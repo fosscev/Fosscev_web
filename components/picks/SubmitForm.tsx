@@ -66,24 +66,12 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
     };
 
     return (
-        <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="overflow-hidden mb-4"
-        >
+        <div className="mb-4">
             <div className="bg-[#0a0a0a]/90 border border-white/[0.08] rounded-xl p-5">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-base font-semibold text-gray-100 font-display">
                         Submit a Pick
                     </h3>
-                    <button
-                        onClick={onClose}
-                        className="p-1 rounded-lg hover:bg-white/5 text-gray-500 hover:text-gray-300 transition-colors"
-                    >
-                        <X size={18} />
-                    </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-3">
@@ -216,6 +204,6 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                     </div>
                 </form>
             </div>
-        </motion.div>
+        </div>
     );
 }

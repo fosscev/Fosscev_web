@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ThumbsUp } from 'lucide-react';
+import { ThumbsUp, ThumbsDown } from 'lucide-react';
 import { usePicksAuth } from './PicksAuthProvider';
 
 interface VoteButtonsProps {
@@ -88,10 +88,25 @@ export function VoteButtons({ postId, score, userVote, onAuthRequired, onVoteCha
                 initial={{ scale: 1.2 }}
                 animate={{ scale: 1 }}
                 className="text-xs font-bold font-mono tabular-nums min-w-[2ch] text-center"
-                style={{ color: score > 0 ? '#D85A30' : '#a3a3a3' }}
+                style={{ color: score > 0 ? '#D85A30' : score < 0 ? '#3b82f6' : '#a3a3a3' }}
             >
                 {score}
             </motion.span>
+
+            <motion.button
+                whileTap={{ scale: 1.3 }}
+                onClick={(e) => { e.stopPropagation(); handleVote(-1); }}
+                className="p-1.5 rounded-full transition-colors duration-150 hover:bg-white/5"
+                aria-label="Dislike"
+                disabled={loading}
+            >
+                <ThumbsDown
+                    size={20}
+                    strokeWidth={2.5}
+                    className="transition-colors duration-150"
+                    style={{ color: userVote === -1 ? '#3b82f6' : '#525252', fill: userVote === -1 ? '#3b82f6' : 'none' }}
+                />
+            </motion.button>
         </div>
     );
 }

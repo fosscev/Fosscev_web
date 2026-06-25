@@ -3,6 +3,9 @@ import type { FinancialReport } from '@/lib/supabase';
 import { FileText, Calendar, ArrowUpRight, ArrowDownRight, Wallet } from 'lucide-react';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { Suspense } from 'react';
+import { FinancesSkeleton } from '@/components/skeletons/FinancesSkeleton';
+
 export const metadata = {
     title: 'Financial Reports | FOSS Community CEV',
     description: 'Transparency is key. View our yearly and event-wise financial reports.',
@@ -10,7 +13,7 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default async function FinancesPage() {
+async function FinancesContent() {
     // Fetch all financial reports
     const { data: reports, error } = await supabase
         .from('financial_reports')
@@ -19,10 +22,10 @@ export default async function FinancesPage() {
 
     if (error) {
         console.error('Error fetching financial reports:', error);
+        // We could render a server-side error state here, but for now we'll just show empty/null check gracefully
     }
 
     const yearlyReports = (reports as FinancialReport[] | null)?.filter(r => r.type === 'Yearly') || [];
-
 
     const renderReportCard = (report: FinancialReport) => {
         const isPositive = report.balance >= 0;
@@ -151,6 +154,27 @@ export default async function FinancesPage() {
     };
 
     return (
+        <section>
+            <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-8 flex items-center gap-3">
+                <span className="w-8 h-1 bg-primary rounded-full"></span>
+                Yearly Reports
+            </h2>
+            
+            {yearlyReports.length > 0 ? (
+                <div className="space-y-6">
+                    {yearlyReports.map(renderReportCard)}
+                </div>
+            ) : (
+                <div className="text-center py-12 bg-surface/30 border border-white/5 rounded-2xl">
+                    <p className="text-gray-400">No yearly reports available yet.</p>
+                </div>
+            )}
+        </section>
+    );
+}
+
+export default function FinancesPage() {
+    return (
         <div className="relative min-h-screen text-white selection:bg-primary selection:text-black overflow-hidden">
             <div className="relative z-10">
                 <Navbar />
@@ -169,27 +193,11 @@ export default async function FinancesPage() {
                             </p>
                         </div>
 
-                <div className="space-y-16 md:space-y-24">
-                    {/* Yearly Reports Section */}
-                    <section>
-                        <h2 className="text-2xl md:text-3xl font-display font-bold text-white mb-8 flex items-center gap-3">
-                            <span className="w-8 h-1 bg-primary rounded-full"></span>
-                            Yearly Reports
-                        </h2>
-                        
-                        {yearlyReports.length > 0 ? (
-                            <div className="space-y-6">
-                                {yearlyReports.map(renderReportCard)}
-                            </div>
-                        ) : (
-                            <div className="text-center py-12 bg-surface/30 border border-white/5 rounded-2xl">
-                                <p className="text-gray-400">No yearly reports available yet.</p>
-                            </div>
-                        )}
-                    </section>
-
-
-                </div>
+                        <div className="space-y-16 md:space-y-24">
+                            <Suspense fallback={<FinancesSkeleton />}>
+                                <FinancesContent />
+                            </Suspense>
+                        </div>
                     </div>
                 </main>
                 

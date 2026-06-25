@@ -10,6 +10,8 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { SOCIAL_LINKS } from "@/lib/constants";
 import { TeamSkeleton } from "@/components/skeletons/TeamSkeleton";
+import useSWR from "swr";
+import { FetchError } from "@/components/FetchError";
 
 interface CardPosition {
     x: number;
@@ -306,6 +308,8 @@ const TeamMemberCard = ({
     );
 };
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export default function TeamPage() {
     const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
     const [hoveredSubteamIndex, setHoveredSubteamIndex] = useState<number | null>(null);
@@ -315,41 +319,37 @@ export default function TeamPage() {
     const [hoveredFacultyIndex, setHoveredFacultyIndex] = useState<number | null>(null);
     const facultyCardPositions = useRef<Map<number, DOMRect>>(new Map());
 
-    // State for team data
-    const [coreTeamData, setCoreTeamData] = useState<any[]>([]);
-    const [subTeamData, setSubTeamData] = useState<any[]>([]);
-    const [facultyTeamData, setFacultyTeamData] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { data, error, isLoading, mutate } = useSWR('/api/data/team', fetcher, {
+        dedupingInterval: 86400000 // 24 hours
+    });
 
-    useEffect(() => {
-        async function fetchTeamData() {
-            try {
-                const [coreResponse, subResponse, facultyResponse] = await Promise.all([
-                    getCoreTeam(),
-                    getSubteam(),
-                    getFacultyAdvisors()
-                ]);
+    const coreTeamData = data?.coreTeam?.map(mapTeamMember) || [];
+    const subTeamData = data?.subTeam?.map(mapTeamMember) || [];
+    const facultyTeamData = data?.faculty?.map(mapTeamMember) || [];
 
-                if (coreResponse.data) {
-                    setCoreTeamData(coreResponse.data.map(mapTeamMember));
-                }
+    if (error) {
+        return (
+            <main className="relative min-h-screen text-white selection:bg-primary selection:text-black overflow-hidden flex flex-col">
+                <Navbar />
+                <div className="flex-1 flex items-center justify-center pt-32 pb-20 px-4">
+                    <FetchError onRetry={() => mutate()} />
+                </div>
+                <Footer />
+            </main>
+        );
+    }
 
-                if (subResponse.data) {
-                    setSubTeamData(subResponse.data.map(mapTeamMember));
-                }
-
-                if (facultyResponse.data) {
-                    setFacultyTeamData(facultyResponse.data.map(mapTeamMember));
-                }
-            } catch (error) {
-                console.error("Failed to fetch team data:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        }
-
-        fetchTeamData();
-    }, []);
+    if (isLoading) {
+        return (
+            <main className="relative min-h-screen text-white selection:bg-primary selection:text-black overflow-hidden flex flex-col">
+                <Navbar />
+                <div className="pt-32 pb-20">
+                    <TeamSkeleton />
+                </div>
+                <Footer />
+            </main>
+        );
+    }
 
     return (
         <main className="relative min-h-screen text-white selection:bg-primary selection:text-black overflow-hidden">
@@ -376,7 +376,7 @@ export default function TeamPage() {
                         </div>
 
                         <div className="flex justify-center gap-8 flex-wrap">
-                            {facultyTeamData.length > 0 ? facultyTeamData.map((member, i) => (
+                            {facultyTeamData.length > 0 ? facultyTeamData.map((member: any, i: number) => (
                                 <div key={`faculty-${i}`} className="w-full sm:w-[calc(50%-16px)] lg:w-[calc(33.33%-21px)] max-w-[320px]">
                                     <TeamMemberCard
                                         member={member as any}
@@ -412,63 +412,55 @@ export default function TeamPage() {
                         </p>
                     </div>
 
-                    {isLoading ? (
-                        <TeamSkeleton />
-                    ) : (
-                        // Team Grid
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-20 overflow-visible min-h-fit">
-                            {coreTeamData.map((member, i) => (
+                    {/* Team Grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-20 overflow-visible min-h-fit">
+                        {coreTeamData.map((member: any, i: number) => (
+                            <TeamMemberCard
+                                key={i}
+                                member={member}
+                                index={i}
+                                hoveredIndex={hoveredIndex}
+                                onHover={setHoveredIndex}
+                                onLeave={() => setHoveredIndex(null)}
+                                cardPositions={cardPositions}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Subteam Section */}
+                    <div className="mb-20">
+                        {/* Subteam Header */}
+                        <div className="mb-12 text-center">
+                            <h2 className="text-4xl md:text-6xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-4 animate-gradient">
+                                SUB_TEAM
+                            </h2>
+                            <div className="flex items-center justify-center gap-4 mb-4">
+                                <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary" />
+                                <p className="text-lg text-primary font-mono">
+                                // THE SUPPORTING FORCE
+                                </p>
+                                <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary" />
+                            </div>
+                            <p className="text-gray-400 font-mono max-w-2xl mx-auto">
+                                Dedicated contributors powering our community initiatives.
+                            </p>
+                        </div>
+
+                        {/* Subteam Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                            {subTeamData.map((member: any, i: number) => (
                                 <TeamMemberCard
-                                    key={i}
+                                    key={`subteam-${i}`}
                                     member={member}
                                     index={i}
-                                    hoveredIndex={hoveredIndex}
-                                    onHover={setHoveredIndex}
-                                    onLeave={() => setHoveredIndex(null)}
-                                    cardPositions={cardPositions}
+                                    hoveredIndex={hoveredSubteamIndex}
+                                    onHover={setHoveredSubteamIndex}
+                                    onLeave={() => setHoveredSubteamIndex(null)}
+                                    cardPositions={subteamCardPositions}
                                 />
                             ))}
                         </div>
-                    )}
-
-                    {!isLoading && (
-                        /* Subteam Section */
-                        <div className="mb-20">
-                            {/* Subteam Header */}
-                            <div className="mb-12 text-center">
-                                <h2 className="text-4xl md:text-6xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-4 animate-gradient">
-                                    SUB_TEAM
-                                </h2>
-                                <div className="flex items-center justify-center gap-4 mb-4">
-                                    <div className="h-px w-12 bg-gradient-to-r from-transparent to-primary" />
-                                    <p className="text-lg text-primary font-mono">
-                                    // THE SUPPORTING FORCE
-                                    </p>
-                                    <div className="h-px w-12 bg-gradient-to-l from-transparent to-primary" />
-                                </div>
-                                <p className="text-gray-400 font-mono max-w-2xl mx-auto">
-                                    Dedicated contributors powering our community initiatives.
-                                </p>
-                            </div>
-
-                            {/* Subteam Grid */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-                                {subTeamData.map((member, i) => (
-                                    <TeamMemberCard
-                                        key={`subteam-${i}`}
-                                        member={member}
-                                        index={i}
-                                        hoveredIndex={hoveredSubteamIndex}
-                                        onHover={setHoveredSubteamIndex}
-                                        onLeave={() => setHoveredSubteamIndex(null)}
-                                        cardPositions={subteamCardPositions}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
-
-
+                    </div>
 
                     {/* Call to Action */}
                     <div className="relative p-8 md:p-12 border border-white/10 bg-surface/50 rounded-xl overflow-hidden backdrop-blur-sm">

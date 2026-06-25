@@ -14,7 +14,7 @@ Welcome to the official website of the **FOSS Club at College of Engineering Vad
 - **Frontend**: Next.js 16 (App Router), React, Framer Motion
 - **Styling**: Tailwind CSS, Lucide React Icons
 - **Backend & Auth**: Supabase (PostgreSQL, Auth, Storage)
-- **Deployment**: Vercel (Recommended)
+- **Deployment**: Vercel
 
 ## 📦 Getting Started
 
@@ -52,6 +52,21 @@ npm run setup:supabase
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) to view the site.
+
+## 🏗️ Project Architecture 
+
+We recently underwent significant architectural upgrades. Here is what you need to know:
+
+### 1. Data Fetching Strategy (SWR & Next.js Caching)
+- **Client Components** (`app/events`, `app/team`): We use `SWR` (`useSWR`) to fetch data on the client side. This ensures fast UI responsiveness and background revalidation.
+- **Proxy API Routes**: Our frontend fetches data from custom API routes (e.g., `/api/data/events`, `/api/data/team`) instead of calling the database directly. These API routes use Next.js Edge caching (`Cache-Control: s-maxage=...`) to heavily reduce load on the database.
+- **Server File (`lib/api/server.ts`)**: This file contains the server-side logic for fetching data from Supabase. DO NOT use this file in client components.
+
+### 2. UI/UX: Skeletons & Error Boundaries
+- Every data-fetching page has a custom Skeleton Loader (in `components/skeletons/`) that perfectly mirrors its card layout.
+- We use a generic `<FetchError />` component for graceful error handling (with a retry button) across the app to prevent silent white-screen failures.
+- **Suspense**: Server Components (like the `Finances` page) use `<Suspense>` boundaries to instantly load the shell (Navbar/Footer) while the heavy data fetches.
+
 
 ## 🤝 Contributing
 We welcome contributions! Please follow our [Code of Conduct](./app/conduct/page.tsx).

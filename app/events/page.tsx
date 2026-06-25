@@ -8,8 +8,9 @@ import Image from "next/image";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
 import { events as localEvents, Event } from "@/data/events";
-import { getUpcomingEvents, getPastEvents } from "@/lib/api/events";
 import EventsSkeleton from "./loading";
+import useSWR from "swr";
+import { FetchError } from "@/components/FetchError";
 
 // Helper to format date string like "10 Feb 2026"
 const formatDate = (dateStr: string) => {
@@ -34,39 +35,17 @@ const mapEvent = (dbEvent: any): Event => ({
     link: dbEvent.link
 });
 
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
 export default function EventsPage() {
-    // Initial state (empty until fetched from DB)
-    const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
-    const [pastEvents, setPastEvents] = useState<Event[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { data, error, isLoading, mutate } = useSWR('/api/data/events', fetcher, {
+        dedupingInterval: 3600000 // 1 hour
+    });
+
+    const upcomingEvents = data?.upcoming?.map(mapEvent) || [];
+    const pastEvents = data?.past?.map(mapEvent) || [];
 
     const router = useRouter();
-    // Fetch from Supabase
-    useEffect(() => {
-        async function fetchEvents() {
-            setIsLoading(true);
-            try {
-                const [upcomingResponse, pastResponse] = await Promise.all([
-                    getUpcomingEvents(),
-                    getPastEvents()
-                ]);
-
-                if (upcomingResponse.data) {
-                    setUpcomingEvents(upcomingResponse.data.map(mapEvent));
-                }
-
-                if (pastResponse.data) {
-                    setPastEvents(pastResponse.data.map(mapEvent));
-                }
-            } catch (error) {
-                console.error("Failed to fetch events:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        }
-
-        fetchEvents();
-    }, []);
 
     // If no upcoming events, show past events by default
     const hasUpcomingEvents = upcomingEvents.length > 0;
@@ -91,7 +70,7 @@ export default function EventsPage() {
             const hashId = window.location.hash.substring(1);
 
             // Check if it's in upcoming
-            const inUpcoming = upcomingEvents.find(e => e.id.toString() === hashId);
+            const inUpcoming = upcomingEvents.find((e: Event) => e.id.toString() === hashId);
             if (inUpcoming) {
                 setShowPastEvents(false);
                 setSelectedEvent(inUpcoming);
@@ -99,7 +78,7 @@ export default function EventsPage() {
             }
 
             // Check if it's in past
-            const inPast = pastEvents.find(e => e.id.toString() === hashId);
+            const inPast = pastEvents.find((e: Event) => e.id.toString() === hashId);
             if (inPast) {
                 setShowPastEvents(true);
                 setSelectedEvent(inPast);
@@ -112,7 +91,7 @@ export default function EventsPage() {
             setSelectedEvent(displayEvents[0]);
         } else if (displayEvents.length > 0 && selectedEvent) {
             // Check if selected event is in currently displayed list, if not, select first
-            const exists = displayEvents.find(e => e.id === selectedEvent?.id);
+            const exists = displayEvents.find((e: Event) => e.id === selectedEvent?.id);
             if (!exists) setSelectedEvent(displayEvents[0]);
         }
     }, [displayEvents, upcomingEvents, pastEvents, selectedEvent?.id]);
@@ -121,6 +100,18 @@ export default function EventsPage() {
     const getEventCardImage = (event: Event): string | undefined => {
         return event.poster || event.image;
     };
+
+    if (error) {
+        return (
+            <div className="relative min-h-screen text-white selection:bg-primary selection:text-black overflow-hidden flex flex-col">
+                <Navbar />
+                <main className="flex-1 flex items-center justify-center pt-24 pb-10 px-4">
+                    <FetchError onRetry={() => mutate()} />
+                </main>
+                <Footer />
+            </div>
+        );
+    }
 
     if (isLoading) {
         return <EventsSkeleton />;
@@ -189,7 +180,7 @@ export default function EventsPage() {
                     {/* Events Grid - Dark Pinboard Style */}
                     <div className="max-w-7xl mx-auto px-4 mb-16">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-                            {displayEvents.map((event, index) => {
+                            {displayEvents.map((event: Event, index: number) => {
                                 const isSelected = selectedEvent?.id === event.id;
                                 const cardImage = getEventCardImage(event);
 

@@ -34,7 +34,7 @@ function PicksSignInPageContent() {
         if (user) {
             const redirect = searchParams.get('redirect');
             if (redirect === 'write') {
-                router.replace('/picks?write=true');
+                router.replace('/picks/write');
             } else {
                 router.replace('/picks');
             }
@@ -85,7 +85,8 @@ function PicksSignInPageContent() {
 
                 if (data?.session) {
                     // Redirect immediately using replace to avoid redirect loops
-                    router.replace('/picks?write=true');
+                    const redirectUrl = searchParams.get('redirect') === 'write' ? '/picks/write' : '/picks';
+                    router.replace(redirectUrl);
                 } else if (data?.user) {
                     setShowOtp(true);
                     setMessage('Sign up successful! Please enter the verification code (OTP) sent to your email.');
@@ -108,7 +109,8 @@ function PicksSignInPageContent() {
                 }
 
                 // Redirect immediately using replace to avoid redirect loops
-                router.replace('/picks?write=true');
+                const redirectUrl = searchParams.get('redirect') === 'write' ? '/picks/write' : '/picks';
+                router.replace(redirectUrl);
             }
         } catch (err) {
             setError('Something went wrong. Please try again.');
@@ -137,7 +139,8 @@ function PicksSignInPageContent() {
             }
 
             setMessage('Email verified successfully! Redirecting...');
-            router.replace('/picks?write=true');
+            const redirectUrl = searchParams.get('redirect') === 'write' ? '/picks/write' : '/picks';
+            router.replace(redirectUrl);
         } catch (err) {
             setError('Failed to verify OTP. Please try again.');
         } finally {

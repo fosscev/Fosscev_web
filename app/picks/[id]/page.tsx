@@ -44,7 +44,7 @@ export default function PickDetailPage({ params }: { params: Promise<{ id: strin
     }, [id, authId, router]);
 
     const handleSubmitClick = () => {
-        router.push('/picks?write=true');
+        router.push('/picks/write');
     };
 
     if (loading) {
@@ -81,13 +81,31 @@ export default function PickDetailPage({ params }: { params: Promise<{ id: strin
                         </h1>
                     </motion.div>
 
-                    {user && (
+                    {user ? (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.9 }}
                             animate={{ opacity: 1, scale: 1 }}
                             className="flex-shrink-0 pt-2"
                         >
                             <ProfileIcon />
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex-shrink-0 pt-2"
+                        >
+                            <button
+                                onClick={() => router.push('/picks/signin')}
+                                className="px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-[0.98]"
+                                style={{
+                                    background: 'linear-gradient(135deg, #D85A30, #e06b3a)',
+                                    color: '#fff',
+                                    boxShadow: '0 4px 20px rgba(216, 90, 48, 0.2)',
+                                }}
+                            >
+                                Log In
+                            </button>
                         </motion.div>
                     )}
                 </div>

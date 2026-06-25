@@ -5,6 +5,9 @@ import { useEffect, useState, useRef, Suspense } from "react";
 import { SOCIAL_LINKS } from "@/lib/constants";
 import { useSiteContent } from "@/lib/useSiteContent";
 import CanvasNetwork from "./CanvasNetwork";
+import useSWR, { preload } from "swr";
+
+const fetcher = (url: string) => fetch(url).then(res => res.json());
 
 // ─── Subtle background ────────────────────────────────────────────────────────
 function Background() {
@@ -37,11 +40,7 @@ function Background() {
 }
 
 // ─── Stats ────────────────────────────────────────────────────────────────────
-const STATS = [
-    { value: "10+", label: "Active Events" },
-    { value: "200+", label: "Members" },
-    { value: "100%", label: "Open Source" },
-];
+// Stat values are dynamically generated in the component
 
 // ─── Hero ─────────────────────────────────────────────────────────────────────
 export function Hero() {
@@ -61,7 +60,25 @@ export function Hero() {
     const opacityFade = useTransform(scrollYProgress, [0, 0.72], [1, 0]);
     const scaleCanvas = useTransform(scrollYProgress, [0, 1], [1, 0.94]);
 
-    useEffect(() => { setIsClient(true); }, []);
+    const { data: statsData } = useSWR('/api/stats', fetcher, {
+        dedupingInterval: 3600000 // 1 hour
+    });
+    
+    const eventsCount = statsData?.eventsCount !== undefined ? `${statsData.eventsCount}+` : "10+";
+    
+    const STATS = [
+        { value: eventsCount, label: "Active Events" },
+        { value: "200+", label: "Members" },
+        { value: "100%", label: "Open Source" },
+    ];
+
+    // Parallel boot sequence data fetching
+    useEffect(() => {
+        setIsClient(true);
+        // Preload commonly accessed data pages immediately on mount
+        preload('/api/data/events', fetcher);
+        preload('/api/data/team', fetcher);
+    }, []);
 
     return (
         <section
