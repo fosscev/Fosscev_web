@@ -62,6 +62,70 @@ export default function EventsPage() {
 
     const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
     const [hoveredEvent, setHoveredEvent] = useState<Event | null>(null);
+    const [toastMessage, setToastMessage] = useState("");
+
+    useEffect(() => {
+        if (!toastMessage) return;
+        const timer = setTimeout(() => {
+            setToastMessage("");
+        }, 2500);
+        return () => clearTimeout(timer);
+    }, [toastMessage]);
+
+    const handleShare = async () => {
+        if (!selectedEvent) return;
+
+        const eventUrl = `${window.location.origin}/events/${selectedEvent.id}`;
+
+        const shareData = {
+            title: selectedEvent.title,
+            text: `Check out this event: ${selectedEvent.title}`,
+            url: eventUrl
+        };
+
+        const copyToClipboard = async () => {
+            try {
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(eventUrl);
+                    setToastMessage("Event link copied to clipboard!");
+                } else {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = eventUrl;
+                    textArea.style.position = "fixed";
+                    textArea.style.left = "-999999px";
+                    textArea.style.top = "-999999px";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    try {
+                        document.execCommand('copy');
+                        setToastMessage("Event link copied to clipboard!");
+                    } catch (error) {
+                        console.error("Fallback copy failed:", error);
+                        setToastMessage("Failed to copy link.");
+                    }
+                    document.body.removeChild(textArea);
+                }
+            } catch (err) {
+                console.error("Clipboard copy failed:", err);
+                setToastMessage("Failed to copy link.");
+            }
+        };
+
+        if (navigator.share) {
+            try {
+                await navigator.share(shareData);
+                setToastMessage("Shared successfully!");
+            } catch (err) {
+                if (err instanceof Error && err.name !== 'AbortError') {
+                    console.error("Share failed, falling back to copy:", err);
+                    await copyToClipboard();
+                }
+            }
+        } else {
+            await copyToClipboard();
+        }
+    };
 
     // Update selected event when view changes, data loads, or on hash navigation
     useEffect(() => {
@@ -446,7 +510,10 @@ export default function EventsPage() {
                                                 </a>
                                             )}
                                             {selectedEvent.status !== "Completed" && (
-                                                <button className="px-8 py-4 bg-gradient-to-br from-white/10 to-white/5 text-white font-bold rounded-lg hover:from-white/15 hover:to-white/10 transition-all duration-300 border border-white/20 hover:border-primary/30 font-display">
+                                                <button
+                                                    onClick={handleShare}
+                                                    className="px-8 py-4 bg-gradient-to-br from-white/10 to-white/5 text-white font-bold rounded-lg hover:from-white/15 hover:to-white/10 transition-all duration-300 border border-white/20 hover:border-primary/30 font-display"
+                                                >
                                                     Share Event
                                                 </button>
                                             )}
@@ -460,6 +527,21 @@ export default function EventsPage() {
 
                 <Footer />
             </div>
+
+            <AnimatePresence>
+                {toastMessage && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                        className="fixed bottom-8 right-8 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-xl border border-primary/30 bg-surface/90 text-primary backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.5)] font-mono text-xs md:text-sm font-semibold"
+                    >
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
+                        <span>{toastMessage}</span>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
