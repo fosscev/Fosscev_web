@@ -94,7 +94,7 @@ export function Tracks() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 md:auto-rows-[300px]">
                     {items.map((item, i) => (
-                        <Link href={`/events#${item.id}`} key={i} className={`relative rounded-2xl overflow-hidden group ${item.className} max-md:h-[300px] block`}>
+                        <Link href={`/events#${item.id}`} scroll={false} key={i} className={`relative rounded-2xl overflow-hidden group ${item.className} max-md:h-[300px] block`}>
                             <div
                                 className="h-full w-full"
                             >
