@@ -22,12 +22,12 @@ export async function POST(request: NextRequest) {
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
             process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
             {
-                cookieOptions: { name: 'sb-admin-auth-token', path: '/foss-manager', sameSite: 'strict' },
+                cookieOptions: { name: 'sb-admin-auth-token', path: '/', sameSite: 'strict' },
                 cookies: {
                     getAll() { return request.cookies.getAll(); },
                     setAll(cookiesToSet) {
                         cookiesToSet.forEach(({ name, value, options }) => {
-                            response.cookies.set(name, value, options);
+                            response.cookies.set(name, value, { ...options, httpOnly: false });
                         });
                     },
                 },
@@ -53,12 +53,11 @@ export async function POST(request: NextRequest) {
             .setExpirationTime(data.session.expires_at || Math.floor(Date.now() / 1000) + 3600)
             .sign(secret);
 
-        // Set the marker cookie
         response.cookies.set('foss-admin-marker', marker, {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'strict',
-            path: '/foss-manager',
+            path: '/',
             maxAge: data.session.expires_in
         });
 

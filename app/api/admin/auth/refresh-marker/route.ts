@@ -9,12 +9,12 @@ export async function POST(request: NextRequest) {
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
-            cookieOptions: { name: 'sb-admin-auth-token', path: '/foss-manager', sameSite: 'strict' },
+            cookieOptions: { name: 'sb-admin-auth-token', path: '/', sameSite: 'strict' },
             cookies: {
                 getAll() { return request.cookies.getAll(); },
                 setAll(cookiesToSet) {
                     cookiesToSet.forEach(({ name, value, options }) => {
-                        response.cookies.set(name, value, options);
+                        response.cookies.set(name, value, { ...options, httpOnly: false });
                     });
                 },
             }
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        path: '/foss-manager',
+        path: '/',
         maxAge: session.expires_in
     });
 

@@ -25,7 +25,8 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
 
 // Create a separate client for the Admin Panel so sessions don't bleed between Picks and Admin
 export const supabaseAdmin = createBrowserClient(supabaseUrl, supabaseAnonKey, {
-    cookieOptions: { name: 'sb-admin-auth-token', path: '/foss-manager', sameSite: 'strict' },
+    isSingleton: false,
+    cookieOptions: { name: 'sb-admin-auth-token', path: '/', sameSite: 'strict' },
     auth: {
         lock: async (key, acquireTimeout, fn) => {
             return fn();

@@ -41,6 +41,7 @@ export async function getServerSupabaseClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions: { name: 'sb-admin-auth-token', path: '/', sameSite: 'strict' },
       cookies: {
         getAll() {
           return cookieStore.getAll();
