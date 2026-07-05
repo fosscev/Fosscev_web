@@ -12,7 +12,8 @@ export async function POST(request: NextRequest) {
         }
 
         if (!isAdminEmail(email)) {
-            return NextResponse.json({ error: 'Forbidden: Not an admin account' }, { status: 403 });
+            // Use generic error to prevent email enumeration
+            return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
         }
 
         const response = NextResponse.json({ message: 'Signed in successfully' });
@@ -36,7 +37,8 @@ export async function POST(request: NextRequest) {
         const { data, error } = await supabaseAdmin.auth.signInWithPassword({ email, password });
 
         if (error) {
-            return NextResponse.json({ error: error.message }, { status: 401 });
+            // Use generic error to prevent credential enumeration
+            return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
         }
 
         if (!data.user || !data.session) {
