@@ -8,11 +8,13 @@ import { TiltedScroll } from "../components/TiltedScroll";
 import { Footer } from "../components/Footer";
 import { CoreTeam } from "../components/CoreTeam";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import { ActiveFormNotification } from "@/components/ActiveFormNotification";
 
 export default function Home() {
   return (
     <div className="relative selection:bg-primary selection:text-black min-h-screen overflow-x-hidden">
       <LoadingScreen />
+      <ActiveFormNotification />
       <div className="relative z-10">
         <Navbar />
 

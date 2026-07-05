@@ -7,9 +7,10 @@ import AdminContentList from '@/components/admin/AdminContentList';
 import AdminGalleryList from '@/components/admin/AdminGalleryList';
 import AdminFinanceList from '@/components/admin/AdminFinanceList';
 import AdminPicksList from '@/components/admin/AdminPicksList';
+import AdminRegistrationsList from '@/components/admin/AdminRegistrationsList';
 
 export default function AdminDashboard() {
-    const [activeTab, setActiveTab] = useState<'events' | 'team' | 'content' | 'gallery' | 'finances' | 'picks'>('events');
+    const [activeTab, setActiveTab] = useState<'events' | 'team' | 'registrations' | 'content' | 'gallery' | 'finances' | 'picks'>('events');
 
     return (
         <div className="space-y-6">
@@ -38,6 +39,15 @@ export default function AdminDashboard() {
                         }`}
                 >
                     Team Members
+                </button>
+                <button
+                    onClick={() => setActiveTab('registrations')}
+                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'registrations'
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-gray-400 hover:text-white'
+                        }`}
+                >
+                    Registrations
                 </button>
                 <button
                     onClick={() => setActiveTab('content')}
@@ -80,6 +90,7 @@ export default function AdminDashboard() {
             <div className="mt-8">
                 {activeTab === 'events' && <AdminEventList />}
                 {activeTab === 'team' && <AdminTeamList />}
+                {activeTab === 'registrations' && <AdminRegistrationsList />}
                 {activeTab === 'content' && <AdminContentList />}
                 {activeTab === 'gallery' && <AdminGalleryList />}
                 {activeTab === 'finances' && <AdminFinanceList />}

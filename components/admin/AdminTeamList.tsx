@@ -59,6 +59,8 @@ export default function AdminTeamList() {
             if (error) {
                 alert('Error adding member: ' + error.message);
             } else {
+                await fetch('/api/revalidate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: '/team' }) });
+                await fetch('/api/revalidate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: '/api/data/team' }) });
                 loadData();
                 setIsAdding(false);
                 setSelectedFile(null);
@@ -113,6 +115,8 @@ export default function AdminTeamList() {
         if (error) {
             alert('Error updating member: ' + error.message);
         } else {
+            await fetch('/api/revalidate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: '/team' }) });
+            await fetch('/api/revalidate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: '/api/data/team' }) });
             loadData();
             setIsEditing(null);
         }
@@ -128,6 +132,8 @@ export default function AdminTeamList() {
         if (error) {
             alert('Error deleting member: ' + error.message);
         } else {
+            await fetch('/api/revalidate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: '/team' }) });
+            await fetch('/api/revalidate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: '/api/data/team' }) });
             loadData();
         }
     };

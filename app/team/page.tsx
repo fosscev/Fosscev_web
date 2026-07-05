@@ -319,9 +319,7 @@ export default function TeamPage() {
     const [hoveredFacultyIndex, setHoveredFacultyIndex] = useState<number | null>(null);
     const facultyCardPositions = useRef<Map<number, DOMRect>>(new Map());
 
-    const { data, error, isLoading, mutate } = useSWR('/api/data/team', fetcher, {
-        dedupingInterval: 86400000 // 24 hours
-    });
+    const { data, error, isLoading, mutate } = useSWR('/api/data/team', fetcher);
 
     const coreTeamData = data?.coreTeam?.map(mapTeamMember) || [];
     const subTeamData = data?.subTeam?.map(mapTeamMember) || [];

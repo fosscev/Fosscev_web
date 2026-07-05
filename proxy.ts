@@ -47,6 +47,18 @@ export async function proxy(request: NextRequest) {
         }
     }
 
+    // 1b. Protect admin API routes: return 403 for non-admin requests.
+    //     The API routes themselves also verify admin auth, but middleware
+    //     provides an additional layer of defense.
+    if (
+        pathname.startsWith('/api/registrations') ||
+        pathname.startsWith('/api/form-schemas')
+    ) {
+        if (!user || !isAdminEmail(user.email)) {
+            return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+    }
+
     // 2. Auto-redirect from login page to dashboard if ALREADY authenticated as admin
     if (user && isAdminEmail(user.email) && pathname === '/foss-manager') {
         const redirectUrl = request.nextUrl.clone();
@@ -61,5 +73,7 @@ export const config = {
     matcher: [
         '/foss-manager',
         '/foss-manager/dashboard/:path*',
+        '/api/registrations/:path*',
+        '/api/form-schemas/:path*',
     ],
 };
