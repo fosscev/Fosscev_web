@@ -1,8 +1,9 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { jwtVerify } from 'jose';
 import { isAdminEmail } from './lib/admin-config';
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
     let response = NextResponse.next({
         request,
     });
@@ -46,6 +47,27 @@ export async function proxy(request: NextRequest) {
             redirectUrl.pathname = '/foss-manager';
             return NextResponse.redirect(redirectUrl);
         }
+
+        const marker = request.cookies.get('foss-admin-marker')?.value;
+        if (!marker) {
+            const redirectUrl = request.nextUrl.clone();
+            redirectUrl.pathname = '/foss-manager';
+            return NextResponse.redirect(redirectUrl);
+        }
+
+        try {
+            const secret = new TextEncoder().encode(process.env.SESSION_MARKER_SECRET || 'development-fallback-secret-key-12345');
+            const { payload } = await jwtVerify(marker, secret, { audience: 'admin' });
+            
+            if (payload.sub !== user.id) {
+                throw new Error('Subject mismatch');
+            }
+        } catch (err) {
+            console.error('Marker verification failed:', err);
+            const redirectUrl = request.nextUrl.clone();
+            redirectUrl.pathname = '/foss-manager';
+            return NextResponse.redirect(redirectUrl);
+        }
     }
 
     // 1b. Protect admin API routes: return 403 for non-admin requests.
@@ -57,6 +79,23 @@ export async function proxy(request: NextRequest) {
     ) {
         if (!user || !isAdminEmail(user.email)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+        }
+
+        const marker = request.cookies.get('foss-admin-marker')?.value;
+        if (!marker) {
+            return NextResponse.json({ error: 'Missing session marker' }, { status: 403 });
+        }
+
+        try {
+            const secret = new TextEncoder().encode(process.env.SESSION_MARKER_SECRET || 'development-fallback-secret-key-12345');
+            const { payload } = await jwtVerify(marker, secret, { audience: 'admin' });
+            
+            if (payload.sub !== user.id) {
+                throw new Error('Subject mismatch');
+            }
+        } catch (err) {
+            console.error('Marker verification failed in API route middleware:', err);
+            return NextResponse.json({ error: 'Invalid session marker' }, { status: 403 });
         }
     }
 

@@ -32,31 +32,42 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         let subscription: any;
 
-        const init = async () => {
+        const checkAuth = async () => {
             try {
+                // Initialize session state on mount
                 const { data: { session: currentSession } } = await supabase.auth.getSession();
-                setSession(currentSession);
-                setUser(currentSession?.user || null);
-                setAccessToken(currentSession?.access_token || null);
-            } catch {
-                // Ignore
-            } finally {
-                setAuthLoading(false);
-
-                // Register listener only after getSession completes to prevent LockManager contention
+                
+                // Set up listener for auth state changes
                 const { data } = supabase.auth.onAuthStateChange(
-                    async (_event, session) => {
-                        setSession(session);
-                        setUser(session?.user || null);
-                        setAccessToken(session?.access_token || null);
+                    async (event, currentSession) => {
+                        setSession(currentSession);
+                        setUser(currentSession?.user ?? null);
+                        setAccessToken(currentSession?.access_token || null);
                         setAuthLoading(false);
+
+                        // If Supabase silently refreshes the token, we MUST explicitly refresh our marker cookie!
+                        if (event === 'TOKEN_REFRESHED') {
+                            try {
+                                await fetch('/api/admin/auth/refresh-marker', { method: 'POST' });
+                            } catch (e) {
+                                console.error('Failed to refresh admin marker cookie', e);
+                            }
+                        }
                     }
                 );
                 subscription = data.subscription;
+
+                setSession(currentSession);
+                setUser(currentSession?.user ?? null);
+                setAccessToken(currentSession?.access_token || null);
+            } catch (error) {
+                console.error("Auth check failed:", error);
+            } finally {
+                setAuthLoading(false);
             }
         };
 
-        init();
+        checkAuth();
 
         return () => {
             if (subscription) {
@@ -66,10 +77,17 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const signOut = async () => {
-        await supabase.auth.signOut();
+        setAuthLoading(true);
+        try {
+            // This calls the server-side route which clears BOTH the Supabase cookie and the marker cookie
+            await fetch('/api/admin/auth/signout', { method: 'POST' });
+        } catch (e) {
+            console.error('Signout failed', e);
+        }
         setUser(null);
         setSession(null);
         setAccessToken(null);
+        setAuthLoading(false);
     };
 
     return (

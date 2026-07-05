@@ -25,24 +25,16 @@ function AdminLoginForm() {
         setLoading(true);
         setError(null);
 
-        // Removed client-side admin check as it now securely checks on the server via middleware
-
         try {
-            const { data, error: authError } = await supabase.auth.signInWithPassword({
-                email,
-                password,
+            const response = await fetch('/api/admin/auth/signin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
             });
 
-            if (authError) {
-                setError(authError.message);
-                setLoading(false);
-                return;
-            }
-
-            // Double-check server response - middleware will handle redirection if not admin
-            if (!data.session?.user) {
-                await supabase.auth.signOut();
-                setError('Authentication failed.');
+            if (!response.ok) {
+                const data = await response.json();
+                setError(data.error || 'Authentication failed.');
                 setLoading(false);
                 return;
             }

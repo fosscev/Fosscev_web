@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/picks-db';
+import { jwtVerify } from 'jose';
 
 // Helper to check admin auth via Supabase service role with detailed errors
 async function checkAdmin(request: NextRequest): Promise<{ allowed: boolean; reason?: string }> {
@@ -21,6 +22,23 @@ async function checkAdmin(request: NextRequest): Promise<{ allowed: boolean; rea
     const { isAdminEmail } = await import('@/lib/admin-config');
     if (!isAdminEmail(user.email)) {
         return { allowed: false, reason: 'Access denied: Not an admin' };
+    }
+
+    // Verify Signed Session Marker
+    const marker = request.cookies.get('foss-admin-marker')?.value;
+    if (!marker) {
+        return { allowed: false, reason: 'Missing signed session marker' };
+    }
+
+    try {
+        const secret = new TextEncoder().encode(process.env.SESSION_MARKER_SECRET || 'development-fallback-secret-key-12345');
+        const { payload } = await jwtVerify(marker, secret, { audience: 'admin' });
+        
+        if (payload.sub !== user.id) {
+            return { allowed: false, reason: 'Session marker subject mismatch' };
+        }
+    } catch (err) {
+        return { allowed: false, reason: 'Invalid or expired session marker' };
     }
 
     return { allowed: true };
