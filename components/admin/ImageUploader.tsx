@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Upload } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { supabaseAdmin as supabase } from '@/lib/supabase';
+import { Upload, X, Link as LinkIcon, AlertCircle } from 'lucide-react';
 
 export default function ImageUploader({
     maxFileSize,

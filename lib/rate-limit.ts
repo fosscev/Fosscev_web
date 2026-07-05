@@ -1,24 +1,4 @@
-// In-memory rate limiter — no extra dependencies
-// Tracks requests per identifier (IP or user ID) per action
-
-interface RateLimitEntry {
-    count: number;
-    windowStart: number;
-}
-
-const store = new Map<string, RateLimitEntry>();
-
-// Clean up expired entries every 5 minutes
-if (typeof setInterval !== 'undefined') {
-    setInterval(() => {
-        const now = Date.now();
-        for (const [key, entry] of store.entries()) {
-            if (now - entry.windowStart > 600000) { // 10 min max
-                store.delete(key);
-            }
-        }
-    }, 300000);
-}
+import { getServiceClient } from '@/lib/picks-db';
 
 interface RateLimitConfig {
     windowMs: number;   // Time window in milliseconds
@@ -34,40 +14,48 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
     'vote': { windowMs: 60000, maxRequests: 60 },              // 60 per min
 };
 
-export function checkRateLimit(
+export async function checkRateLimit(
     identifier: string,
     action: string
-): { allowed: boolean; retryAfterMs: number } {
+): Promise<{ allowed: boolean; retryAfterMs: number }> {
     const config = RATE_LIMITS[action];
     if (!config) return { allowed: true, retryAfterMs: 0 };
 
-    const key = `${action}:${identifier}`;
-    const now = Date.now();
-    const entry = store.get(key);
+    try {
+        const serviceClient = getServiceClient();
+        const { data, error } = await serviceClient.rpc('check_rate_limit', {
+            p_identifier: identifier,
+            p_action: action,
+            p_max_requests: config.maxRequests,
+            p_window_seconds: Math.floor(config.windowMs / 1000)
+        });
 
-    if (!entry || now - entry.windowStart > config.windowMs) {
-        // New window
-        store.set(key, { count: 1, windowStart: now });
+        if (error) {
+            console.error('Rate limit RPC error:', error);
+            // Fall open if DB fails
+            return { allowed: true, retryAfterMs: 0 };
+        }
+
+        return { allowed: !!data, retryAfterMs: data ? 0 : config.windowMs };
+    } catch (err) {
+        console.error('Rate limit exception:', err);
         return { allowed: true, retryAfterMs: 0 };
     }
-
-    if (entry.count >= config.maxRequests) {
-        const retryAfterMs = config.windowMs - (now - entry.windowStart);
-        return { allowed: false, retryAfterMs };
-    }
-
-    entry.count++;
-    return { allowed: true, retryAfterMs: 0 };
 }
 
-// Simple HTML tag stripper for XSS prevention
+// Simple HTML tag stripper for XSS prevention with while loop to catch double encoding
 export function sanitizeText(input: string): string {
-    return input
-        .replace(/<[^>]*>/g, '')       // Strip HTML tags
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&')
-        .trim();
+    let current = input || "";
+    let previous = "";
+    while (current !== previous) {
+        previous = current;
+        current = current
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&');
+        current = current.replace(/<[^>]*>/g, '');
+    }
+    return current.trim();
 }
 
 // Email domain validation

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useState, useEffect } from 'react';
+import { supabaseAdmin as supabase } from '@/lib/supabase';
+import type { Event } from '@/lib/supabase';
 import { z } from 'zod';
 import {
     Plus,

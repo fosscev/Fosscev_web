@@ -32,7 +32,7 @@ export function PicksAuthProvider({ children }: { children: ReactNode }) {
     const [session, setSession] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchPicksUser = useCallback(async (supabaseAuthId: string, email?: string) => {
+    const fetchPicksUser = useCallback(async (supabaseAuthId: string, email?: string, token?: string) => {
         try {
             const { data } = await supabase
                 .from('picks_users')
@@ -43,36 +43,23 @@ export function PicksAuthProvider({ children }: { children: ReactNode }) {
             if (data) {
                 setUser(data);
                 setAuthId(supabaseAuthId);
-            } else if (email) {
-                // Profile doesn't exist, let's create it on the fly!
-                let username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
-                
-                // Query if username already exists in picks_users
-                const { data: existing } = await supabase
-                    .from('picks_users')
-                    .select('id')
-                    .eq('username', username)
-                    .maybeSingle();
-                
-                if (existing) {
-                    username = `${username}_${Math.floor(1000 + Math.random() * 9000)}`;
-                }
+            } else if (email && token) {
+                // Call server to ensure profile, which also blocks admins
+                const response = await fetch('/api/picks/auth/ensure-profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ auth_id: supabaseAuthId, email })
+                });
 
-                const { data: insertedUser, error: insertError } = await supabase
-                    .from('picks_users')
-                    .insert({
-                        auth_id: supabaseAuthId,
-                        email: email,
-                        username: username
-                    })
-                    .select()
-                    .single();
-
-                if (insertedUser) {
-                    setUser(insertedUser);
+                if (response.ok) {
+                    const result = await response.json();
+                    setUser(result.user);
                     setAuthId(supabaseAuthId);
                 } else {
-                    console.error('Failed to auto-create picks_users profile:', insertError);
+                    console.error('Failed to ensure picks profile via API', await response.text());
                     setUser(null);
                     setAuthId(null);
                 }
@@ -92,7 +79,7 @@ export function PicksAuthProvider({ children }: { children: ReactNode }) {
             const { data: { session: currentSession } } = await supabase.auth.getSession();
             setSession(currentSession);
             if (currentSession?.user) {
-                await fetchPicksUser(currentSession.user.id, currentSession.user.email);
+                await fetchPicksUser(currentSession.user.id, currentSession.user.email, currentSession.access_token);
             } else {
                 setUser(null);
                 setAuthId(null);
@@ -113,7 +100,7 @@ export function PicksAuthProvider({ children }: { children: ReactNode }) {
                 const { data: { session: currentSession } } = await supabase.auth.getSession();
                 setSession(currentSession);
                 if (currentSession?.user) {
-                    await fetchPicksUser(currentSession.user.id, currentSession.user.email);
+                    await fetchPicksUser(currentSession.user.id, currentSession.user.email, currentSession.access_token);
                 }
             } catch {
                 // Not logged in
@@ -125,7 +112,7 @@ export function PicksAuthProvider({ children }: { children: ReactNode }) {
                     async (_event, currentSession) => {
                         setSession(currentSession);
                         if (currentSession?.user) {
-                            await fetchPicksUser(currentSession.user.id, currentSession.user.email);
+                            await fetchPicksUser(currentSession.user.id, currentSession.user.email, currentSession.access_token);
                         } else {
                             setUser(null);
                             setAuthId(null);

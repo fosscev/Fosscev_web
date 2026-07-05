@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { isAdminEmail } from '@/lib/admin-config';
+import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { AdminAuthProvider, useAdminAuth } from '@/components/admin/AdminAuthProvider';
 
 function AdminLoginForm() {
@@ -19,23 +18,14 @@ function AdminLoginForm() {
         setMounted(true);
     }, []);
 
-    useEffect(() => {
-        if (mounted && !authLoading && user) {
-            router.push('/foss-manager/dashboard');
-        }
-    }, [mounted, authLoading, user, router]);
+
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
-        // Client-side admin check before even attempting login
-        if (!isAdminEmail(email)) {
-            setError('Access denied — only authorized admin accounts can sign in.');
-            setLoading(false);
-            return;
-        }
+        // Removed client-side admin check as it now securely checks on the server via middleware
 
         try {
             const { data, error: authError } = await supabase.auth.signInWithPassword({
@@ -49,10 +39,10 @@ function AdminLoginForm() {
                 return;
             }
 
-            // Double-check server response
-            if (!data.session?.user || !isAdminEmail(data.session.user.email)) {
+            // Double-check server response - middleware will handle redirection if not admin
+            if (!data.session?.user) {
                 await supabase.auth.signOut();
-                setError('Access denied — only authorized admin accounts can sign in.');
+                setError('Authentication failed.');
                 setLoading(false);
                 return;
             }

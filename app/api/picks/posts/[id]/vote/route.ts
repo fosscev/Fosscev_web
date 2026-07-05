@@ -9,11 +9,20 @@ export async function POST(
 ) {
     try {
         const { id: postId } = await params;
-        const { auth_id, value } = await request.json();
-
-        if (!auth_id) {
+        const authHeader = request.headers.get('authorization');
+        if (!authHeader) {
             return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
         }
+        const token = authHeader.replace('Bearer ', '');
+        const serviceClient = getServiceClient();
+        const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
+
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+        }
+
+        const { value } = await request.json();
+        const auth_id = user.id;
 
         if (value !== 1 && value !== -1) {
             return NextResponse.json({ error: 'Vote value must be 1 or -1' }, { status: 400 });
@@ -25,12 +34,10 @@ export async function POST(
         }
 
         // Rate limit
-        const rateCheck = checkRateLimit(picksUser.id, 'vote');
+        const rateCheck = await checkRateLimit(picksUser.id, 'vote');
         if (!rateCheck.allowed) {
             return NextResponse.json({ error: 'Voting too fast. Slow down.' }, { status: 429 });
         }
-
-        const serviceClient = getServiceClient();
 
         // Check existing vote
         const { data: existingVote } = await serviceClient
@@ -70,19 +77,25 @@ export async function POST(
             scoreDelta = value;
         }
 
-        // Update post score
+        // Update post score using atomic RPC
+        const { error: rpcError } = await serviceClient.rpc('increment_score', {
+            p_post_id: postId,
+            p_delta: scoreDelta
+        });
+
+        if (rpcError) {
+             console.error('RPC Error:', rpcError);
+             return NextResponse.json({ error: 'Failed to update score' }, { status: 500 });
+        }
+        
+        // Fetch new score to return to client
         const { data: post } = await serviceClient
             .from('picks_posts')
             .select('score')
             .eq('id', postId)
             .single();
 
-        const newScore = (post?.score || 0) + scoreDelta;
-
-        await serviceClient
-            .from('picks_posts')
-            .update({ score: newScore })
-            .eq('id', postId);
+        const newScore = post?.score || 0;
 
         // Update user flair affinity score
         const { data: postData } = await serviceClient

@@ -83,6 +83,11 @@ export async function hashIp(ip: string): Promise<string> {
  * Returns '0.0.0.0' as a fallback if no IP header is found.
  */
 export function getClientIp(headers: Headers): string {
+  const vercelForwarded = headers.get('x-vercel-forwarded-for');
+  if (vercelForwarded) {
+    return vercelForwarded.trim();
+  }
+
   const forwarded = headers.get('x-forwarded-for');
   if (forwarded) {
     // x-forwarded-for can be a comma-separated list; take the first (client) IP

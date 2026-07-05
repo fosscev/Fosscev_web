@@ -1,11 +1,9 @@
-// Single source of truth for admin email whitelist.
-// Used by proxy.ts (server middleware), login page, and dashboard layout.
-export const ADMIN_EMAILS: string[] = [
-    'fossclubcev@cev.ac.in',
-    'admin@fosscev.org',
-];
+// Admin email whitelist is now stored in process.env.ADMIN_EMAILS
 
 export function isAdminEmail(email: string | undefined | null): boolean {
     if (!email) return false;
-    return ADMIN_EMAILS.includes(email.toLowerCase());
+    // Server-side only
+    const adminEmailsStr = process.env.ADMIN_EMAILS || '';
+    const adminEmails = adminEmailsStr.split(',').map(e => e.trim().toLowerCase());
+    return adminEmails.includes(email.toLowerCase());
 }

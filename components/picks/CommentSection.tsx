@@ -24,7 +24,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export function CommentSection({ postId, onAuthRequired }: CommentSectionProps) {
-    const { user, authId } = usePicksAuth();
+    const { user, authId, session } = usePicksAuth();
     const [comments, setComments] = useState<PicksComment[]>([]);
     const [loading, setLoading] = useState(true);
     const [body, setBody] = useState('');
@@ -63,8 +63,11 @@ export function CommentSection({ postId, onAuthRequired }: CommentSectionProps) 
         try {
             const res = await fetch(`/api/picks/posts/${postId}/comments`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ auth_id: authId, body: body.trim() }),
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ body: body.trim() }),
             });
 
             if (res.ok) {
@@ -92,8 +95,10 @@ export function CommentSection({ postId, onAuthRequired }: CommentSectionProps) 
         try {
             const res = await fetch(`/api/picks/posts/${postId}/comments/${commentId}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ auth_id: authId }),
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                }
             });
             
             if (!res.ok) {

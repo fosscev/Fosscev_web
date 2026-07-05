@@ -7,18 +7,25 @@ export async function DELETE(
 ) {
     try {
         const { id: postId, commentId } = await params;
-        const { auth_id } = await request.json();
-
-        if (!auth_id) {
+        const authHeader = request.headers.get('authorization');
+        if (!authHeader) {
             return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
         }
+        const token = authHeader.replace('Bearer ', '');
+        const serviceClient = getServiceClient();
+        const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
+
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+        }
+        const auth_id = user.id;
 
         const picksUser = await getPicksUserByAuthId(auth_id);
         if (!picksUser) {
             return NextResponse.json({ error: 'User not found' }, { status: 401 });
         }
 
-        const serviceClient = getServiceClient();
+
 
         // Verify comment exists and belongs to user
         const { data: comment } = await serviceClient

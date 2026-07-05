@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Rate limit
-        const rateCheck = checkRateLimit(picksUser.id, 'create-post');
+        const rateCheck = await checkRateLimit(picksUser.id, 'create-post');
         if (!rateCheck.allowed) {
             return NextResponse.json(
                 { error: `Post limit reached. Try again in ${Math.ceil(rateCheck.retryAfterMs / 60000)} minutes.` },

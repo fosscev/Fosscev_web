@@ -15,8 +15,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Rate limit to prevent brute-force OTP guessing
-        const ip = request.headers.get('x-forwarded-for') || 'unknown';
-        const rateCheck = checkRateLimit(`${ip}:${email}`, 'verify-otp');
+        const ip = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+        const rateCheck = await checkRateLimit(`${ip}:${email}`, 'verify-otp');
         if (!rateCheck.allowed) {
             return NextResponse.json(
                 { error: `Too many verification attempts. Account locked for ${Math.ceil(rateCheck.retryAfterMs / 60000)} minutes.` },

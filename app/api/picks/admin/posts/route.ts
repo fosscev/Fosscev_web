@@ -18,6 +18,10 @@ async function checkAdmin(request: NextRequest): Promise<{ allowed: boolean; rea
     if (!user) {
         return { allowed: false, reason: 'No active Supabase user session was found for this token' };
     }
+    const { isAdminEmail } = await import('@/lib/admin-config');
+    if (!isAdminEmail(user.email)) {
+        return { allowed: false, reason: 'Access denied: Not an admin' };
+    }
 
     return { allowed: true };
 }

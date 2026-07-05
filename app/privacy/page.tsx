@@ -41,6 +41,19 @@ export default function PrivacyPage() {
                             <p className="text-gray-300 mt-3">
                                 We also store public event data and information regarding our team members, which is displayed publicly on the site.
                             </p>
+                            
+                            <p className="text-gray-300 mt-6 mb-2">
+                                <strong className="text-white">Event & Community Registrations</strong>
+                            </p>
+                            <p className="text-gray-300">
+                                When you apply or register for our events, workshops, or community teams via our registration forms, we collect the specific information requested on that form (such as your name, email, phone number, and academic details). This data is:
+                            </p>
+                            <ul className="list-disc pl-6 space-y-1.5 text-gray-300 mt-3 marker:text-primary">
+                                <li>Used strictly for organizing the event, selection processes, or contacting you regarding your application.</li>
+                                <li>Never sold or shared with third-party advertisers.</li>
+                                <li>Stored securely and accessed only by authorized FOSS CEV core members.</li>
+                               
+                            </ul>
                         </div>
 
                         <div className="bg-white/5 border border-white/10 p-6 rounded-xl hover:border-primary/50 transition-colors">

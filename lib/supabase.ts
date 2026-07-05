@@ -15,6 +15,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Using createBrowserClient from @supabase/ssr to ensure cookies are 
 // correctly shared between client and server (middleware/proxy).
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: { name: 'sb-picks-auth-token' },
+    auth: {
+        lock: async (key, acquireTimeout, fn) => {
+            return fn();
+        }
+    }
+});
+
+// Create a separate client for the Admin Panel so sessions don't bleed between Picks and Admin
+export const supabaseAdmin = createBrowserClient(supabaseUrl, supabaseAnonKey, {
+    cookieOptions: { name: 'sb-admin-auth-token' },
     auth: {
         lock: async (key, acquireTimeout, fn) => {
             return fn();
@@ -90,8 +101,8 @@ export interface FinancialReport {
 }
 
 // Helper function to get public URL for storage files
-export const getPublicUrl = (bucket: string, path: string): string => {
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+export const getPublicUrl = (bucket: string, path: string, client = supabase): string => {
+    const { data } = client.storage.from(bucket).getPublicUrl(path);
     return data.publicUrl;
 };
 
@@ -99,10 +110,11 @@ export const getPublicUrl = (bucket: string, path: string): string => {
 export const uploadFile = async (
     bucket: string,
     path: string,
-    file: File
+    file: File,
+    client = supabase
 ): Promise<{ url: string | null; error: Error | null }> => {
     try {
-        const { data, error } = await supabase.storage.from(bucket).upload(path, file, {
+        const { data, error } = await client.storage.from(bucket).upload(path, file, {
             cacheControl: '3600',
             upsert: false,
         });
@@ -111,7 +123,7 @@ export const uploadFile = async (
             return { url: null, error };
         }
 
-        const publicUrl = getPublicUrl(bucket, data.path);
+        const publicUrl = getPublicUrl(bucket, data.path, client);
         return { url: publicUrl, error: null };
     } catch (error) {
         return { url: null, error: error as Error };
@@ -121,10 +133,11 @@ export const uploadFile = async (
 // Helper function to delete file from storage
 export const deleteFile = async (
     bucket: string,
-    path: string
+    path: string,
+    client = supabase
 ): Promise<{ success: boolean; error: Error | null }> => {
     try {
-        const { error } = await supabase.storage.from(bucket).remove([path]);
+        const { error } = await client.storage.from(bucket).remove([path]);
 
         if (error) {
             return { success: false, error };

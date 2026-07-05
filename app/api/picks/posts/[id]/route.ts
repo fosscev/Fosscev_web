@@ -182,7 +182,7 @@ export async function DELETE(
         }
 
         // Rate limit deletes
-        const rateCheck = checkRateLimit(user.id, 'delete-post');
+        const rateCheck = await checkRateLimit(user.id, 'delete-post');
         if (!rateCheck.allowed) {
             return NextResponse.json(
                 { error: `Delete limit reached. Try again in ${Math.ceil(rateCheck.retryAfterMs / 60000)} minutes.` },

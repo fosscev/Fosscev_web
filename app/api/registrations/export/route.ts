@@ -48,7 +48,8 @@ async function fetchBatch(
   if (formType) query = query.eq('form_type', formType);
   if (status && REGISTRATION_STATUSES.includes(status)) query = query.eq('status', status);
   if (search && search.trim()) {
-    query = query.or(`data::text.ilike.%${search.trim()}%`);
+    const cleanSearch = search.trim().replace(/[%_\\]/g, '\\$&');
+    query = query.or(`data::text.ilike.%${cleanSearch}%`);
   }
 
   query = query.range(offset, offset + limit - 1);

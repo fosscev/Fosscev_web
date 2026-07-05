@@ -122,14 +122,19 @@ export function validateFormData(
  * Also decodes common HTML entities and trims whitespace.
  */
 export function sanitizeHtml(input: string): string {
-  return input
-    .replace(/<[^>]*>/g, '')   // Strip HTML tags
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#x27;/g, "'")
-    .trim();
+  let current = input || "";
+  let previous = "";
+  while (current !== previous) {
+    previous = current;
+    current = current
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'");
+    current = current.replace(/<[^>]*>/g, '');
+  }
+  return current.trim();
 }
 
 /**

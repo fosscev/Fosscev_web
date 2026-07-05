@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { createPicksUser, getPicksUserByAuthId } from '@/lib/picks-db';
+import { logSecurityEvent } from '@/lib/security-logger';
 
 export async function POST(request: NextRequest) {
     try {
@@ -23,11 +24,17 @@ export async function POST(request: NextRequest) {
         }
 
         // Rate limit sign-in attempts
-        const ip = request.headers.get('x-forwarded-for') || 'unknown';
-        const rateCheck = checkRateLimit(ip, 'signin');
+        const ip = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+        const rateCheck = await checkRateLimit(ip, 'signin');
         if (!rateCheck.allowed) {
+            logSecurityEvent({
+                type: 'AUTH_RATE_LIMIT_EXCEEDED',
+                ip,
+                email,
+                reason: 'signin endpoint'
+            });
             return NextResponse.json(
-                { error: `Too many sign-in attempts. Try again in ${Math.ceil(rateCheck.retryAfterMs / 60000)} minutes.` },
+                { error: `Too many sign-in attempts. Try again later.` },
                 { status: 429 }
             );
         }
@@ -43,6 +50,12 @@ export async function POST(request: NextRequest) {
         });
 
         if (error) {
+            logSecurityEvent({
+                type: 'AUTH_LOGIN_FAILED',
+                ip,
+                email,
+                reason: 'Invalid credentials'
+            });
             return NextResponse.json(
                 { error: 'Invalid email or password' },
                 { status: 401 }

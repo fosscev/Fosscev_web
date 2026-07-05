@@ -10,7 +10,7 @@ interface ReportModalProps {
 }
 
 export function ReportModal({ isOpen, onClose, postId }: ReportModalProps) {
-    const { session } = usePicksAuth();
+    const { authId, session } = usePicksAuth();
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -20,26 +20,20 @@ export function ReportModal({ isOpen, onClose, postId }: ReportModalProps) {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!authId || !session) return;
         if (!reason.trim() || isSubmitting) return;
 
         setIsSubmitting(true);
         setError(null);
 
         try {
-            const token = session?.access_token;
-            if (!token) {
-                setError('You must be signed in to report.');
-                setIsSubmitting(false);
-                return;
-            }
-
             const res = await fetch(`/api/picks/posts/${postId}/report`, {
                 method: 'POST',
-                headers: {
+                headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${session.access_token}`
                 },
-                body: JSON.stringify({ reason: reason.trim(), auth_id: session.user.id })
+                body: JSON.stringify({ reason: reason.trim() })
             });
 
             if (res.ok) {

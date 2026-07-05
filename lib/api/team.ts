@@ -173,7 +173,26 @@ export async function deleteTeamMember(id: string) {
  */
 export async function uploadTeamImage(file: File, memberId?: string): Promise<{ url: string | null; error: Error | null }> {
     try {
-        const fileExt = file.name.split('.').pop();
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+            return { url: null, error: new Error('File size exceeds 5MB limit') };
+        }
+
+        // Validate magic bytes for common image formats (JPEG, PNG, WebP)
+        const arrayBuffer = await file.slice(0, 4).arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        const header = Array.from(bytes).map(b => b.toString(16).padStart(2, '0')).join('');
+        
+        let isValidImage = false;
+        if (header.startsWith('ffd8ff')) isValidImage = true; // JPEG
+        else if (header.startsWith('89504e47')) isValidImage = true; // PNG
+        else if (header.startsWith('52494646')) isValidImage = true; // WebP
+
+        if (!isValidImage) {
+            return { url: null, error: new Error('Invalid file type. Only JPEG, PNG, and WebP are allowed.') };
+        }
+
+        const fileExt = file.name.split('.').pop() || 'jpg';
         const fileName = memberId
             ? `${memberId}.${fileExt}`
             : `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;

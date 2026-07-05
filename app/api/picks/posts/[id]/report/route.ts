@@ -9,11 +9,20 @@ export async function POST(
 ) {
     try {
         const { id: postId } = await params;
-        const { auth_id, reason } = await request.json();
-
-        if (!auth_id) {
+        const authHeader = request.headers.get('authorization');
+        if (!authHeader) {
             return NextResponse.json({ error: 'Authentication required to report' }, { status: 401 });
         }
+        const token = authHeader.replace('Bearer ', '');
+        const serviceClient = getServiceClient();
+        const { data: { user }, error: authError } = await serviceClient.auth.getUser(token);
+
+        if (authError || !user) {
+            return NextResponse.json({ error: 'Authentication required to report' }, { status: 401 });
+        }
+
+        const { reason } = await request.json();
+        const auth_id = user.id;
 
         const cleanReason = sanitizeText(reason || '').slice(0, 1000);
         if (cleanReason.length < 1) {
@@ -26,12 +35,10 @@ export async function POST(
         }
 
         // Rate limit reports (e.g., max 5 per 5 mins)
-        const rateCheck = checkRateLimit(picksUser.id, 'create-report');
+        const rateCheck = await checkRateLimit(picksUser.id, 'create-report');
         if (!rateCheck.allowed) {
             return NextResponse.json({ error: 'Reporting too fast. Slow down.' }, { status: 429 });
         }
-
-        const serviceClient = getServiceClient();
 
         // Verify post exists
         const { data: post } = await serviceClient

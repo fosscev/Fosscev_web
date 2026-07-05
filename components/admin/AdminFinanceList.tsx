@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { supabase, uploadFile, deleteFile } from '@/lib/supabase';
+import { supabaseAdmin as supabase, uploadFile, deleteFile } from '@/lib/supabase';
 import type { FinancialReport, FinanceDetail } from '@/lib/supabase';
 import { FileText, Link as LinkIcon, Trash2, Edit2, Upload, X, Plus, Minus } from 'lucide-react';
 

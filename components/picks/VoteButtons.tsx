@@ -14,11 +14,11 @@ interface VoteButtonsProps {
 }
 
 export function VoteButtons({ postId, score, userVote, onAuthRequired, onVoteChange }: VoteButtonsProps) {
-    const { authId } = usePicksAuth();
+    const { authId, session } = usePicksAuth();
     const [loading, setLoading] = useState(false);
 
     const handleVote = async (value: 1 | -1) => {
-        if (!authId) {
+        if (!authId || !session) {
             onAuthRequired();
             return;
         }
@@ -48,8 +48,11 @@ export function VoteButtons({ postId, score, userVote, onAuthRequired, onVoteCha
         try {
             const res = await fetch(`/api/picks/posts/${postId}/vote`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ auth_id: authId, value }),
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ value }),
             });
 
             if (res.ok) {

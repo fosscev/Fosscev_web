@@ -57,7 +57,9 @@ export async function GET(request: NextRequest) {
 
   // Search within jsonb data — uses Postgres text search on the cast data
   if (search && search.trim()) {
-    query = query.or(`data::text.ilike.%${search.trim()}%`);
+    // Escape PostgREST wildcard characters to prevent injection
+    const cleanSearch = search.trim().replace(/[%_\\]/g, '\\$&');
+    query = query.or(`data::text.ilike.%${cleanSearch}%`);
   }
 
   // Sort

@@ -47,7 +47,6 @@ export function SubmitForm({ onClose, onPostCreated, onAuthRequired }: SubmitFor
                     tool_name: toolName.trim(),
                     flair,
                     license: license.trim(),
-                    auth_id: authId,
                 }),
             });
 
