@@ -17,7 +17,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     cookieOptions: { name: 'sb-picks-auth-token' },
     auth: {
-        storageKey: 'sb-picks-auth-token',
         lock: async (key, acquireTimeout, fn) => {
             return fn();
         }
@@ -26,9 +25,8 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
 
 // Create a separate client for the Admin Panel so sessions don't bleed between Picks and Admin
 export const supabaseAdmin = createBrowserClient(supabaseUrl, supabaseAnonKey, {
-    cookieOptions: { name: 'sb-admin-auth-token' },
+    cookieOptions: { name: 'sb-admin-auth-token', path: '/foss-manager', sameSite: 'strict' },
     auth: {
-        storageKey: 'sb-admin-auth-token',
         lock: async (key, acquireTimeout, fn) => {
             return fn();
         }
