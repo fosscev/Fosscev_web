@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { AnimatePresence, motion } from "framer-motion";
-import { MapPin, Calendar, ArrowRight, Clock, Users, ExternalLink } from "lucide-react";
+import { motion } from "framer-motion";
+import { MapPin, Calendar, ArrowRight, Clock, Users } from "lucide-react";
 import Image from "next/image";
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
@@ -81,32 +81,7 @@ export default function EventsPage() {
 
     const displayEvents = showPastEvents ? pastEvents : upcomingEvents;
 
-    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-    const [hoveredEvent, setHoveredEvent] = useState<Event | null>(null);
 
-    // Update selected event when view changes, data loads, or on hash navigation
-    useEffect(() => {
-        // Handle direct linking to specific event via URL hash
-        if (typeof window !== 'undefined' && window.location.hash) {
-            const hashId = window.location.hash.substring(1);
-
-            // Check if it's in upcoming
-            const inUpcoming = upcomingEvents.find(e => e.id.toString() === hashId);
-            if (inUpcoming) {
-                setShowPastEvents(false);
-                setSelectedEvent(inUpcoming);
-                return;
-            }
-
-            // Check if it's in past
-            const inPast = pastEvents.find(e => e.id.toString() === hashId);
-            if (inPast) {
-                setShowPastEvents(true);
-                setSelectedEvent(inPast);
-                return;
-            }
-        }
-    }, [upcomingEvents, pastEvents]);
 
     // Get the display image for an event card (prefer poster, then image)
     const getEventCardImage = (event: Event): string | undefined => {
@@ -181,7 +156,6 @@ export default function EventsPage() {
                     <div className="max-w-7xl mx-auto px-4 mb-16">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                             {displayEvents.map((event: Event, index: number) => {
-                                const isSelected = selectedEvent?.id === event.id;
                                 const cardImage = getEventCardImage(event);
 
                                 return (
@@ -203,10 +177,7 @@ export default function EventsPage() {
                                         className="cursor-pointer group relative transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,230,118,0.15)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/70"
                                     >
                                         {/* Modern Glass Card */}
-                                        <div className={`bg-surface/40 backdrop-blur-sm rounded-2xl overflow-hidden border transition-all duration-500 h-full flex flex-col ${isSelected
-                                            ? 'border-primary shadow-[0_0_30px_rgba(0,230,118,0.2)]'
-                                            : 'border-white/5 hover:border-primary/40 hover:bg-surface/60 hover:shadow-2xl'
-                                            }`}>
+                                        <div className="bg-surface/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/5 transition-all duration-500 h-full flex flex-col hover:border-primary/40 hover:bg-surface/60 hover:shadow-2xl">
 
                                             {/* Event Poster Image */}
                                             <div className="h-48 md:h-56 bg-gradient-to-br from-primary/5 to-transparent relative overflow-hidden shrink-0">
@@ -317,144 +288,6 @@ export default function EventsPage() {
                             })}
                         </div>
                     </div>
-                    {/* Selected Event Details - Dark Theme */}
-                    {selectedEvent && (
-                        <div className="max-w-5xl mx-auto px-4">
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={selectedEvent.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    transition={{ duration: 0.3 }}
-                                    className="bg-surface/30 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative"
-                                >
-                                    {/* Abstract glow behind the selected event box */}
-                                    <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
-
-                                    {/* Header with gradient and patterns */}
-                                    <div className="relative h-64 bg-gradient-to-br from-surface to-background overflow-hidden border-b border-white/5">
-                                        {/* Display poster or image if available */}
-                                        {(selectedEvent.poster || selectedEvent.image) ? (
-                                            <Image
-                                                src={selectedEvent.poster || selectedEvent.image || ""}
-                                                alt={selectedEvent.title}
-                                                fill
-                                                className="object-cover opacity-50 mix-blend-overlay"
-                                                sizes="(max-width: 768px) 100vw, 1000px"
-                                            />
-                                        ) : (
-                                            <div className="absolute inset-0 bg-background opacity-50"></div>
-                                        )}
-
-                                        {/* Minimal overlay gradient */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent"></div>
-
-                                        {/* Grid pattern */}
-                                        <div className="absolute inset-0 opacity-10" style={{
-                                            backgroundImage: 'linear-gradient(rgba(0,230,118,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,230,118,0.3) 1px, transparent 1px)',
-                                            backgroundSize: '30px 30px'
-                                        }}></div>
-
-                                        {/* Diagonal pattern */}
-                                        <div className="absolute inset-0 opacity-5" style={{
-                                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(0,230,118,0.2) 15px, rgba(0,230,118,0.2) 30px)'
-                                        }}></div>
-
-                                        <div className="relative z-10 h-full flex flex-col justify-end p-8">
-                                            <div className="flex items-center gap-3 mb-4 flex-wrap">
-                                                <span className="px-4 py-2 bg-black/80 backdrop-blur-sm text-primary text-sm font-bold font-display uppercase rounded-lg border border-primary/30 shadow-lg">
-                                                    {selectedEvent.type}
-                                                </span>
-                                                <span className={`px-4 py-2 backdrop-blur-sm text-white text-sm font-bold font-display rounded-lg border shadow-lg ${selectedEvent.status === "Completed"
-                                                    ? "bg-gray-800/80 border-gray-600/50"
-                                                    : "bg-white/10 border-white/20"
-                                                    }`}>
-                                                    {selectedEvent.status}
-                                                </span>
-                                            </div>
-                                            <h2 className="text-4xl md:text-5xl font-bold font-display text-white drop-shadow-lg">
-                                                {selectedEvent.title}
-                                            </h2>
-                                        </div>
-                                    </div>
-
-                                    {/* Content inside Selected Event */}
-                                    <div className="p-8 md:p-12 bg-surface/50 backdrop-blur-md">
-                                        {/* Event Meta Info */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                            <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all">
-                                                    <Calendar className="w-6 h-6 text-primary" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-500 font-mono uppercase mb-1">Date</p>
-                                                    <p className="text-white font-display font-bold">{selectedEvent.date}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all">
-                                                    <Clock className="w-6 h-6 text-primary" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-500 font-mono uppercase mb-1">Time</p>
-                                                    <p className="text-white font-display font-bold">{selectedEvent.time}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all">
-                                                    <Users className="w-6 h-6 text-primary" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-500 font-mono uppercase mb-1">Attendees</p>
-                                                    <p className="text-white font-display font-bold">{selectedEvent.attendees}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Location */}
-                                        <div className="flex items-center gap-3 mb-8 p-5 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
-                                            <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 border border-primary/20 group-hover:border-primary/40 transition-all">
-                                                <MapPin className="w-6 h-6 text-primary" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-gray-500 font-mono uppercase mb-1">Location</p>
-                                                <p className="text-white font-display text-lg">{selectedEvent.location}</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Description */}
-                                        <div className="mb-8 p-6 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10">
-                                            <h3 className="text-2xl font-display font-bold mb-4 text-primary">About this Event</h3>
-                                            <p className="text-lg text-gray-300 leading-relaxed">
-                                                {selectedEvent.description}
-                                            </p>
-                                        </div>
-
-                                        {/* CTA Buttons */}
-                                        <div className="flex gap-4 flex-wrap mt-8">
-                                            {selectedEvent.link && (
-                                                <a
-                                                    href={selectedEvent.link}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center justify-center gap-2 px-8 py-4 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,230,118,0.6)] font-display text-lg group"
-                                                >
-                                                    View on FOSS United
-                                                    <ExternalLink size={20} className="group-hover:translate-x-1 transition-transform" />
-                                                </a>
-                                            )}
-                                            {selectedEvent.status !== "Completed" && (
-                                                <button className="px-8 py-4 bg-gradient-to-br from-white/10 to-white/5 text-white font-bold rounded-lg hover:from-white/15 hover:to-white/10 transition-all duration-300 border border-white/20 hover:border-primary/30 font-display">
-                                                    Share Event
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            </AnimatePresence>
-                        </div>
-                    )}
                 </main>
 
                 <Footer />

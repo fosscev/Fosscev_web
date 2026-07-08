@@ -136,7 +136,7 @@ export function Tracks() {
                                 {cardContent}
                             </div>
                         ) : (
-                            <Link key={i} href={`/events#${item.id}`} className={`relative rounded-2xl overflow-hidden group ${item.className} max-md:h-[300px] block cursor-pointer`}>
+                            <Link key={i} href={`/events/${item.id}`} className={`relative rounded-2xl overflow-hidden group ${item.className} max-md:h-[300px] block cursor-pointer`}>
                                 {cardContent}
                             </Link>
                         );

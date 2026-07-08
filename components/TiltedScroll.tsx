@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import { getGalleryPhotos } from "@/app/actions/gallery";
 import { useSiteContent } from "@/lib/useSiteContent";
 
@@ -10,6 +11,44 @@ interface GalleryItem {
     event: string;
     image: string;
 }
+
+const GalleryCard = ({ item }: { item: GalleryItem }) => {
+    const [imageLoaded, setImageLoaded] = useState(false);
+
+    return (
+        <div className="w-[320px] h-[220px] rounded-lg overflow-hidden relative group flex-shrink-0 isolate bg-surface/80 border border-white/5">
+            {/* Shimmer Placeholder */}
+            {!imageLoaded && (
+                <div className="absolute inset-0 bg-gray-900 overflow-hidden">
+                    <div 
+                        className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                        style={{ animation: 'var(--animate-shimmer) 2s infinite' }}
+                    />
+                </div>
+            )}
+            
+            <Image
+                src={item.image}
+                alt={item.title}
+                fill
+                sizes="320px"
+                loading="eager"
+                onLoad={() => setImageLoaded(true)}
+                className={`absolute inset-0 w-full h-full object-cover transition-all duration-500 ${
+                    imageLoaded ? 'opacity-80 group-hover:opacity-100 scale-100' : 'opacity-0 scale-95'
+                }`}
+            />
+
+            {/* Overlay on hover */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <h3 className="text-xl font-display font-light text-white tracking-tight mb-1">{item.title}</h3>
+                    <p className="text-white/60 font-mono text-xs tracking-wider uppercase">{item.event}</p>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const Row = ({ items, speed = 20, reverse = false, offset = 0, className = "" }: { items: GalleryItem[], speed?: number, reverse?: boolean, offset?: number, className?: string }) => {
     const effectiveOffset = items.length > 0 ? offset % items.length : 0;
@@ -29,26 +68,46 @@ const Row = ({ items, speed = 20, reverse = false, offset = 0, className = "" }:
                 style={{ animationDuration: `${speed}s` }}
             >
                 {displayItems.map((item, i) => (
-                    <div key={i} className="w-[320px] h-[220px] rounded-lg overflow-hidden relative group flex-shrink-0 isolate">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                            src={item.image}
-                            alt={item.title}
-                            loading="lazy"
-                            decoding="async"
-                            className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500"
-                            onError={(e) => {
-                                (e.target as HTMLElement).style.display = 'none';
-                            }}
-                        />
+                    <GalleryCard key={i} item={item} />
+                ))}
+            </div>
+        </div>
+    );
+};
 
-                        {/* Overlay on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                            <div className="absolute bottom-0 left-0 right-0 p-6">
-                                <h3 className="text-xl font-display font-light text-white tracking-tight mb-1">{item.title}</h3>
-                                <p className="text-white/60 font-mono text-xs tracking-wider uppercase">{item.event}</p>
-                            </div>
-                        </div>
+const TiltedScrollSkeleton = () => {
+    return (
+        <div className="w-full max-w-none space-y-8 opacity-40">
+            {/* Row 1 */}
+            <div className="flex gap-6 overflow-hidden">
+                {[...Array(6)].map((_, i) => (
+                    <div key={i} className="w-[320px] h-[220px] bg-gray-900 border border-white/5 rounded-lg shrink-0 overflow-hidden relative">
+                        <div 
+                            className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                            style={{ animation: 'var(--animate-shimmer) 2s infinite' }}
+                        />
+                    </div>
+                ))}
+            </div>
+            {/* Row 2 */}
+            <div className="flex gap-6 overflow-hidden">
+                {[...Array(6)].map((_, i) => (
+                    <div key={i} className="w-[320px] h-[220px] bg-gray-900 border border-white/5 rounded-lg shrink-0 overflow-hidden relative">
+                        <div 
+                            className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                            style={{ animation: 'var(--animate-shimmer) 2s infinite' }}
+                        />
+                    </div>
+                ))}
+            </div>
+            {/* Row 3 */}
+            <div className="flex gap-6 overflow-hidden">
+                {[...Array(6)].map((_, i) => (
+                    <div key={i} className="w-[320px] h-[220px] bg-gray-900 border border-white/5 rounded-lg shrink-0 overflow-hidden relative">
+                        <div 
+                            className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                            style={{ animation: 'var(--animate-shimmer) 2s infinite' }}
+                        />
                     </div>
                 ))}
             </div>
@@ -61,36 +120,19 @@ export function TiltedScroll() {
     const [row2Items, setRow2Items] = useState<GalleryItem[]>([]);
     const [row3Items, setRow3Items] = useState<GalleryItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isVisible, setIsVisible] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const sectionRef = useRef<HTMLElement>(null);
     const { content: siteContent } = useSiteContent();
     const sectionContent = siteContent.gallery || { title: "Community\nGallery" };
 
-    // Only render heavy content when section is near viewport
     useEffect(() => {
-        const el = sectionRef.current;
-        if (!el) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                if (entry.isIntersecting) {
-                    setIsVisible(true);
-                    observer.disconnect();
-                }
-            },
-            { rootMargin: '400px 0px' } // Start loading moderately before visible
-        );
-
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, []);
-
-    useEffect(() => {
-        if (!isVisible) return;
+        let retries = 3;
+        let active = true;
 
         const fetchDatabaseGallery = async () => {
             try {
                 const result = await getGalleryPhotos();
+                if (!active) return;
                 const formattedItems = Array.isArray(result) ? result : [];
 
                 if (formattedItems.length > 0) {
@@ -105,38 +147,43 @@ export function TiltedScroll() {
                         setRow2Items([...formattedItems].reverse());
                         setRow3Items(formattedItems);
                     }
+                    setError(null);
+                    setIsLoading(false);
+                } else {
+                    throw new Error("No gallery items found");
                 }
-            } catch (error) {
-                console.error("Error loading gallery photos:", error);
-            } finally {
-                setIsLoading(false);
+            } catch (err) {
+                console.error("Error loading gallery photos:", err);
+                if (retries > 0) {
+                    retries--;
+                    setTimeout(() => {
+                        if (active) fetchDatabaseGallery();
+                    }, 2000);
+                } else {
+                    if (active) {
+                        setError("Failed to load gallery photos");
+                        setIsLoading(false);
+                    }
+                }
             }
         };
 
         fetchDatabaseGallery();
-    }, [isVisible]);
+
+        return () => {
+            active = false;
+        };
+    }, []);
 
     return (
         <section ref={sectionRef} className="relative overflow-hidden py-20 flex flex-col justify-center items-center min-h-screen" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 100vh' }}>
             <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background z-10 pointer-events-none" />
 
-            {!isVisible || isLoading ? (
-                <div className="w-full max-w-none opacity-20">
-                    <div className="flex gap-6 mb-8 overflow-hidden">
-                        {[...Array(6)].map((_, i) => (
-                            <div key={i} className="w-[320px] h-[220px] bg-gray-800/50 border border-primary/10 rounded-xl shrink-0 animate-pulse"></div>
-                        ))}
-                    </div>
-                    <div className="flex gap-6 mb-8 overflow-hidden">
-                        {[...Array(6)].map((_, i) => (
-                            <div key={i} className="w-[320px] h-[220px] bg-gray-800/50 border border-primary/10 rounded-xl shrink-0 animate-pulse"></div>
-                        ))}
-                    </div>
-                    <div className="flex gap-6 mb-8 overflow-hidden">
-                        {[...Array(6)].map((_, i) => (
-                            <div key={i} className="w-[320px] h-[220px] bg-gray-800/50 border border-primary/10 rounded-xl shrink-0 animate-pulse"></div>
-                        ))}
-                    </div>
+            {isLoading ? (
+                <TiltedScrollSkeleton />
+            ) : error ? (
+                <div className="text-center py-10 z-20">
+                    <p className="text-red-500 font-mono">{error}</p>
                 </div>
             ) : (
                 <>

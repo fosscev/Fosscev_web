@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { saveSiteContent } from '@/app/actions/admin';
 import { Edit3, Check, X } from 'lucide-react';
 
 const DEFAULT_SECTIONS = [
@@ -50,17 +51,21 @@ export default function AdminContentList() {
     };
 
     const handleSave = async (sectionKey: string) => {
-        // Check if exists
-        const { data: existing } = await supabase.from('site_content').select('id').eq('section', sectionKey).single();
-        
-        if (existing) {
-            await supabase.from('site_content').update({ content: editForm }).eq('section', sectionKey);
-        } else {
-            await supabase.from('site_content').insert({ section: sectionKey, content: editForm });
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) {
+                alert('Session expired. Please log in again.');
+                return;
+            }
+
+            await saveSiteContent(token, sectionKey, editForm);
+            
+            setEditingSection(null);
+            loadData();
+        } catch (error: any) {
+            alert('Error saving content: ' + error.message);
         }
-        
-        setEditingSection(null);
-        loadData();
     };
 
     return (

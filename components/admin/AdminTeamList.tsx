@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { saveTeamMember, deleteTeamMember, uploadStorageFile } from '@/app/actions/admin';
 import {
     Plus,
     Trash,
@@ -33,45 +34,38 @@ export default function AdminTeamList() {
         let finalImageUrl = addForm.image_url;
 
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) {
+                alert('Session expired. Please log in again.');
+                setIsSubmitting(false);
+                return;
+            }
+
             if (selectedFile) {
-                const fileExt = selectedFile.name.split('.').pop();
-                const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
-                    alert('Session expired. Please log in again.');
-                    setIsSubmitting(false);
-                    return;
-                }
-
-                const { data, error: uploadError } = await supabase.storage.from('team-images').upload(fileName, selectedFile);
-                if (uploadError) throw uploadError;
-
-                const { data: urlData } = supabase.storage.from('team-images').getPublicUrl(data.path);
-                finalImageUrl = urlData.publicUrl;
+                const uploadData = new FormData();
+                uploadData.append('file', selectedFile);
+                
+                const uploadResult = await uploadStorageFile(token, 'team-images', selectedFile.name, uploadData);
+                finalImageUrl = uploadResult.url;
             }
 
-            const { error } = await supabase
-                .from('team_members')
-                .insert([{ ...addForm, image_url: finalImageUrl }]);
+            const payload = { ...addForm, image_url: finalImageUrl };
+            await saveTeamMember(token, payload, null);
 
-            if (error) {
-                alert('Error adding member: ' + error.message);
-            } else {
-                loadData();
-                setIsAdding(false);
-                setSelectedFile(null);
-                setAddForm({
-                    name: '',
-                    role: '',
-                    is_core_team: false,
-                    is_faculty_advisor: false,
-                    image_url: '',
-                    display_order: 0
-                });
-            }
+            loadData();
+            setIsAdding(false);
+            setSelectedFile(null);
+            setAddForm({
+                name: '',
+                role: '',
+                is_core_team: false,
+                is_faculty_advisor: false,
+                image_url: '',
+                display_order: 0
+            });
         } catch (error: any) {
-            alert('Error: ' + error.message);
+            alert('Error adding member: ' + error.message);
         } finally {
             setIsSubmitting(false);
         }
@@ -102,30 +96,40 @@ export default function AdminTeamList() {
     };
 
     const handleSave = async (id: string) => {
-        const { error } = await supabase
-            .from('team_members')
-            .update(editForm)
-            .eq('id', id);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) {
+                alert('Session expired. Please log in again.');
+                return;
+            }
 
-        if (error) {
-            alert('Error updating member: ' + error.message);
-        } else {
+            // Exclude metadata from zod-parsed object
+            const { id: _mId, created_at: _created_at, updated_at: _updated_at, ...cleanPayload } = editForm;
+            await saveTeamMember(token, cleanPayload, id);
+
             loadData();
             setIsEditing(null);
+        } catch (error: any) {
+            alert('Error updating member: ' + error.message);
         }
     };
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this member?')) return;
-        const { error } = await supabase
-            .from('team_members')
-            .delete()
-            .eq('id', id);
+        
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) {
+                alert('Session expired. Please log in again.');
+                return;
+            }
 
-        if (error) {
-            alert('Error deleting member: ' + error.message);
-        } else {
+            await deleteTeamMember(token, id);
             loadData();
+        } catch (error: any) {
+            alert('Error deleting member: ' + error.message);
         }
     };
 

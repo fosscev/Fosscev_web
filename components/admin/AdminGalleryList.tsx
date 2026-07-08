@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { uploadStorageFile, deleteStorageFile } from '@/app/actions/admin';
 import { Trash2, Plus, X } from 'lucide-react';
 import ImageUploader from './ImageUploader';
 
@@ -44,11 +45,18 @@ export default function AdminGalleryList() {
     const handleDelete = async (fileName: string) => {
         if (!window.confirm("Are you sure you want to delete this photo from the gallery?")) return;
 
-        const { error } = await supabase.storage.from('event-photos').remove([fileName]);
-        if (error) {
-            alert("Error deleting: " + error.message);
-        } else {
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) {
+                alert('Session expired. Please log in again.');
+                return;
+            }
+
+            await deleteStorageFile(token, 'event-photos', fileName);
             loadPhotos();
+        } catch (error: any) {
+            alert("Error deleting: " + error.message);
         }
     };
 
@@ -60,16 +68,18 @@ export default function AdminGalleryList() {
         setUploadError(null);
 
         try {
-            // Generate a safe unique filename based on the original name
-            const ext = selectedFile.name.split('.').pop();
-            const baseName = selectedFile.name.substring(0, selectedFile.name.lastIndexOf('.')).replace(/[^a-zA-Z0-9_-]/g, '_');
-            const newFileName = `${baseName}.${ext}`;
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) {
+                alert('Session expired. Please log in again.');
+                setIsSubmitting(false);
+                return;
+            }
 
-            const { error: uploadErr } = await supabase.storage
-                .from('event-photos')
-                .upload(newFileName, selectedFile, { upsert: true });
+            const uploadData = new FormData();
+            uploadData.append('file', selectedFile);
 
-            if (uploadErr) throw uploadErr;
+            await uploadStorageFile(token, 'event-photos', selectedFile.name, uploadData);
 
             setIsAdding(false);
             setSelectedFile(null);

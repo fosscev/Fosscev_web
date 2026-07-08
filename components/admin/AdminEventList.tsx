@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { saveEvent, deleteEvent, uploadStorageFile } from '@/app/actions/admin';
 import { z } from 'zod';
 import {
     Plus,
@@ -69,6 +70,16 @@ export default function AdminEventList() {
         loadData();
     }, []);
 
+    useEffect(() => {
+        if (isAdding) {
+            const originalOverflow = document.body.style.overflow;
+            document.body.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = originalOverflow;
+            };
+        }
+    }, [isAdding]);
+
     const validateForm = (): boolean => {
         const result = eventFormSchema.safeParse(formData);
         if (!result.success) {
@@ -91,40 +102,25 @@ export default function AdminEventList() {
         let finalPosterUrl = formData.poster_url;
 
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) {
+                alert('Session expired. Please log in again.');
+                setIsSubmitting(false);
+                return;
+            }
+
             if (selectedFile) {
-                const fileExt = selectedFile.name.split('.').pop();
-                const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-                const { data: { session } } = await supabase.auth.getSession();
-                if (!session) {
-                    alert('Session expired. Please log in again.');
-                    setIsSubmitting(false);
-                    return;
-                }
-
-                const { data, error: uploadError } = await supabase.storage.from('event-posters').upload(fileName, selectedFile);
-                if (uploadError) throw uploadError;
-
-                const { data: urlData } = supabase.storage.from('event-posters').getPublicUrl(data.path);
-                finalPosterUrl = urlData.publicUrl;
+                const uploadData = new FormData();
+                uploadData.append('file', selectedFile);
+                
+                const uploadResult = await uploadStorageFile(token, 'event-posters', selectedFile.name, uploadData);
+                finalPosterUrl = uploadResult.url;
             }
 
             const payload = { ...formData, poster_url: finalPosterUrl };
 
-            if (isEditing) {
-                const { error } = await supabase
-                    .from('events')
-                    .update(payload)
-                    .eq('id', isEditing);
-
-                if (error) throw error;
-            } else {
-                const { error } = await supabase
-                    .from('events')
-                    .insert([payload]);
-
-                if (error) throw error;
-            }
+            await saveEvent(token, payload, isEditing);
 
             loadData();
             resetForm();
@@ -137,15 +133,19 @@ export default function AdminEventList() {
 
     const handleDeleteEvent = async (id: string) => {
         if (!confirm('Are you sure you want to delete this event?')) return;
-        const { error } = await supabase
-            .from('events')
-            .delete()
-            .eq('id', id);
+        
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) {
+                alert('Session expired. Please log in again.');
+                return;
+            }
 
-        if (error) {
-            alert('Error deleting event: ' + error.message);
-        } else {
+            await deleteEvent(token, id);
             loadData();
+        } catch (error: any) {
+            alert('Error deleting event: ' + error.message);
         }
     };
 
@@ -193,8 +193,8 @@ export default function AdminEventList() {
 
             {/* Add/Edit Event Modal */}
             {isAdding && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
-                    <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 w-full max-w-2xl space-y-4 my-8 relative">
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-hidden">
+                    <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 w-full max-w-[900px] max-h-[90vh] overflow-y-auto overscroll-contain space-y-4 relative scroll-smooth">
                         <button
                             onClick={resetForm}
                             className="absolute top-4 right-4 text-gray-400 hover:text-white"

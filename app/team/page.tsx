@@ -2,11 +2,10 @@
 
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { team as localCoreTeam, subteam as localSubteam } from "@/data/team";
-import { getCoreTeam, getSubteam, getFacultyAdvisors } from "@/lib/api/team";
 import Image from "next/image";
 import { Github, Linkedin, Instagram } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { SOCIAL_LINKS } from "@/lib/constants";
 import { TeamSkeleton } from "@/components/skeletons/TeamSkeleton";
@@ -16,50 +15,24 @@ interface CardPosition {
     y: number;
 }
 
-// Personalized messages for each team member
-const getPersonalizedMessage = (name: string, role: string): string => {
-    const messages: { [key: string]: string } = {
-        "Rishnu Lal N": "The visionary leader driving<br />our FOSS community forward",
-        "Hussain Huzefa": "Strategic organizer shaping<br />our community's future",
-        "Devapriya k": "Passionate organizer bringing<br />ideas to life",
-        "Roshith Krishna": "Managing our resources with<br />precision and care",
-        "Anvar Sadath": "Crafting beautiful experiences<br />for our community",
-        "Lakshmi Reji Suresh": "Empowering women in tech<br />and open source",
-        "Rida Waseem": "Championing diversity and<br />inclusion in FOSS",
-        "Sayanth P": "Connecting our community<br />across all platforms",
-        "Ashwandha": "Ensuring financial stability<br />and transparency",
-        "Muhammad Aswlah": "Designing the visual identity<br />of our community",
-        "Fathima P": "Creating stunning designs<br />that inspire",
-        "Sandra Sunil T": "Building bridges through<br />social engagement",
-        "Muhammed Sinan A P": "Crafting stories that<br />bring our mission to life",
-    };
-    return messages[name] || `Passionate ${role}<br />in our FOSS community`;
-};
-
 // Helper to normalize/validate image URLs and map DB fields to component fields
 const normalizeImageUrl = (url: any) => {
-    // Fallback placeholder in public/
     const placeholder = "/placeholder-user.svg";
-
     if (!url) return placeholder;
 
     try {
-        // If it's a valid absolute URL, return as-is
-        // new URL will throw for invalid/relative values
-        // eslint-disable-next-line no-new
         new URL(url);
         return url;
     } catch (e) {
-        // Not an absolute URL — return placeholder
         return placeholder;
     }
 };
 
-// Helper to map database fields to component fields if necessary
+// Helper to map database fields to component fields
 const mapTeamMember = (member: any) => ({
     name: member.name,
     role: member.role,
-    image: normalizeImageUrl(member.image_url), // Use validated image_url from DB
+    image: normalizeImageUrl(member.image_url || member.image),
     github: member.github,
     linkedin: member.linkedin,
     instagram: member.instagram,
@@ -75,7 +48,7 @@ const TeamMemberCard = ({
     onLeave,
     cardPositions
 }: {
-    member: typeof localCoreTeam[0] & { bio?: string | null },
+    member: any,
     index: number,
     hoveredIndex: number | null,
     onHover: (index: number) => void,
@@ -84,6 +57,7 @@ const TeamMemberCard = ({
 }) => {
     const [magneticPos, setMagneticPos] = useState<CardPosition>({ x: 0, y: 0 });
     const [repulsionPos, setRepulsionPos] = useState<CardPosition>({ x: 0, y: 0 });
+    const [imageLoaded, setImageLoaded] = useState(false);
     const cardRef = useRef<HTMLDivElement>(null);
     const isHovered = hoveredIndex === index;
 
@@ -100,77 +74,60 @@ const TeamMemberCard = ({
             const deltaX = e.clientX - centerX;
             const deltaY = e.clientY - centerY;
 
-            // Very subtle magnetic strength for hovered card
-            const strength = 0.08;
-            setMagneticPos({
-                x: deltaX * strength,
-                y: deltaY * strength
-            });
+            // Magnetic pull: cards follow cursor up to 15px
+            const magneticX = deltaX * 0.12;
+            const magneticY = deltaY * 0.12;
+            setMagneticPos({ x: magneticX, y: magneticY });
         };
 
-        card.addEventListener('mousemove', handleMouseMove);
-        return () => card.removeEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mousemove', handleMouseMove);
+        return () => window.removeEventListener('mousemove', handleMouseMove);
     }, [isHovered]);
 
-    // Handle repulsion effect for nearby cards
+    // Handle repulsion effect for non-hovered cards (they push away slightly from hovered card)
     useEffect(() => {
-        if (hoveredIndex === null || hoveredIndex === index) {
-            // Reset repulsion when nothing is hovered or this card is hovered
+        if (hoveredIndex === null || isHovered) {
             setRepulsionPos({ x: 0, y: 0 });
             return;
         }
 
-        const hoveredRect = cardPositions.current.get(hoveredIndex);
-        const thisRect = cardPositions.current.get(index);
-
-        if (!hoveredRect || !thisRect) return;
-
-        const hoveredCenterX = hoveredRect.left + hoveredRect.width / 2;
-        const hoveredCenterY = hoveredRect.top + hoveredRect.height / 2;
-        const thisCenterX = thisRect.left + thisRect.width / 2;
-        const thisCenterY = thisRect.top + thisRect.height / 2;
-
-        const deltaX = thisCenterX - hoveredCenterX;
-        const deltaY = thisCenterY - hoveredCenterY;
-        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-        // Repulsion radius (in pixels)
-        const repulsionRadius = 400;
-
-        if (distance < repulsionRadius && distance > 0) {
-            // Calculate repulsion strength (STRONGER - increased from 30 to 50)
-            const repulsionStrength = (1 - distance / repulsionRadius) * 50;
-            const angle = Math.atan2(deltaY, deltaX);
-
-            const repulseX = Math.cos(angle) * repulsionStrength;
-            const repulseY = Math.sin(angle) * repulsionStrength;
-
-            setRepulsionPos({
-                x: repulseX,
-                y: repulseY
-            });
-        } else {
-            setRepulsionPos({ x: 0, y: 0 });
-        }
-    }, [hoveredIndex, index, cardPositions]);
-
-    // Update card position in the map
-    useEffect(() => {
         const updatePosition = () => {
-            if (cardRef.current) {
-                cardPositions.current.set(index, cardRef.current.getBoundingClientRect());
+            const card = cardRef.current;
+            const hoveredCardPos = cardPositions.current.get(hoveredIndex);
+
+            if (!card || !hoveredCardPos) return;
+
+            const rect = card.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+
+            const hoverCenterX = hoveredCardPos.left + hoveredCardPos.width / 2;
+            const hoverCenterY = hoveredCardPos.top + hoveredCardPos.height / 2;
+
+            const dx = centerX - hoverCenterX;
+            const dy = centerY - hoverCenterY;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            // Subtle push away (repulsion): max 6px shift, decreases with distance
+            if (distance > 0 && distance < 450) {
+                const force = (450 - distance) / 450;
+                const pushX = (dx / distance) * 6 * force;
+                const pushY = (dy / distance) * 6 * force;
+                setRepulsionPos({ x: pushX, y: pushY });
+            } else {
+                setRepulsionPos({ x: 0, y: 0 });
             }
         };
 
         updatePosition();
+
         window.addEventListener('resize', updatePosition);
         window.addEventListener('scroll', updatePosition);
-
         return () => {
             window.removeEventListener('resize', updatePosition);
             window.removeEventListener('scroll', updatePosition);
         };
-    }, [index, cardPositions]);
+    }, [index, hoveredIndex, isHovered, cardPositions]);
 
     const handleMouseEnter = () => {
         onHover(index);
@@ -218,16 +175,26 @@ const TeamMemberCard = ({
 
                 {/* Profile Image Container */}
                 <div className="relative aspect-square overflow-hidden bg-surface-highlight">
+                    {/* Shimmer Placeholder while loading image */}
+                    {!imageLoaded && (
+                        <div className="absolute inset-0 bg-gray-900 overflow-hidden z-10">
+                            <div 
+                                className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent"
+                                style={{ animation: 'var(--animate-shimmer) 2s infinite' }}
+                            />
+                        </div>
+                    )}
                     <Image
                         src={member.image}
                         alt={member.name}
                         fill
-                        className="object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2"
+                        className={`object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2 ${
+                            imageLoaded ? 'opacity-100' : 'opacity-0'
+                        }`}
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                        priority={index < 4}
+                        loading="eager"
+                        onLoad={() => setImageLoaded(true)}
                     />
-
-
 
                     {/* Scan line effect */}
                     <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
@@ -241,7 +208,7 @@ const TeamMemberCard = ({
                 </div>
 
                 {/* Info Section */}
-                <div className="relative p-6 bg-surface/90 backdrop-blur-sm border-t border-white/5">
+                <div className="relative p-6 bg-surface/90 backdrop-blur-sm border-t border-white/5 border-t-emerald-400/5">
                     {/* Name */}
                     <h3 className="text-xl font-display font-bold text-white mb-1 group-hover:text-primary transition-colors duration-300">
                         {member.name}
@@ -317,38 +284,61 @@ export default function TeamPage() {
 
     // State for team data
     const [coreTeamData, setCoreTeamData] = useState<any[]>([]);
+    const [previousCoreTeamData, setPreviousCoreTeamData] = useState<any[]>([]);
     const [subTeamData, setSubTeamData] = useState<any[]>([]);
     const [facultyTeamData, setFacultyTeamData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<'current' | 'previous'>('current');
 
     useEffect(() => {
+        let retries = 3;
+        let active = true;
+
         async function fetchTeamData() {
             try {
-                const [coreResponse, subResponse, facultyResponse] = await Promise.all([
-                    getCoreTeam(),
-                    getSubteam(),
-                    getFacultyAdvisors()
-                ]);
+                const response = await fetch("/api/data/team", { cache: "no-store" });
+                if (!active) return;
+                if (!response.ok) throw new Error("Failed to fetch team data");
+                const data = await response.json();
 
-                if (coreResponse.data) {
-                    setCoreTeamData(coreResponse.data.map(mapTeamMember));
+                if (data.coreTeam) {
+                    const mappedCore = data.coreTeam.map(mapTeamMember);
+                    setCoreTeamData(mappedCore);
+                    // Duplicate for previous core team initially as requested
+                    setPreviousCoreTeamData(mappedCore);
                 }
 
-                if (subResponse.data) {
-                    setSubTeamData(subResponse.data.map(mapTeamMember));
+                if (data.subTeam) {
+                    setSubTeamData(data.subTeam.map(mapTeamMember));
                 }
 
-                if (facultyResponse.data) {
-                    setFacultyTeamData(facultyResponse.data.map(mapTeamMember));
+                if (data.faculty) {
+                    setFacultyTeamData(data.faculty.map(mapTeamMember));
                 }
-            } catch (error) {
-                console.error("Failed to fetch team data:", error);
-            } finally {
+                setError(null);
                 setIsLoading(false);
+            } catch (err) {
+                console.error("Failed to fetch team data:", err);
+                if (retries > 0) {
+                    retries--;
+                    setTimeout(() => {
+                        if (active) fetchTeamData();
+                    }, 2000);
+                } else {
+                    if (active) {
+                        setError("Failed to load team data");
+                        setIsLoading(false);
+                    }
+                }
             }
         }
 
         fetchTeamData();
+
+        return () => {
+            active = false;
+        };
     }, []);
 
     return (
@@ -387,7 +377,7 @@ export default function TeamPage() {
                                         cardPositions={facultyCardPositions}
                                     />
                                 </div>
-                            )) : (
+                            )) : !isLoading && (
                                 <div className="text-gray-500 font-mono text-center w-full py-8">
                                     No faculty advisors found.
                                 </div>
@@ -396,7 +386,7 @@ export default function TeamPage() {
                     </div>
 
                     {/* Header */}
-                    <div className="mb-16 text-center">
+                    <div className="mb-12 text-center">
                         <h1 className="text-6xl md:text-8xl font-display font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-primary to-white mb-6 animate-gradient">
                             CORE_TEAM
                         </h1>
@@ -412,26 +402,85 @@ export default function TeamPage() {
                         </p>
                     </div>
 
-                    {isLoading ? (
-                        <TeamSkeleton />
-                    ) : (
-                        // Team Grid
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-20 overflow-visible min-h-fit">
-                            {coreTeamData.map((member, i) => (
-                                <TeamMemberCard
-                                    key={i}
-                                    member={member}
-                                    index={i}
-                                    hoveredIndex={hoveredIndex}
-                                    onHover={setHoveredIndex}
-                                    onLeave={() => setHoveredIndex(null)}
-                                    cardPositions={cardPositions}
+                    {/* Toggle Switcher */}
+                    {!isLoading && !error && (
+                        <div className="flex justify-center mb-16">
+                            <div className="relative flex p-1.5 bg-black/40 backdrop-blur-md border border-white/10 rounded-xl max-w-md w-full sm:w-auto">
+                                {/* Sliding background highlight */}
+                                <div 
+                                    className="absolute top-1.5 bottom-1.5 left-1.5 rounded-lg bg-primary/20 border border-primary/30 transition-all duration-300 ease-out"
+                                    style={{
+                                        left: activeTab === 'current' ? '6px' : 'calc(50% + 2px)',
+                                        width: 'calc(50% - 8px)'
+                                    }}
                                 />
-                            ))}
+                                
+                                <button
+                                    onClick={() => setActiveTab('current')}
+                                    className={`relative z-10 flex-1 px-6 py-2.5 rounded-lg text-sm font-display font-bold transition-colors duration-300 whitespace-nowrap text-center ${
+                                        activeTab === 'current' ? 'text-primary' : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    Current Core Team
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('previous')}
+                                    className={`relative z-10 flex-1 px-6 py-2.5 rounded-lg text-sm font-display font-bold transition-colors duration-300 whitespace-nowrap text-center ${
+                                        activeTab === 'previous' ? 'text-primary' : 'text-gray-400 hover:text-white'
+                                    }`}
+                                >
+                                    Previous Core Team
+                                </button>
+                            </div>
                         </div>
                     )}
 
-                    {!isLoading && (
+                    {isLoading ? (
+                        <TeamSkeleton />
+                    ) : error ? (
+                        <div className="text-center py-10 z-20">
+                            <p className="text-red-500 font-mono">{error}</p>
+                        </div>
+                    ) : (
+                        // Team Grid with transitions
+                        <AnimatePresence mode="wait">
+                            <motion.div
+                                key={activeTab}
+                                initial={{ opacity: 0, y: 15 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -15 }}
+                                transition={{ duration: 0.25 }}
+                                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 mb-20 overflow-visible min-h-fit"
+                            >
+                                {activeTab === 'current' 
+                                    ? coreTeamData.map((member, i) => (
+                                        <TeamMemberCard
+                                            key={`core-${i}`}
+                                            member={member}
+                                            index={i}
+                                            hoveredIndex={hoveredIndex}
+                                            onHover={setHoveredIndex}
+                                            onLeave={() => setHoveredIndex(null)}
+                                            cardPositions={cardPositions}
+                                        />
+                                      ))
+                                    : previousCoreTeamData.map((member, i) => (
+                                        <TeamMemberCard
+                                            key={`prev-${i}`}
+                                            member={member}
+                                            index={i}
+                                            hoveredIndex={hoveredIndex}
+                                            onHover={setHoveredIndex}
+                                            onLeave={() => setHoveredIndex(null)}
+                                            cardPositions={cardPositions}
+                                        />
+                                      ))
+                                }
+                            </motion.div>
+                        </AnimatePresence>
+                    )}
+
+                    {!isLoading && !error && subTeamData.length > 0 && (
                         /* Subteam Section */
                         <div className="mb-20">
                             {/* Subteam Header */}
@@ -467,8 +516,6 @@ export default function TeamPage() {
                             </div>
                         </div>
                     )}
-
-
 
                     {/* Call to Action */}
                     <div className="relative p-8 md:p-12 border border-white/10 bg-surface/50 rounded-xl overflow-hidden backdrop-blur-sm">

@@ -62,12 +62,30 @@ export function checkRateLimit(
 
 // Simple HTML tag stripper for XSS prevention
 export function sanitizeText(input: string): string {
-    return input
-        .replace(/<[^>]*>/g, '')       // Strip HTML tags
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/&amp;/g, '&')
-        .trim();
+    if (!input) return '';
+    let result = '';
+    let inTag = false;
+    let quoteChar: string | null = null;
+
+    for (let i = 0; i < input.length; i++) {
+        const char = input[i];
+        if (inTag) {
+            if (quoteChar) {
+                if (char === quoteChar) {
+                    quoteChar = null;
+                }
+            } else if (char === '"' || char === "'") {
+                quoteChar = char;
+            } else if (char === '>') {
+                inTag = false;
+            }
+        } else if (char === '<') {
+            inTag = true;
+        } else {
+            result += char;
+        }
+    }
+    return result.trim();
 }
 
 // Email domain validation

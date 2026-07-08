@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { supabase, uploadFile, deleteFile } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
+import { saveFinanceReport, deleteFinanceReport, uploadStorageFile, deleteStorageFile } from '@/app/actions/admin';
 import type { FinancialReport, FinanceDetail } from '@/lib/supabase';
 import { FileText, Link as LinkIcon, Trash2, Edit2, Upload, X, Plus, Minus } from 'lucide-react';
 
@@ -63,18 +64,23 @@ export default function AdminFinanceList() {
         setIsSaving(true);
 
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) {
+                alert('Session expired. Please log in again.');
+                setIsSaving(false);
+                return;
+            }
+
             let final_report_url = reportUrl;
 
             // Upload new file if selected
             if (selectedFile) {
-                const fileExt = selectedFile.name.split('.').pop();
-                const fileName = `report_${Date.now()}.${fileExt}`;
-                const filePath = `reports/${fileName}`;
-
-                const { url, error: uploadError } = await uploadFile('foss-images', filePath, selectedFile);
+                const uploadData = new FormData();
+                uploadData.append('file', selectedFile);
                 
-                if (uploadError) throw uploadError;
-                final_report_url = url;
+                const uploadResult = await uploadStorageFile(token, 'foss-images', selectedFile.name, uploadData);
+                final_report_url = uploadResult.url;
             }
 
             const reportData = {
@@ -87,25 +93,9 @@ export default function AdminFinanceList() {
                 expense_details: type === 'Event' ? expenseDetails : [],
                 date,
                 report_url: final_report_url,
-                updated_at: new Date().toISOString()
             };
 
-            if (currentId) {
-                // Update
-                const { error } = await supabase
-                    .from('financial_reports')
-                    .update(reportData)
-                    .eq('id', currentId);
-
-                if (error) throw error;
-            } else {
-                // Insert
-                const { error } = await supabase
-                    .from('financial_reports')
-                    .insert([{ ...reportData, created_at: new Date().toISOString() }]);
-
-                if (error) throw error;
-            }
+            await saveFinanceReport(token, reportData, currentId);
 
             alert('Report saved successfully!');
             setIsEditing(false);
@@ -114,7 +104,7 @@ export default function AdminFinanceList() {
         } catch (error: any) {
             console.error('Error saving report:', error);
             const errorMessage = error?.message || error?.details || JSON.stringify(error, null, 2);
-            alert(`Error saving report: ${errorMessage}\n\nDid you run the SQL ALTER TABLE command?`);
+            alert(`Error saving report: ${errorMessage}`);
         } finally {
             setIsSaving(false);
         }
@@ -124,25 +114,28 @@ export default function AdminFinanceList() {
         if (!window.confirm('Are you sure you want to delete this report?')) return;
 
         try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+            if (!token) {
+                alert('Session expired. Please log in again.');
+                return;
+            }
+
             // If it has a file, try to delete it
             if (reportUrl && reportUrl.includes('supabase.co')) {
                 const pathParts = reportUrl.split('/');
                 const fileName = pathParts[pathParts.length - 1];
-                await deleteFile('foss-images', `reports/${fileName}`);
+                try {
+                    await deleteStorageFile(token, 'foss-images', `reports/${fileName}`);
+                } catch (err) {
+                    console.warn("Storage delete warn:", err);
+                }
             }
 
-            const { error } = await supabase
-                .from('financial_reports')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-
-            alert('Report deleted successfully');
+            await deleteFinanceReport(token, id);
             fetchReports();
         } catch (error: any) {
-            console.error('Error deleting report:', error);
-            alert('Error deleting report');
+            alert('Error deleting report: ' + error.message);
         }
     };
 

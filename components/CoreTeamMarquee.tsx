@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { useSiteContent } from "@/lib/useSiteContent";
 
@@ -14,20 +15,35 @@ interface TeamMember {
 }
 
 const MarqueeCard = ({ member }: { member: TeamMember }) => {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   return (
     <motion.div
       className="group relative flex h-[420px] w-full flex-col overflow-hidden rounded-[24px] border border-emerald-400/25 bg-black/30 shadow-[0_0_40px_rgba(2,8,23,0.45)] backdrop-blur-xl"
       whileHover={{ y: -8, scale: 1.02, boxShadow: "0 0 0 1px rgba(16, 185, 129, 0.25), 0 0 35px rgba(16, 185, 129, 0.22)" }}
       transition={{ type: "spring", stiffness: 220, damping: 20 }}
     >
-      <div className="h-[calc(100%-96px)] w-full overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+      <div className="h-[calc(100%-96px)] w-full overflow-hidden relative">
+        {/* Shimmer Placeholder while loading image */}
+        {!imageLoaded && (
+          <div className="absolute inset-0 bg-gray-900 overflow-hidden z-10 animate-pulse">
+            <div 
+              className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent"
+              style={{ animation: 'var(--animate-shimmer) 2s infinite' }}
+            />
+          </div>
+        )}
+
+        <Image
           src={member.image}
           alt={member.name}
-          className="h-full w-full object-cover object-center brightness-100 contrast-110 transition duration-500 ease-out group-hover:scale-105"
-          loading="lazy"
-          decoding="async"
+          fill
+          sizes="(max-width: 768px) 46vw, (max-width: 1024px) 31vw, 24vw"
+          loading="eager"
+          onLoad={() => setImageLoaded(true)}
+          className={`object-cover object-center brightness-100 contrast-110 transition duration-500 ease-out group-hover:scale-105 ${
+            imageLoaded ? 'opacity-100' : 'opacity-0'
+          }`}
         />
       </div>
 
@@ -61,9 +77,51 @@ const memberOrder = [
   "Ananthanarayanan M",
 ] as const;
 
+const CoreTeamSkeleton = () => {
+  return (
+    <div className="w-full overflow-hidden opacity-50 py-10">
+      <div className="flex gap-6 justify-center">
+        {[...Array(4)].map((_, i) => (
+          <div
+            key={i}
+            className="flex-shrink-0 w-[46vw] h-[420px] rounded-[24px] border border-emerald-400/10 bg-black/30 backdrop-blur-xl flex flex-col overflow-hidden relative sm:w-[31vw] lg:w-[24vw]"
+          >
+            {/* Image Placeholder */}
+            <div className="h-[calc(100%-96px)] w-full bg-gray-900 relative overflow-hidden">
+              <div 
+                className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent"
+                style={{ animation: 'var(--animate-shimmer) 2s infinite' }}
+              />
+            </div>
+            
+            {/* Text Placeholders */}
+            <div className="flex h-[96px] flex-col items-center justify-center px-4 py-4 text-center sm:px-5 space-y-3">
+              {/* Name Skeleton */}
+              <div className="w-2/3 h-4 bg-gray-800 rounded relative overflow-hidden">
+                <div 
+                  className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/5 to-transparent"
+                  style={{ animation: 'var(--animate-shimmer) 2s infinite' }}
+                />
+              </div>
+              {/* Role Skeleton */}
+              <div className="w-1/2 h-3 bg-emerald-950/40 rounded relative overflow-hidden">
+                <div 
+                  className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-emerald-400/10 to-transparent"
+                  style={{ animation: 'var(--animate-shimmer) 2s infinite' }}
+                />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export function CoreTeamMarquee() {
   const [teamData, setTeamData] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
   const marqueeRef = useRef<HTMLDivElement>(null);
@@ -79,6 +137,7 @@ export function CoreTeamMarquee() {
   const [isHovering, setIsHovering] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
+  // Still observe visibility for heading fade-in transition
   useEffect(() => {
     const el = sectionRef.current;
     if (!el) return;
@@ -110,15 +169,21 @@ export function CoreTeamMarquee() {
     return () => resizeObserver.disconnect();
   }, [isLoading]);
 
+  // Fetch immediately on mount, retry up to 3 times
   useEffect(() => {
-    if (!isVisible) return;
+    let retries = 3;
+    let active = true;
 
     const fetchTeam = async () => {
       try {
         const response = await fetch("/api/data/team", { cache: "no-store" });
+        if (!active) return;
         if (!response.ok) throw new Error("Failed to fetch team data");
         const data = await response.json();
         const coreTeamMembers = Array.isArray(data?.coreTeam) ? data.coreTeam : [];
+        
+        if (coreTeamMembers.length === 0) throw new Error("No core team members returned");
+
         setTeamData(
           coreTeamMembers.map((member: Record<string, any>) => ({
             name: member.name || "",
@@ -126,15 +191,30 @@ export function CoreTeamMarquee() {
             image: member.image_url || member.image || "/placeholder.jpg",
           }))
         );
-      } catch (err) {
-        console.error("Unexpected error:", err);
-      } finally {
+        setError(null);
         setIsLoading(false);
+      } catch (err) {
+        console.error("Unexpected error loading team data:", err);
+        if (retries > 0) {
+          retries--;
+          setTimeout(() => {
+            if (active) fetchTeam();
+          }, 2000);
+        } else {
+          if (active) {
+            setError("Failed to load core team data");
+            setIsLoading(false);
+          }
+        }
       }
     };
 
     fetchTeam();
-  }, [isVisible]);
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const orderedMembers = useMemo(() => {
     if (!teamData.length) return [];
@@ -201,9 +281,15 @@ export function CoreTeamMarquee() {
   if (isLoading) {
     return (
       <section ref={sectionRef} className="relative overflow-hidden py-20">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="h-96 animate-pulse rounded-[2rem] border border-white/5 bg-gray-800/40"></div>
-        </div>
+        <CoreTeamSkeleton />
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section ref={sectionRef} className="relative overflow-hidden py-20 text-center">
+        <p className="text-red-500 font-mono">{error}</p>
       </section>
     );
   }
