@@ -8,6 +8,14 @@ export function getServiceClient() {
     return createClient(url, key);
 }
 
+let serviceClientInstance: any = null;
+function getDb(): any {
+    if (!serviceClientInstance) {
+        serviceClientInstance = getServiceClient();
+    }
+    return serviceClientInstance;
+}
+
 // ── Types ──────────────────────────────────────────────
 
 export type Flair = 'Development' | 'Design' | 'Sysadmin' | 'Writing' | 'Other' | 'Question';
@@ -82,7 +90,7 @@ export interface PicksComment {
 // ── Database Helpers ───────────────────────────────────
 
 export async function getPicksUserByAuthId(authId: string): Promise<PicksUser | null> {
-    const { data } = await supabase
+    const { data } = await getDb()
         .from('picks_users')
         .select('*')
         .eq('auth_id', authId)
@@ -90,15 +98,11 @@ export async function getPicksUserByAuthId(authId: string): Promise<PicksUser | 
     return data;
 }
 
-export async function createPicksUser(authId: string, email: string, customUsername?: string): Promise<PicksUser | null> {
-    const baseUsername = customUsername 
-        ? customUsername.toLowerCase().replace(/[^a-z0-9_]/g, '_')
-        : email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
-
-    const serviceClient = getServiceClient();
+export async function createPicksUser(authId: string, email: string, username?: string): Promise<PicksUser | null> {
+    const baseUsername = username || email.split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
 
     // Check if username exists, append random digits if so
-    const { data: existing } = await serviceClient
+    const { data: existing } = await getDb()
         .from('picks_users')
         .select('id')
         .eq('username', baseUsername)
@@ -108,7 +112,7 @@ export async function createPicksUser(authId: string, email: string, customUsern
         ? `${baseUsername}_${Math.floor(Math.random() * 9999)}`
         : baseUsername;
 
-    const { data, error } = await serviceClient
+    const { data, error } = await getDb()
         .from('picks_users')
         .insert({ auth_id: authId, email, username: finalUsername })
         .select()
@@ -116,6 +120,21 @@ export async function createPicksUser(authId: string, email: string, customUsern
 
     if (error) {
         console.error('Error creating picks user:', error);
+        return null;
+    }
+    return data;
+}
+
+export async function updatePicksUsername(authId: string, username: string): Promise<PicksUser | null> {
+    const { data, error } = await getDb()
+        .from('picks_users')
+        .update({ username })
+        .eq('auth_id', authId)
+        .select()
+        .single();
+
+    if (error) {
+        console.error('Error updating picks username:', error);
         return null;
     }
     return data;
@@ -134,7 +153,7 @@ export async function fetchPosts(options: {
     const { sort, page, flair, userId, authorId, perPage = 20 } = options;
     const offset = (page - 1) * perPage;
 
-    let query = supabase
+    let query = getDb()
         .from('picks_posts')
         .select(`
             *,
@@ -204,7 +223,7 @@ export async function fetchPosts(options: {
 
     // For You sort: boost flairs user has upvoted
     if (sort === 'foryou' && userId) {
-        const { data: flairScores } = await supabase
+        const { data: flairScores } = await getDb()
             .from('picks_user_flair_scores')
             .select('flair, score')
             .eq('user_id', userId);
@@ -215,7 +234,7 @@ export async function fetchPosts(options: {
         });
 
         // Get user's voted post IDs
-        const { data: userVotes } = await supabase
+        const { data: userVotes } = await getDb()
             .from('picks_votes')
             .select('post_id')
             .eq('user_id', userId);
@@ -238,13 +257,14 @@ export async function fetchPosts(options: {
     // If userId provided, fetch user's votes and saved status for these posts
     if (userId && posts.length > 0) {
         const postIds = posts.map(p => p.id);
-        
-        const [votesRes] = await Promise.all([
-            supabase.from('picks_votes').select('post_id, value').eq('user_id', userId).in('post_id', postIds)
-        ]);
+        const { data: votes } = await getDb()
+            .from('picks_votes')
+            .select('post_id, value')
+            .eq('user_id', userId)
+            .in('post_id', postIds);
 
         const voteMap: Record<string, number> = {};
-        (votesRes.data || []).forEach((v: any) => {
+        (votes || []).forEach((v: any) => {
             voteMap[v.post_id] = v.value;
         });
 
@@ -258,7 +278,7 @@ export async function fetchPosts(options: {
 }
 
 export async function fetchComments(postId: string): Promise<PicksComment[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getDb()
         .from('picks_comments')
         .select(`
             *,
@@ -278,9 +298,9 @@ export async function fetchComments(postId: string): Promise<PicksComment[]> {
 
 export async function getCommunityStats() {
     const [usersResult, postsResult, flairResult] = await Promise.all([
-        supabase.from('picks_users').select('*', { count: 'exact', head: true }),
-        supabase.from('picks_posts').select('*', { count: 'exact', head: true }).eq('is_removed', false),
-        supabase.from('picks_posts').select('flair').eq('is_removed', false),
+        getDb().from('picks_users').select('*', { count: 'exact', head: true }),
+        getDb().from('picks_posts').select('*', { count: 'exact', head: true }).eq('is_removed', false),
+        getDb().from('picks_posts').select('flair').eq('is_removed', false),
     ]);
 
     const flairCounts: Record<string, number> = {};

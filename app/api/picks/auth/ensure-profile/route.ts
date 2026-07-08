@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createPicksUser, getPicksUserByAuthId } from '@/lib/picks-db';
+import { createPicksUser, getPicksUserByAuthId, getServiceClient, updatePicksUsername } from '@/lib/picks-db';
 
 export async function POST(request: NextRequest) {
     try {
@@ -16,6 +16,8 @@ export async function POST(request: NextRequest) {
         let picksUser = await getPicksUserByAuthId(auth_id);
         if (!picksUser) {
             picksUser = await createPicksUser(auth_id, email, username);
+        } else if (username && picksUser.username !== username) {
+            picksUser = await updatePicksUsername(auth_id, username);
         }
 
         return NextResponse.json({ user: picksUser });

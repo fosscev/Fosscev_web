@@ -33,11 +33,11 @@ export function Tracks() {
                         event: `${event.type} ${year}`,
                         status: event.status,
                         imageUrl: event.poster_url || event.image_url || '/placeholder.jpg',
-                        className: classNames[index] || "md:col-span-1 md:row-span-1"
+                        className: classNames[index] || "md:col-span-1 md:row-span-1",
+                        isPlaceholder: false
                     };
                 });
 
-                // Pad with placeholders if less than 4 events exist
                 while (formattedItems.length < 4) {
                     const idx = formattedItems.length;
                     formattedItems.push({
@@ -46,9 +46,11 @@ export function Tracks() {
                         event: "Stay Tuned",
                         status: "Upcoming",
                         imageUrl: "/placeholder.jpg",
-                        className: classNames[idx]
+                        className: classNames[idx],
+                        isPlaceholder: true
                     });
                 }
+
                 setItems(formattedItems);
             } else {
                 // Fallback if no events in db
@@ -58,7 +60,8 @@ export function Tracks() {
                     event: "Stay Tuned",
                     status: "Upcoming",
                     imageUrl: "/placeholder.jpg",
-                    className
+                    className,
+                    isPlaceholder: true
                 }));
                 setItems(placeholders);
             }
@@ -93,11 +96,9 @@ export function Tracks() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 md:auto-rows-[300px]">
-                    {items.map((item, i) => (
-                        <Link href={`/events#${item.id}`} key={i} className={`relative rounded-2xl overflow-hidden group ${item.className} max-md:h-[300px] block`}>
-                            <div
-                                className="h-full w-full"
-                            >
+                    {items.map((item, i) => {
+                        const cardContent = (
+                            <div className="h-full w-full relative">
                                 <div className="absolute inset-0 bg-white/[0.02]">
                                     <Image
                                         src={item.imageUrl}
@@ -128,8 +129,18 @@ export function Tracks() {
                                     <p className="text-gray-300 font-mono text-xs md:text-sm tracking-wider uppercase drop-shadow">{item.event}</p>
                                 </div>
                             </div>
-                        </Link>
-                    ))}
+                        );
+
+                        return item.isPlaceholder ? (
+                            <div key={i} className={`relative rounded-2xl overflow-hidden group ${item.className} max-md:h-[300px] block cursor-default`}>
+                                {cardContent}
+                            </div>
+                        ) : (
+                            <Link key={i} href={`/events#${item.id}`} className={`relative rounded-2xl overflow-hidden group ${item.className} max-md:h-[300px] block cursor-pointer`}>
+                                {cardContent}
+                            </Link>
+                        );
+                    })}
                 </div>
             )}
         </section>

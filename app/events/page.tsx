@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
 import { MapPin, Calendar, ArrowRight, Clock, Users, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { Navbar } from "../../components/Navbar";
@@ -34,6 +35,7 @@ const mapEvent = (dbEvent: any): Event => ({
 });
 
 export default function EventsPage() {
+    const router = useRouter();
     // Initial state (empty until fetched from DB)
     const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
     const [pastEvents, setPastEvents] = useState<Event[]>([]);
@@ -104,16 +106,7 @@ export default function EventsPage() {
                 return;
             }
         }
-
-        // Default behavior if no hash or hash not found
-        if (displayEvents.length > 0 && !selectedEvent) {
-            setSelectedEvent(displayEvents[0]);
-        } else if (displayEvents.length > 0 && selectedEvent) {
-            // Check if selected event is in currently displayed list, if not, select first
-            const exists = displayEvents.find(e => e.id === selectedEvent?.id);
-            if (!exists) setSelectedEvent(displayEvents[0]);
-        }
-    }, [displayEvents, upcomingEvents, pastEvents, selectedEvent?.id]);
+    }, [upcomingEvents, pastEvents]);
 
     // Get the display image for an event card (prefer poster, then image)
     const getEventCardImage = (event: Event): string | undefined => {
@@ -187,7 +180,7 @@ export default function EventsPage() {
                     {/* Events Grid - Dark Pinboard Style */}
                     <div className="max-w-7xl mx-auto px-4 mb-16">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-                            {displayEvents.map((event, index) => {
+                            {displayEvents.map((event: Event, index: number) => {
                                 const isSelected = selectedEvent?.id === event.id;
                                 const cardImage = getEventCardImage(event);
 
@@ -197,10 +190,17 @@ export default function EventsPage() {
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.1 }}
-                                        onClick={() => setSelectedEvent(event)}
-                                        onMouseEnter={() => setHoveredEvent(event)}
-                                        onMouseLeave={() => setHoveredEvent(null)}
-                                        className="cursor-pointer group relative transition-all duration-500 hover:-translate-y-2"
+                                        role="link"
+                                        tabIndex={0}
+                                        aria-label={`View details for ${event.title}`}
+                                        onClick={() => router.push(`/events/${event.id}`)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                router.push(`/events/${event.id}`);
+                                            }
+                                        }}
+                                        className="cursor-pointer group relative transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,230,118,0.15)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/70"
                                     >
                                         {/* Modern Glass Card */}
                                         <div className={`bg-surface/40 backdrop-blur-sm rounded-2xl overflow-hidden border transition-all duration-500 h-full flex flex-col ${isSelected
@@ -296,7 +296,6 @@ export default function EventsPage() {
 
                                             {/* Neon tape effect on corners (visible on hover) */}
                                             <div className="absolute top-0 right-0 w-16 md:w-20 h-6 md:h-8 bg-gradient-to-br from-primary/20 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rotate-45 translate-x-4 md:translate-x-6 -translate-y-2 md:-translate-y-3 shadow-lg backdrop-blur-sm border border-primary/20"></div>
-                                            <div className="absolute bottom-20 md:bottom-24 left-0 w-16 md:w-20 h-6 md:h-8 bg-gradient-to-br from-purple-500/20 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -rotate-45 -translate-x-4 md:-translate-x-6 shadow-lg backdrop-blur-sm border border-purple-500/20"></div>
 
                                             {/* Glowing edge effect on hover */}
                                             <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
@@ -307,9 +306,9 @@ export default function EventsPage() {
                                             ></div>
                                         </div>
 
-                                        {/* Click indicator */}
-                                        <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block">
-                                            <span className="text-xs text-primary font-mono whitespace-nowrap flex items-center gap-1">
+                                        {/* Click to view details overlay */}
+                                        <div className="absolute inset-x-6 bottom-6 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none z-20">
+                                            <span className="inline-flex items-center gap-2 rounded-full bg-black/70 px-3 py-1 text-xs text-primary font-mono uppercase tracking-[0.18em] border border-primary/30 backdrop-blur-sm shadow-[0_0_20px_rgba(0,230,118,0.12)]">
                                                 Click to view details <ArrowRight className="w-3 h-3" />
                                             </span>
                                         </div>
@@ -318,7 +317,6 @@ export default function EventsPage() {
                             })}
                         </div>
                     </div>
-
                     {/* Selected Event Details - Dark Theme */}
                     {selectedEvent && (
                         <div className="max-w-5xl mx-auto px-4">

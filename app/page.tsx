@@ -6,7 +6,7 @@ import { WhatWeDo } from "../components/WhatWeDo";
 import { Tracks } from "../components/Tracks";
 import { TiltedScroll } from "../components/TiltedScroll";
 import { Footer } from "../components/Footer";
-import { CoreTeam } from "../components/CoreTeam";
+import { CoreTeamMarquee } from "../components/CoreTeamMarquee";
 import { LoadingScreen } from "@/components/LoadingScreen";
 
 export default function Home() {
@@ -21,7 +21,7 @@ export default function Home() {
           <WhatWeDo />
           <Tracks />
           <TiltedScroll />
-          <CoreTeam />
+          <CoreTeamMarquee />
         </main>
 
         <Footer />

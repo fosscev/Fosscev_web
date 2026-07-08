@@ -78,7 +78,7 @@ export function TiltedScroll() {
                     observer.disconnect();
                 }
             },
-            { rootMargin: '200px' } // Start loading 200px before visible
+            { rootMargin: '400px 0px' } // Start loading moderately before visible
         );
 
         observer.observe(el);
