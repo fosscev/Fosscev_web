@@ -95,6 +95,14 @@
 
   --animate-marquee: marquee 25s linear infinite;
   --animate-marquee-reverse: marquee-reverse 25s linear infinite;
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  --animate-shimmer: shimmer 2s infinite;
 }
 
 .glass-nav {
@@ -269,4 +277,32 @@ input:-webkit-autofill:active {
 
 .animate-flicker {
   animation: flicker 0.15s infinite;
+}
+
+/* Add custom underline hover effect for orange links */
+.underline-hover-effect-orange {
+  position: relative;
+  display: inline-block;
+  outline: none; /* Remove default focus outline */
+}
+
+.underline-hover-effect-orange:focus-visible {
+  outline: 2px solid #D85A30; /* Custom focus outline */
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.underline-hover-effect-orange::after {
+  content: '';
+  position: absolute;
+  width: 0%;
+  height: 2px;
+  bottom: -2px;
+  left: 0;
+  background-color: #D85A30; /* Orange color */
+  transition: width 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94); /* Smooth transition */
+}
+
+.underline-hover-effect-orange:hover::after {
+  width: 100%;
 }

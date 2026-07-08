@@ -39,25 +39,61 @@ export async function getServerTeam() {
         .from('team_members')
         .select('*')
         .eq('is_core_team', true)
-        .is('is_faculty_advisor', false)
-        .order('display_order', { ascending: true });
+        .is('is_faculty_advisor', false);
 
     const subTeamResponse = await supabaseServer
         .from('team_members')
         .select('*')
         .eq('is_core_team', false)
-        .is('is_faculty_advisor', false)
-        .order('display_order', { ascending: true });
+        .is('is_faculty_advisor', false);
 
     const facultyResponse = await supabaseServer
         .from('team_members')
         .select('*')
-        .eq('is_faculty_advisor', true)
-        .order('display_order', { ascending: true });
+        .eq('is_faculty_advisor', true);
+
+    const allMembers = [
+        ...(coreTeamResponse.data || []),
+        ...(subTeamResponse.data || [])
+    ];
+
+    const desiredOrder = [
+        "Rishnu Lal N",
+        "Roshith Krishna",
+        "Sayanth P",
+        "Anvar Sadath",
+        "Lakshmi Reji Suresh",
+        "Ashwandha RJ",
+        "Sandra Sunil T",
+        "Muhammad Shabaz",
+        "Muhammad Aswlah",
+        "Fathima P",
+        "Hemanth Sudhan C",
+        "Ananthanarayanan M"
+    ];
+
+    const finalCore = desiredOrder
+        .map((name) => allMembers.find((member) => member.name === name))
+        .filter(Boolean)
+        .map((member) => {
+            if (member.name === 'Muhammad Shabaz') {
+                return {
+                    ...member,
+                    role: 'Content Writer'
+                };
+            }
+            return member;
+        });
+
+    const finalSub = (subTeamResponse.data || []).filter(
+        (member) =>
+            member.name !== 'Hemanth Sudhan C' &&
+            member.name !== 'Ananthanarayanan M'
+    );
 
     return {
-        coreTeam: coreTeamResponse.data || [],
-        subTeam: subTeamResponse.data || [],
+        coreTeam: finalCore,
+        subTeam: finalSub,
         faculty: facultyResponse.data || [],
         error: coreTeamResponse.error || subTeamResponse.error || facultyResponse.error || null
     };

@@ -32,7 +32,7 @@ export function PicksAuthProvider({ children }: { children: ReactNode }) {
     const [session, setSession] = useState<any | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const fetchPicksUser = useCallback(async (supabaseAuthId: string, email?: string, token?: string) => {
+    const fetchPicksUser = useCallback(async (supabaseAuthId: string, email?: string, token?: string, username?: string) => {
         try {
             const { data } = await supabase
                 .from('picks_users')
@@ -51,7 +51,7 @@ export function PicksAuthProvider({ children }: { children: ReactNode }) {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
                     },
-                    body: JSON.stringify({ auth_id: supabaseAuthId, email })
+                    body: JSON.stringify({ auth_id: supabaseAuthId, email, username })
                 });
 
                 if (response.ok) {
@@ -79,7 +79,7 @@ export function PicksAuthProvider({ children }: { children: ReactNode }) {
             const { data: { session: currentSession } } = await supabase.auth.getSession();
             setSession(currentSession);
             if (currentSession?.user) {
-                await fetchPicksUser(currentSession.user.id, currentSession.user.email, currentSession.access_token);
+                await fetchPicksUser(currentSession.user.id, currentSession.user.email, currentSession.access_token, currentSession.user.user_metadata?.username);
             } else {
                 setUser(null);
                 setAuthId(null);
@@ -100,7 +100,7 @@ export function PicksAuthProvider({ children }: { children: ReactNode }) {
                 const { data: { session: currentSession } } = await supabase.auth.getSession();
                 setSession(currentSession);
                 if (currentSession?.user) {
-                    await fetchPicksUser(currentSession.user.id, currentSession.user.email, currentSession.access_token);
+                    await fetchPicksUser(currentSession.user.id, currentSession.user.email, currentSession.access_token, currentSession.user.user_metadata?.username);
                 }
             } catch {
                 // Not logged in
@@ -112,7 +112,7 @@ export function PicksAuthProvider({ children }: { children: ReactNode }) {
                     async (_event, currentSession) => {
                         setSession(currentSession);
                         if (currentSession?.user) {
-                            await fetchPicksUser(currentSession.user.id, currentSession.user.email, currentSession.access_token);
+                            await fetchPicksUser(currentSession.user.id, currentSession.user.email, currentSession.access_token, currentSession.user.user_metadata?.username);
                         } else {
                             setUser(null);
                             setAuthId(null);

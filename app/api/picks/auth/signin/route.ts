@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit } from '@/lib/rate-limit';
-import { createPicksUser, getPicksUserByAuthId } from '@/lib/picks-db';
+import { createPicksUser, getPicksUserByAuthId, updatePicksUsername } from '@/lib/picks-db';
 import { logSecurityEvent } from '@/lib/security-logger';
 
 export async function POST(request: NextRequest) {
@@ -71,8 +71,11 @@ export async function POST(request: NextRequest) {
 
         // Ensure picks_users profile exists
         let picksUser = await getPicksUserByAuthId(data.user.id);
+        const customUsername = data.user.user_metadata?.username;
         if (!picksUser) {
-            picksUser = await createPicksUser(data.user.id, email);
+            picksUser = await createPicksUser(data.user.id, email, customUsername);
+        } else if (customUsername && picksUser.username !== customUsername) {
+            picksUser = await updatePicksUsername(data.user.id, customUsername);
         }
 
         return NextResponse.json({

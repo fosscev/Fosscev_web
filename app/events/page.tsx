@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { MapPin, Calendar, ArrowRight, Clock, Users, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { Navbar } from "../../components/Navbar";
@@ -60,105 +60,10 @@ export default function EventsPage() {
 
     const displayEvents = showPastEvents ? pastEvents : upcomingEvents;
 
-    const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
-    const [hoveredEvent, setHoveredEvent] = useState<Event | null>(null);
-    const [toastMessage, setToastMessage] = useState("");
 
-    useEffect(() => {
-        if (!toastMessage) return;
-        const timer = setTimeout(() => {
-            setToastMessage("");
-        }, 2500);
-        return () => clearTimeout(timer);
-    }, [toastMessage]);
 
-    const handleShare = async () => {
-        if (!selectedEvent) return;
-
-        const eventUrl = `${window.location.origin}/events/${selectedEvent.id}`;
-
-        const shareData = {
-            title: selectedEvent.title,
-            text: `Check out this event: ${selectedEvent.title}`,
-            url: eventUrl
-        };
-
-        const copyToClipboard = async () => {
-            try {
-                if (navigator.clipboard && window.isSecureContext) {
-                    await navigator.clipboard.writeText(eventUrl);
-                    setToastMessage("Event link copied to clipboard!");
-                } else {
-                    const textArea = document.createElement("textarea");
-                    textArea.value = eventUrl;
-                    textArea.style.position = "fixed";
-                    textArea.style.left = "-999999px";
-                    textArea.style.top = "-999999px";
-                    document.body.appendChild(textArea);
-                    textArea.focus();
-                    textArea.select();
-                    try {
-                        document.execCommand('copy');
-                        setToastMessage("Event link copied to clipboard!");
-                    } catch (error) {
-                        console.error("Fallback copy failed:", error);
-                        setToastMessage("Failed to copy link.");
-                    }
-                    document.body.removeChild(textArea);
-                }
-            } catch (err) {
-                console.error("Clipboard copy failed:", err);
-                setToastMessage("Failed to copy link.");
-            }
-        };
-
-        if (navigator.share) {
-            try {
-                await navigator.share(shareData);
-                setToastMessage("Shared successfully!");
-            } catch (err) {
-                if (err instanceof Error && err.name !== 'AbortError') {
-                    console.error("Share failed, falling back to copy:", err);
-                    await copyToClipboard();
-                }
-            }
-        } else {
-            await copyToClipboard();
-        }
-    };
-
-    // Update selected event when view changes, data loads, or on hash navigation
-    useEffect(() => {
-        // Handle direct linking to specific event via URL hash
-        if (typeof window !== 'undefined' && window.location.hash) {
-            const hashId = window.location.hash.substring(1);
-
-            // Check if it's in upcoming
-            const inUpcoming = upcomingEvents.find((e: Event) => e.id.toString() === hashId);
-            if (inUpcoming) {
-                setShowPastEvents(false);
-                setSelectedEvent(inUpcoming);
-                return;
-            }
-
-            // Check if it's in past
-            const inPast = pastEvents.find((e: Event) => e.id.toString() === hashId);
-            if (inPast) {
-                setShowPastEvents(true);
-                setSelectedEvent(inPast);
-                return;
-            }
-        }
-
-        // Default behavior if no hash or hash not found
-        if (displayEvents.length > 0 && !selectedEvent) {
-            setSelectedEvent(displayEvents[0]);
-        } else if (displayEvents.length > 0 && selectedEvent) {
-            // Check if selected event is in currently displayed list, if not, select first
-            const exists = displayEvents.find((e: Event) => e.id === selectedEvent?.id);
-            if (!exists) setSelectedEvent(displayEvents[0]);
-        }
-    }, [displayEvents, upcomingEvents, pastEvents, selectedEvent?.id]);
+    // Direct event linking is handled by the dedicated Event Details page.
+    // This page only renders the event cards and navigation controls.
 
     // Get the display image for an event card (prefer poster, then image)
     const getEventCardImage = (event: Event): string | undefined => {
@@ -245,7 +150,6 @@ export default function EventsPage() {
                     <div className="max-w-7xl mx-auto px-4 mb-16">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                             {displayEvents.map((event: Event, index: number) => {
-                                const isSelected = selectedEvent?.id === event.id;
                                 const cardImage = getEventCardImage(event);
 
                                 return (
@@ -254,16 +158,20 @@ export default function EventsPage() {
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.1 }}
-                                        onClick={() => setSelectedEvent(event)}
-                                        onMouseEnter={() => setHoveredEvent(event)}
-                                        onMouseLeave={() => setHoveredEvent(null)}
-                                        className="cursor-pointer group relative transition-all duration-500 hover:-translate-y-2"
+                                        role="link"
+                                        tabIndex={0}
+                                        aria-label={`View details for ${event.title}`}
+                                        onClick={() => router.push(`/events/${event.id}`)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                e.preventDefault();
+                                                router.push(`/events/${event.id}`);
+                                            }
+                                        }}
+                                        className="cursor-pointer group relative transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,230,118,0.15)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/70"
                                     >
                                         {/* Modern Glass Card */}
-                                        <div className={`bg-surface/40 backdrop-blur-sm rounded-2xl overflow-hidden border transition-all duration-500 h-full flex flex-col ${isSelected
-                                            ? 'border-primary shadow-[0_0_30px_rgba(0,230,118,0.2)]'
-                                            : 'border-white/5 hover:border-primary/40 hover:bg-surface/60 hover:shadow-2xl'
-                                            }`}>
+                                        <div className="bg-surface/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/5 transition-all duration-500 h-full flex flex-col hover:border-primary/40 hover:bg-surface/60 hover:shadow-2xl">
 
                                             {/* Event Poster Image */}
                                             <div className="h-48 md:h-56 bg-gradient-to-br from-primary/5 to-transparent relative overflow-hidden shrink-0">
@@ -353,26 +261,10 @@ export default function EventsPage() {
 
                                             {/* Neon tape effect on corners (visible on hover) */}
                                             <div className="absolute top-0 right-0 w-16 md:w-20 h-6 md:h-8 bg-gradient-to-br from-primary/20 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rotate-45 translate-x-4 md:translate-x-6 -translate-y-2 md:-translate-y-3 shadow-lg backdrop-blur-sm border border-primary/20"></div>
-                                            <div className="absolute bottom-20 md:bottom-24 left-0 w-16 md:w-20 h-6 md:h-8 bg-gradient-to-br from-purple-500/20 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 -rotate-45 -translate-x-4 md:-translate-x-6 shadow-lg backdrop-blur-sm border border-purple-500/20"></div>
+                                                        </div>
 
-                                            {/* Glowing edge effect on hover */}
-                                            <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
-                                                style={{
-                                                    background: 'linear-gradient(90deg, transparent, rgba(0,230,118,0.1), transparent)',
-                                                    animation: 'shimmer 2s infinite'
-                                                }}
-                                            ></div>
-                                        </div>
-
-                                        {/* Click indicator */}
-                                        <div
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                router.push(`/events/${event.id}`);
-                                            }}
-                                            className="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity hidden md:block"
-                                        >
-                                            <span className="text-xs text-primary font-mono whitespace-nowrap flex items-center gap-1">
+                                        <div className="absolute inset-x-6 bottom-6 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none">
+                                            <span className="inline-flex items-center gap-2 rounded-full bg-black/70 px-3 py-1 text-xs text-primary font-mono uppercase tracking-[0.18em] border border-primary/30 backdrop-blur-sm shadow-[0_0_20px_rgba(0,230,118,0.12)]">
                                                 Click to view details <ArrowRight className="w-3 h-3" />
                                             </span>
                                         </div>
@@ -381,167 +273,11 @@ export default function EventsPage() {
                             })}
                         </div>
                     </div>
-
-                    {/* Selected Event Details - Dark Theme */}
-                    {selectedEvent && (
-                        <div className="max-w-5xl mx-auto px-4">
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={selectedEvent.id}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    exit={{ opacity: 0, y: -20 }}
-                                    transition={{ duration: 0.3 }}
-                                    className="bg-surface/30 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative"
-                                >
-                                    {/* Abstract glow behind the selected event box */}
-                                    <div className="absolute -top-40 -right-40 w-96 h-96 bg-primary/10 rounded-full blur-[100px] pointer-events-none"></div>
-
-                                    {/* Header with gradient and patterns */}
-                                    <div className="relative h-64 bg-gradient-to-br from-surface to-background overflow-hidden border-b border-white/5">
-                                        {/* Display poster or image if available */}
-                                        {(selectedEvent.poster || selectedEvent.image) ? (
-                                            <Image
-                                                src={selectedEvent.poster || selectedEvent.image || ""}
-                                                alt={selectedEvent.title}
-                                                fill
-                                                className="object-cover opacity-50 mix-blend-overlay"
-                                                sizes="(max-width: 768px) 100vw, 1000px"
-                                            />
-                                        ) : (
-                                            <div className="absolute inset-0 bg-background opacity-50"></div>
-                                        )}
-
-                                        {/* Minimal overlay gradient */}
-                                        <div className="absolute inset-0 bg-gradient-to-t from-surface via-transparent to-transparent"></div>
-
-                                        {/* Grid pattern */}
-                                        <div className="absolute inset-0 opacity-10" style={{
-                                            backgroundImage: 'linear-gradient(rgba(0,230,118,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,230,118,0.3) 1px, transparent 1px)',
-                                            backgroundSize: '30px 30px'
-                                        }}></div>
-
-                                        {/* Diagonal pattern */}
-                                        <div className="absolute inset-0 opacity-5" style={{
-                                            backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(0,230,118,0.2) 15px, rgba(0,230,118,0.2) 30px)'
-                                        }}></div>
-
-                                        <div className="relative z-10 h-full flex flex-col justify-end p-8">
-                                            <div className="flex items-center gap-3 mb-4 flex-wrap">
-                                                <span className="px-4 py-2 bg-black/80 backdrop-blur-sm text-primary text-sm font-bold font-display uppercase rounded-lg border border-primary/30 shadow-lg">
-                                                    {selectedEvent.type}
-                                                </span>
-                                                <span className={`px-4 py-2 backdrop-blur-sm text-white text-sm font-bold font-display rounded-lg border shadow-lg ${selectedEvent.status === "Completed"
-                                                    ? "bg-gray-800/80 border-gray-600/50"
-                                                    : "bg-white/10 border-white/20"
-                                                    }`}>
-                                                    {selectedEvent.status}
-                                                </span>
-                                            </div>
-                                            <h2 className="text-4xl md:text-5xl font-bold font-display text-white drop-shadow-lg">
-                                                {selectedEvent.title}
-                                            </h2>
-                                        </div>
-                                    </div>
-
-                                    {/* Content inside Selected Event */}
-                                    <div className="p-8 md:p-12 bg-surface/50 backdrop-blur-md">
-                                        {/* Event Meta Info */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                                            <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all">
-                                                    <Calendar className="w-6 h-6 text-primary" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-500 font-mono uppercase mb-1">Date</p>
-                                                    <p className="text-white font-display font-bold">{selectedEvent.date}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all">
-                                                    <Clock className="w-6 h-6 text-primary" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-500 font-mono uppercase mb-1">Time</p>
-                                                    <p className="text-white font-display font-bold">{selectedEvent.time}</p>
-                                                </div>
-                                            </div>
-                                            <div className="flex items-center gap-3 p-4 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
-                                                <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center border border-primary/20 group-hover:border-primary/40 transition-all">
-                                                    <Users className="w-6 h-6 text-primary" />
-                                                </div>
-                                                <div>
-                                                    <p className="text-xs text-gray-500 font-mono uppercase mb-1">Attendees</p>
-                                                    <p className="text-white font-display font-bold">{selectedEvent.attendees}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Location */}
-                                        <div className="flex items-center gap-3 mb-8 p-5 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10 hover:border-primary/30 transition-all duration-300 group">
-                                            <div className="w-12 h-12 bg-gradient-to-br from-primary/20 to-primary/10 rounded-lg flex items-center justify-center flex-shrink-0 border border-primary/20 group-hover:border-primary/40 transition-all">
-                                                <MapPin className="w-6 h-6 text-primary" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-gray-500 font-mono uppercase mb-1">Location</p>
-                                                <p className="text-white font-display text-lg">{selectedEvent.location}</p>
-                                            </div>
-                                        </div>
-
-                                        {/* Description */}
-                                        <div className="mb-8 p-6 bg-gradient-to-br from-white/5 to-white/[0.02] rounded-xl border border-white/10">
-                                            <h3 className="text-2xl font-display font-bold mb-4 text-primary">About this Event</h3>
-                                            <p className="text-lg text-gray-300 leading-relaxed">
-                                                {selectedEvent.description}
-                                            </p>
-                                        </div>
-
-                                        {/* CTA Buttons */}
-                                        <div className="flex gap-4 flex-wrap mt-8">
-                                            {selectedEvent.link && (
-                                                <a
-                                                    href={selectedEvent.link}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="flex items-center justify-center gap-2 px-8 py-4 bg-primary text-black font-bold rounded-lg hover:bg-primary/90 transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,230,118,0.6)] font-display text-lg group"
-                                                >
-                                                    View on FOSS United
-                                                    <ExternalLink size={20} className="group-hover:translate-x-1 transition-transform" />
-                                                </a>
-                                            )}
-                                            {selectedEvent.status !== "Completed" && (
-                                                <button
-                                                    onClick={handleShare}
-                                                    className="px-8 py-4 bg-gradient-to-br from-white/10 to-white/5 text-white font-bold rounded-lg hover:from-white/15 hover:to-white/10 transition-all duration-300 border border-white/20 hover:border-primary/30 font-display"
-                                                >
-                                                    Share Event
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </motion.div>
-                            </AnimatePresence>
-                        </div>
-                    )}
                 </main>
 
                 <Footer />
             </div>
 
-            <AnimatePresence>
-                {toastMessage && (
-                    <motion.div
-                        initial={{ opacity: 0, y: 50, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                        className="fixed bottom-8 right-8 z-[9999] flex items-center gap-3 px-5 py-3.5 rounded-xl border border-primary/30 bg-surface/90 text-primary backdrop-blur-md shadow-[0_8px_32px_rgba(0,0,0,0.5)] font-mono text-xs md:text-sm font-semibold"
-                    >
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
-                        <span>{toastMessage}</span>
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }
