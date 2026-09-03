@@ -18,12 +18,14 @@ export async function getServerEvents() {
     const upcomingResponse = await supabaseServer
         .from('events')
         .select('*')
+        .neq('status', 'Draft')
         .gte('date', today)
         .order('date', { ascending: true });
 
     const pastResponse = await supabaseServer
         .from('events')
         .select('*')
+        .neq('status', 'Draft')
         .lt('date', today)
         .order('date', { ascending: false });
 
@@ -102,7 +104,8 @@ export async function getServerTeam() {
 export async function getServerStats() {
     const { count, error } = await supabaseServer
         .from('events')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .neq('status', 'Draft');
 
     return {
         eventsCount: count || 0,

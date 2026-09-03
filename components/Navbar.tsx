@@ -6,7 +6,6 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { SOCIAL_LINKS } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
 
 const NAV_LINKS = [
@@ -107,29 +106,6 @@ export function Navbar() {
                                 ))}
                             </nav>
 
-                            {/* Desktop CTA */}
-                            <div className="hidden md:flex items-center">
-                                <a
-                                    href={SOCIAL_LINKS.whatsapp}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="px-4 py-1.5 rounded-lg text-sm font-mono font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
-                                    style={{ background: "rgba(0,230,118,0.1)", border: "1px solid rgba(0,230,118,0.25)", color: "#00e676" }}
-                                    onMouseEnter={(e) => {
-                                        const el = e.currentTarget as HTMLElement;
-                                        el.style.background = "rgba(0,230,118,0.18)";
-                                        el.style.boxShadow = "0 0 14px rgba(0,230,118,0.2)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        const el = e.currentTarget as HTMLElement;
-                                        el.style.background = "rgba(0,230,118,0.1)";
-                                        el.style.boxShadow = "none";
-                                    }}
-                                >
-                                    Join Community
-                                </a>
-                            </div>
-
                             {/* Mobile hamburger */}
                             <button
                                 onClick={() => setMobileOpen((o) => !o)}
@@ -195,19 +171,6 @@ export function Navbar() {
                                 </motion.div>
                             ))}
                         </nav>
-                        <div className="mx-3 border-t" style={{ borderColor: "rgba(0,230,118,0.08)" }} />
-                        <div className="p-3">
-                            <a
-                                href={SOCIAL_LINKS.whatsapp}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center justify-center w-full py-3 rounded-xl text-sm font-mono font-semibold active:scale-95 transition-transform"
-                                style={{ background: "linear-gradient(135deg, #00e676, #00b4d8)", color: "#000", boxShadow: "0 0 20px rgba(0,230,118,0.25)" }}
-                                onClick={() => setMobileOpen(false)}
-                            >
-                                Join Community →
-                            </a>
-                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>

@@ -201,8 +201,25 @@ export function CoreTeamMarquee() {
   if (isLoading) {
     return (
       <section ref={sectionRef} className="relative overflow-hidden py-20">
-        <div className="mx-auto max-w-7xl px-4">
-          <div className="h-96 animate-pulse rounded-[2rem] border border-white/5 bg-gray-800/40"></div>
+        <div className="mx-auto mb-16 max-w-7xl px-4 text-center">
+          <div className="mx-auto h-10 w-48 animate-pulse rounded bg-gray-800/50 md:h-14 md:w-64"></div>
+          <div className="mx-auto mt-6 h-px w-12 bg-emerald-400/40 shadow-[0_0_20px_rgba(16,185,129,0.7)]"></div>
+        </div>
+        <div className="flex w-full overflow-hidden">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div
+              key={i}
+              className="mr-3 flex-shrink-0 w-[46vw] px-1 sm:mr-4 sm:w-[31vw] sm:px-2 lg:mr-6 lg:w-[24vw] lg:px-3"
+            >
+              <div className="flex h-[420px] w-full flex-col overflow-hidden rounded-[24px] border border-emerald-400/10 bg-gray-900/40 animate-pulse">
+                <div className="h-[calc(100%-96px)] w-full bg-gray-800/60"></div>
+                <div className="flex h-[96px] flex-col items-center justify-center px-4 py-4 text-center">
+                  <div className="mb-3 h-4 w-32 rounded bg-gray-700"></div>
+                  <div className="h-3 w-20 rounded bg-emerald-900/50"></div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     );

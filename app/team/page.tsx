@@ -482,7 +482,7 @@ export default function TeamPage() {
                                 <span className="text-primary">// Initialize your journey with us</span>
                             </p>
                             <Link
-                                href={SOCIAL_LINKS.whatsapp}
+                                href={SOCIAL_LINKS.telegram}
                                 target="_blank"
                                 className="group relative inline-block bg-transparent border-2 border-primary text-primary hover:bg-primary hover:text-black px-8 py-4 font-bold transition-all duration-300 uppercase font-display overflow-hidden"
                             >

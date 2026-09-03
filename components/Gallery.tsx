@@ -1,30 +1,24 @@
 "use client";
 
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
+import { supabase } from "@/lib/supabase";
 
-const galleryImages = [
-    // This would typically come from a fetch call
-    { id: 1, title: "HackDay CEV", event: "Hackathon 2023", image: "/gallery/1.jpg" },
-    { id: 2, title: "FOSS Meetup", event: "Community Event 2023", image: "/gallery/2.jpg" },
-    { id: 3, title: "Intro to Git & GitHub", event: "Workshop 2023", image: "/gallery/3.jpg" },
-    { id: 4, title: "Web Dev Bootcamp", event: "Workshop 2024", image: "/gallery/4.jpg" },
-    { id: 5, title: "Python for Beginners", event: "Workshop 2024", image: "/gallery/5.jpg" },
-    { id: 6, title: "Capture The Flag", event: "Cybersecurity 2024", image: "/gallery/6.jpg" },
-];
+interface GalleryItem {
+    id: string | number;
+    title: string;
+    event: string;
+    image: string;
+}
 
-const SkeletonPlaceholder = () => (
-    <div className="relative h-[60vh] w-[400px] md:w-[500px] shrink-0 overflow-hidden bg-surface/80 border border-glass-border rounded-xl">
-        <div 
-            className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/10 to-transparent"
-            style={{ animation: 'var(--animate-shimmer) 2s infinite' }}
-        />
-        <div className="absolute inset-0 rounded-xl shadow-[inset_0_0_10px_rgba(0,230,118,0.1)]"></div>
+const EmptyGalleryBox = () => (
+    <div className="h-[60vh] w-[400px] md:w-[500px] shrink-0 border-2 border-dashed border-gray-800 rounded-xl flex items-center justify-center bg-gray-900/20">
+        <div className="text-gray-500 font-mono text-sm tracking-widest uppercase">Loading Gallery...</div>
     </div>
 );
 
-const GalleryCard = ({ item }: { item: typeof galleryImages[0] }) => {
+const GalleryCard = ({ item }: { item: GalleryItem }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [hasError, setHasError] = useState(false);
 
@@ -37,17 +31,17 @@ const GalleryCard = ({ item }: { item: typeof galleryImages[0] }) => {
                     <motion.div
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.5 }}
+                        className="absolute inset-0 bg-gray-900 flex items-center justify-center"
                     >
-                        <SkeletonPlaceholder />
+                        <div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-500 animate-spin"></div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {hasError && (
-                 <div className="absolute inset-0 flex items-center justify-center bg-surface/90">
-                    <div className="text-center text-gray-400">
-                        <span className="text-4xl">🖼</span>
-                        <p className="mt-2 font-mono">Image unavailable</p>
+                 <div className="absolute inset-0 flex items-center justify-center bg-gray-900">
+                    <div className="text-center text-gray-500">
+                        <span className="text-3xl">🖼</span>
                     </div>
                 </div>
             )}
@@ -71,7 +65,7 @@ const GalleryCard = ({ item }: { item: typeof galleryImages[0] }) => {
                                 setIsLoading(false);
                                 setHasError(true);
                             }}
-                            unoptimized // Assuming high-quality source images
+                            unoptimized
                         />
                     </motion.div>
                 )}
@@ -101,9 +95,38 @@ export function Gallery() {
 
     const x = useTransform(scrollYProgress, [0, 1], ["1%", "-95%"]);
     
-    // Optional Enhancement: If data were fetched, you'd check a loading state here.
-    // const { data, isLoading } = useQuery(...);
-    // For now, we use the hardcoded array.
+    const [images, setImages] = useState<GalleryItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchImages = async () => {
+            try {
+                const { data: files, error } = await supabase.storage
+                    .from('event-photos')
+                    .list('', { limit: 12, sortBy: { column: 'created_at', order: 'desc' } });
+
+                if (!error && files) {
+                    const validFiles = files.filter(f => f.name && !f.name.startsWith('.') && f.id);
+                    const formatted = validFiles.map((file, idx) => {
+                        const { data: urlData } = supabase.storage.from('event-photos').getPublicUrl(file.name);
+                        return {
+                            id: file.id || String(idx),
+                            title: file.name.split('.')[0].replace(/_/g, ' '),
+                            event: "Community Gallery",
+                            image: urlData.publicUrl
+                        };
+                    });
+                    setImages(formatted);
+                }
+            } catch (err) {
+                console.error("Error fetching gallery", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchImages();
+    }, []);
 
     return (
         <section ref={targetRef} className="relative h-[300vh] bg-background">
@@ -112,9 +135,20 @@ export function Gallery() {
                     Gallery_
                 </h2>
                 <motion.div style={{ x }} className="flex gap-10 pl-10 pr-10">
-                    {galleryImages.map((item) => (
-                        <GalleryCard key={item.id} item={item} />
-                    ))}
+                    {isLoading ? (
+                        <>
+                            <EmptyGalleryBox />
+                            <EmptyGalleryBox />
+                            <EmptyGalleryBox />
+                            <EmptyGalleryBox />
+                        </>
+                    ) : images.length > 0 ? (
+                        images.map((item) => (
+                            <GalleryCard key={item.id} item={item} />
+                        ))
+                    ) : (
+                        <div className="text-gray-400 text-xl font-mono mt-20 ml-20">No images available in gallery.</div>
+                    )}
                 </motion.div>
             </div>
         </section>

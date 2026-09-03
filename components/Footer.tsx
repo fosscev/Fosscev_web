@@ -48,16 +48,6 @@ export function Footer() {
                         </li>
                         <li>
                             <a
-                                href={SOCIAL_LINKS.whatsapp}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="hover:text-white hover:underline decoration-primary underline-offset-4 transition-colors flex items-center gap-2"
-                            >
-                                WhatsApp <ExternalLink className="w-3 h-3" />
-                            </a>
-                        </li>
-                        <li>
-                            <a
                                 href={SOCIAL_LINKS.telegram}
                                 target="_blank"
                                 rel="noopener noreferrer"
@@ -66,14 +56,7 @@ export function Footer() {
                                 Telegram <ExternalLink className="w-3 h-3" />
                             </a>
                         </li>
-                        <li>
-                            <a
-                                href={SOCIAL_LINKS.email}
-                                className="hover:text-white hover:underline decoration-primary underline-offset-4 transition-colors flex items-center gap-2"
-                            >
-                                Email <ExternalLink className="w-3 h-3" />
-                            </a>
-                        </li>
+
                     </ul>
                 </div>
 

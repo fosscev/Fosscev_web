@@ -42,3 +42,5 @@ next-env.d.ts
 /public/**/*.blend1
 /public/**/*.fbx
 /public/**/*.obj
+DEVELOPER_ONBOARDING.md
+*.zip

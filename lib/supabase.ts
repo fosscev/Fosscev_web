@@ -73,7 +73,7 @@ export interface Event {
     description: string;
     type: 'Workshop' | 'Hackathon' | 'Talk' | 'Meetup';
     attendees: string;
-    status: 'Upcoming' | 'Registration Open' | 'Completed';
+    status: 'Upcoming' | 'Registration Open' | 'Completed' | 'Draft';
     image_url?: string | null;
     poster_url?: string | null;
     link?: string | null;

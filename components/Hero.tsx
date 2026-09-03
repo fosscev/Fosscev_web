@@ -2,7 +2,6 @@
 
 import { motion, useScroll, useTransform, useInView } from "framer-motion";
 import { useEffect, useState, useRef, Suspense } from "react";
-import { SOCIAL_LINKS } from "@/lib/constants";
 import { useSiteContent } from "@/lib/useSiteContent";
 import CanvasNetwork from "./CanvasNetwork";
 import useSWR, { preload } from "swr";
@@ -176,28 +175,6 @@ export function Hero() {
                     >
                         <span className="relative z-10">Explore Events →</span>
                         <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-colors duration-300" />
-                    </a>
-
-                    <a
-                        href={SOCIAL_LINKS.whatsapp}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-8 py-3.5 rounded-xl font-semibold transition-all duration-200 hover:scale-105 active:scale-95"
-                        style={{
-                            background: "rgba(0,230,118,0.07)",
-                            border: "1px solid rgba(0,230,118,0.28)",
-                            color: "#00e676",
-                        }}
-                        onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLElement).style.background = "rgba(0,230,118,0.13)";
-                            (e.currentTarget as HTMLElement).style.boxShadow = "0 0 18px rgba(0,230,118,0.18)";
-                        }}
-                        onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLElement).style.background = "rgba(0,230,118,0.07)";
-                            (e.currentTarget as HTMLElement).style.boxShadow = "none";
-                        }}
-                    >
-                        Join Community
                     </a>
                 </motion.div>
 

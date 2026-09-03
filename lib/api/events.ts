@@ -8,6 +8,7 @@ export async function getEvents() {
         const { data, error } = await supabase
             .from('events')
             .select('*')
+            .neq('status', 'Draft')
             .order('date', { ascending: false });
 
         if (error) {
@@ -32,6 +33,7 @@ export async function getUpcomingEvents() {
         const { data, error } = await supabase
             .from('events')
             .select('*')
+            .neq('status', 'Draft')
             .gte('date', today)
             .order('date', { ascending: true });
 
@@ -57,6 +59,7 @@ export async function getPastEvents() {
         const { data, error } = await supabase
             .from('events')
             .select('*')
+            .neq('status', 'Draft')
             .lt('date', today)
             .order('date', { ascending: false });
 
@@ -80,6 +83,7 @@ export async function getEventsByType(type: 'Workshop' | 'Hackathon' | 'Talk' | 
         const { data, error } = await supabase
             .from('events')
             .select('*')
+            .neq('status', 'Draft')
             .eq('type', type)
             .order('date', { ascending: false });
 
@@ -126,6 +130,7 @@ export async function getEventById(id: string) {
         const { data, error } = await supabase
             .from('events')
             .select('*')
+            .neq('status', 'Draft')
             .eq('id', id)
             .single();
 

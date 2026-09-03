@@ -2,7 +2,7 @@
 
 import { Navbar } from "../../components/Navbar";
 import { Footer } from "../../components/Footer";
-import { Github, Linkedin, Mail, Instagram, ArrowUpRight, Users, Target, Lightbulb, Heart } from "lucide-react";
+import { Github, Linkedin, Instagram, ArrowUpRight, Users, Target, Lightbulb, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { SOCIAL_LINKS } from "@/lib/constants";
 import { WhatWeDo } from "../../components/WhatWeDo";
@@ -92,8 +92,7 @@ export default function AboutPage() {
                             {[
                                 { icon: Github, href: SOCIAL_LINKS.github, label: "GitHub" },
                                 { icon: Linkedin, href: SOCIAL_LINKS.linkedin, label: "LinkedIn" },
-                                { icon: Instagram, href: SOCIAL_LINKS.instagram, label: "Instagram" },
-                                { icon: Mail, href: `mailto:${SOCIAL_LINKS.email}`, label: "Email" }
+                                { icon: Instagram, href: SOCIAL_LINKS.instagram, label: "Instagram" }
                             ].map((social, index) => (
                                 <motion.a
                                     key={index}

@@ -1,8 +1,5 @@
-// Social Media and Contact Links
+// Social Media and Community Links
 export const SOCIAL_LINKS = {
-    // WhatsApp Community Group - Update this link when ready
-    whatsapp: "https://chat.whatsapp.com/KEUoSJnRl3jJ8TuEV0hl7h",
-
     // Telegram Community Group - Update this link when ready
     telegram: "https://t.me/+zu7gLcpXrx02NTNl",
 
@@ -17,7 +14,5 @@ export const SOCIAL_LINKS = {
 };
 
 // Update instructions:
-// Replace "YOUR_GROUP_INVITE_LINK" with your actual WhatsApp group invite link
 // Replace "YOUR_TELEGRAM_GROUP" with your actual Telegram group link
-// Example WhatsApp: "https://chat.whatsapp.com/AbCdEfGhIjKlMnOpQrSt"
 // Example Telegram: "https://t.me/foss_cev" or "https://t.me/+AbCdEfGhIjKlMn"

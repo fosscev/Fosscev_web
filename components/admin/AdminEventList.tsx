@@ -2,56 +2,15 @@
 
 import { useState, useEffect } from 'react';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
-import type { Event } from '@/lib/supabase';
-import { z } from 'zod';
-import {
-    Plus,
-    Trash,
-    Edit3,
-    Check,
-    X,
-    AlertCircle
-} from 'lucide-react';
-import ImageUploader from './ImageUploader';
+import { useRouter } from 'next/navigation';
+import { Plus, Trash, Edit3 } from 'lucide-react';
 import { useAdminAuth } from './AdminAuthProvider';
-
-// Zod schema for event form validation
-const eventFormSchema = z.object({
-    title: z.coerce.string().min(3, 'Title is required'),
-    date: z.coerce.string().min(1, 'Date is required'),
-    time: z.coerce.string().min(1, 'Time is required'),
-    location: z.coerce.string().min(1, 'Location is required'),
-    description: z.coerce.string().min(1, 'Description is required'),
-    type: z.coerce.string().optional().nullable(),
-    attendees: z.coerce.string().optional().nullable(),
-    status: z.coerce.string().optional().nullable(),
-    poster_url: z.coerce.string().optional().nullable(),
-    link: z.coerce.string().optional().nullable(),
-});
-
-const MAX_POSTER_SIZE = 2 * 1024 * 1024; // 2MB in bytes
 
 export default function AdminEventList() {
     const { session } = useAdminAuth();
+    const router = useRouter();
     const [events, setEvents] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isAdding, setIsAdding] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [isEditing, setIsEditing] = useState<string | null>(null);
-    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-    const [formData, setFormData] = useState({
-        title: '',
-        date: '',
-        time: '',
-        location: '',
-        description: '',
-        type: 'Workshop',
-        attendees: '0+',
-        status: 'Upcoming',
-        poster_url: '',
-        link: ''
-    });
 
     const loadData = async () => {
         setIsLoading(true);
@@ -74,77 +33,6 @@ export default function AdminEventList() {
         }
     }, [session]);
 
-    const validateForm = (): boolean => {
-        const result = eventFormSchema.safeParse(formData);
-        if (!result.success) {
-            const errors: Record<string, string> = {};
-            result.error.issues.forEach((issue) => {
-                const field = issue.path[0] as string;
-                errors[field] = issue.message;
-            });
-            console.log("Form validation failed:", errors);
-            setFormErrors(errors);
-            
-            // Alert user about validation failure so it doesn't just fail silently
-            const errorMessages = Object.entries(errors).map(([field, msg]) => `${field}: ${msg}`).join('\n');
-            alert(`Please fix the following errors:\n${errorMessages}`);
-            
-            return false;
-        }
-        setFormErrors({});
-        return true;
-    };
-
-    const handleSaveEvent = async () => {
-        if (!validateForm()) return;
-        setIsSubmitting(true);
-
-        let finalPosterUrl = formData.poster_url;
-
-        try {
-            if (selectedFile) {
-                const fileExt = selectedFile.name.split('.').pop();
-                const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-
-                if (!session) {
-                    alert('Session expired. Please log in again.');
-                    setIsSubmitting(false);
-                    return;
-                }
-
-                const { data, error: uploadError } = await supabase.storage.from('event-posters').upload(fileName, selectedFile);
-                if (uploadError) throw uploadError;
-
-                const { data: urlData } = supabase.storage.from('event-posters').getPublicUrl(data.path);
-                finalPosterUrl = urlData.publicUrl;
-            }
-
-            const payload = { ...formData, poster_url: finalPosterUrl };
-
-            if (isEditing) {
-                const { error } = await supabase
-                    .from('events')
-                    .update(payload)
-                    .eq('id', isEditing);
-
-                if (error) throw error;
-            } else {
-                const { error } = await supabase
-                    .from('events')
-                    .insert([payload]);
-
-                if (error) throw error;
-            }
-
-            loadData();
-            resetForm();
-        } catch (error: any) {
-            alert('Error saving event: ' + error.message);
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
     const handleDeleteEvent = async (id: string) => {
         if (!confirm('Are you sure you want to delete this event?')) return;
         const { error } = await supabase
@@ -159,232 +47,11 @@ export default function AdminEventList() {
         }
     };
 
-    const openEditModal = (event: any) => {
-        setIsEditing(event.id);
-        
-        let formattedDate = '';
-        if (event.date) {
-            try {
-                // Handle standard ISO and other valid date formats
-                const d = new Date(event.date);
-                if (!isNaN(d.getTime())) {
-                    formattedDate = d.toISOString().split('T')[0];
-                } else {
-                    formattedDate = String(event.date).split('T')[0];
-                }
-            } catch (e) {
-                formattedDate = String(event.date).split('T')[0];
-            }
-        }
-        
-        setFormData({
-            title: event.title || '',
-            date: formattedDate,
-            time: event.time || '',
-            location: event.location || '',
-            description: event.description || '',
-            type: event.type || 'Workshop',
-            attendees: event.attendees || '0+',
-            status: event.status || 'Upcoming',
-            poster_url: event.poster_url || event.image_url || '',
-            link: event.link || ''
-        });
-        setIsAdding(true);
-    };
-
-    const resetForm = () => {
-        setIsAdding(false);
-        setIsEditing(null);
-        setSelectedFile(null);
-        setFormErrors({});
-        setFormData({
-            title: '',
-            date: '',
-            time: '',
-            location: '',
-            description: '',
-            type: 'Workshop',
-            attendees: '0+',
-            status: 'Upcoming',
-            poster_url: '',
-            link: ''
-        });
-    };
-
     return (
         <div className="space-y-6">
             <h3 className="text-xl font-bold bg-gradient-to-br from-white to-gray-400 bg-clip-text text-transparent">
                 Events Management
             </h3>
-
-            {/* Add/Edit Event Modal */}
-            {isAdding && (
-                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 overflow-y-auto">
-                    <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 w-full max-w-2xl space-y-4 my-8 relative">
-                        <button
-                            onClick={resetForm}
-                            className="absolute top-4 right-4 text-gray-400 hover:text-white"
-                        >
-                            <X size={24} />
-                        </button>
-                        <h3 className="text-xl font-bold text-white">
-                            {isEditing ? 'Edit Event' : 'Create New Event'}
-                        </h3>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Event Poster <span className="text-xs text-gray-600">(Max 2MB)</span></label>
-                                <ImageUploader
-                                    onFileSelect={setSelectedFile}
-                                    maxFileSize={MAX_POSTER_SIZE}
-                                    initialPreview={isEditing && formData.poster_url ? formData.poster_url : null}
-                                />
-                                {selectedFile && (
-                                    <div className="mt-2 text-sm text-green-400 flex items-center gap-2">
-                                        <Check size={14} /> Poster selected for upload
-                                    </div>
-                                )}
-                                {isEditing && !formData.poster_url && (
-                                    <div className="mt-1 text-xs text-gray-500">Current poster will be kept if not updated.</div>
-                                )}
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Title</label>
-                                <input
-                                    type="text"
-                                    className={`w-full bg-gray-800 text-white rounded px-3 py-2 border outline-none ${formErrors.title ? 'border-red-500' : 'border-gray-700 focus:border-primary'}`}
-                                    value={formData.title}
-                                    onChange={(e) => { setFormData((prev: any) => ({ ...prev, title: e.target.value })); setFormErrors(prev => ({ ...prev, title: '' })); }}
-                                    placeholder="Event Title (min. 5 characters)"
-                                />
-                                {formErrors.title && (
-                                    <p className="mt-1 text-xs text-red-400 flex items-center gap-1"><AlertCircle size={12} /> {formErrors.title}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Date</label>
-                                <input
-                                    type="date"
-                                    className={`w-full bg-gray-800 text-white rounded px-3 py-2 border outline-none ${formErrors.date ? 'border-red-500' : 'border-gray-700 focus:border-primary'}`}
-                                    value={formData.date}
-                                    onChange={(e) => { setFormData((prev: any) => ({ ...prev, date: e.target.value })); setFormErrors(prev => ({ ...prev, date: '' })); }}
-                                />
-                                {formErrors.date && (
-                                    <p className="mt-1 text-xs text-red-400 flex items-center gap-1"><AlertCircle size={12} /> {formErrors.date}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Time</label>
-                                <input
-                                    type="text"
-                                    className={`w-full bg-gray-800 text-white rounded px-3 py-2 border outline-none ${formErrors.time ? 'border-red-500' : 'border-gray-700 focus:border-primary'}`}
-                                    value={formData.time}
-                                    onChange={(e) => { setFormData((prev: any) => ({ ...prev, time: e.target.value })); setFormErrors(prev => ({ ...prev, time: '' })); }}
-                                    placeholder="e.g. 10:00 AM - 4:00 PM"
-                                />
-                                {formErrors.time && (
-                                    <p className="mt-1 text-xs text-red-400 flex items-center gap-1"><AlertCircle size={12} /> {formErrors.time}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Location</label>
-                                <input
-                                    type="text"
-                                    className={`w-full bg-gray-800 text-white rounded px-3 py-2 border outline-none ${formErrors.location ? 'border-red-500' : 'border-gray-700 focus:border-primary'}`}
-                                    value={formData.location}
-                                    onChange={(e) => { setFormData((prev: any) => ({ ...prev, location: e.target.value })); setFormErrors(prev => ({ ...prev, location: '' })); }}
-                                    placeholder="Multiplier Hall / Online"
-                                />
-                                {formErrors.location && (
-                                    <p className="mt-1 text-xs text-red-400 flex items-center gap-1"><AlertCircle size={12} /> {formErrors.location}</p>
-                                )}
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Type</label>
-                                <select
-                                    className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none"
-                                    value={formData.type}
-                                    onChange={(e) => setFormData((prev: any) => ({ ...prev, type: e.target.value }))}
-                                >
-                                    <option value="Workshop">Workshop</option>
-                                    <option value="Hackathon">Hackathon</option>
-                                    <option value="Talk">Talk</option>
-                                    <option value="Meetup">Meetup</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Attendees (Estimate)</label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none"
-                                    value={formData.attendees}
-                                    onChange={(e) => setFormData((prev: any) => ({ ...prev, attendees: e.target.value }))}
-                                    placeholder="e.g. 50+"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
-                                <select
-                                    className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none"
-                                    value={formData.status}
-                                    onChange={(e) => setFormData((prev: any) => ({ ...prev, status: e.target.value as any }))}
-                                >
-                                    <option value="Upcoming">Upcoming</option>
-                                    <option value="Registration Open">Registration Open</option>
-                                    <option value="Completed">Completed</option>
-                                </select>
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Registration Link</label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none"
-                                    value={formData.link}
-                                    onChange={(e) => setFormData((prev: any) => ({ ...prev, link: e.target.value }))}
-                                    placeholder="https://..."
-                                />
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-400 mb-1">Description</label>
-                                <textarea
-                                    className={`w-full bg-gray-800 text-white rounded px-3 py-2 border outline-none min-h-[100px] ${formErrors.description ? 'border-red-500' : 'border-gray-700 focus:border-primary'}`}
-                                    value={formData.description}
-                                    onChange={(e) => { setFormData((prev: any) => ({ ...prev, description: e.target.value })); setFormErrors(prev => ({ ...prev, description: '' })); }}
-                                    placeholder="Event description..."
-                                />
-                                {formErrors.description && (
-                                    <p className="mt-1 text-xs text-red-400 flex items-center gap-1"><AlertCircle size={12} /> {formErrors.description}</p>
-                                )}
-                            </div>
-                        </div>
-
-                        <div className="flex justify-end gap-3 pt-4 border-t border-gray-800 mt-6">
-                            <button
-                                onClick={resetForm}
-                                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleSaveEvent}
-                                className="px-4 py-2 bg-primary text-black font-bold rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={isSubmitting}
-                            >
-                                {isSubmitting ? 'Saving...' : (isEditing ? 'Update Event' : 'Create Event')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             {isLoading ? (
                 <div className="flex justify-center p-8 text-primary">Loading...</div>
@@ -392,7 +59,7 @@ export default function AdminEventList() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {/* Add New Card */}
                     <div
-                        onClick={() => setIsAdding(true)}
+                        onClick={() => router.push('/foss-manager/dashboard/events/form')}
                         className="bg-gray-900/50 border-2 border-dashed border-gray-800 rounded-xl p-6 flex flex-col items-center justify-center min-h-[300px] hover:border-primary/50 hover:bg-gray-900/80 transition-all cursor-pointer group"
                     >
                         <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
@@ -416,11 +83,12 @@ export default function AdminEventList() {
                                         No Image
                                     </div>
                                 )}
-                                <div className={`absolute top-2 right-2 px-2 py-1 rounded text-xs font-bold text-white border border-white/10 backdrop-blur-md
-                                    ${event.status === 'Completed' ? 'bg-gray-800/80' :
-                                        event.status === 'Registration Open' ? 'bg-green-600/80' : 'bg-blue-600/80'}`}
+                                <div className={`absolute top-2 right-2 px-2.5 py-1 rounded text-xs font-bold border backdrop-blur-md
+                                    ${event.status === 'Draft' ? 'bg-amber-500 text-black border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.3)]' :
+                                        event.status === 'Completed' ? 'bg-gray-800/80 text-white border-white/10' :
+                                        event.status === 'Registration Open' ? 'bg-green-600/80 text-white border-white/10' : 'bg-blue-600/80 text-white border-white/10'}`}
                                 >
-                                    {event.status}
+                                    {event.status === 'Draft' ? '● Draft' : event.status}
                                 </div>
                             </div>
                             <div className="p-5">
@@ -433,7 +101,7 @@ export default function AdminEventList() {
 
                                 <div className="flex gap-2 mt-auto pt-4 border-t border-gray-800">
                                     <button
-                                        onClick={() => openEditModal(event)}
+                                        onClick={() => router.push('/foss-manager/dashboard/events/form?id=' + event.id)}
                                         className="flex-1 px-3 py-2 bg-gray-800 hover:bg-gray-700 rounded text-sm font-medium text-white transition-colors flex items-center justify-center gap-2"
                                     >
                                         <Edit3 size={14} /> Edit

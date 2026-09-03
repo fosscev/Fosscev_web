@@ -286,11 +286,19 @@ export function CoreTeam() {
 
             {showSkeleton ? (
                 <>
-                    <div className="mx-auto mb-12 max-w-7xl px-4">
-                        <div className="mx-auto h-12 w-64 animate-pulse rounded border border-white/5 bg-gray-800/50"></div>
+                    <div className="mx-auto mb-12 max-w-7xl px-4 text-center">
+                        <div className="mx-auto h-10 w-48 animate-pulse rounded bg-gray-800/50 md:h-14 md:w-64"></div>
+                        <div className="mx-auto mt-6 h-px w-12 bg-emerald-400/40 shadow-[0_0_20px_rgba(16,185,129,0.7)]"></div>
                     </div>
                     <div className="mx-auto max-w-7xl px-4">
-                        <div className="h-[560px] animate-pulse rounded-[2rem] border border-white/5 bg-gray-800/40"></div>
+                        <div className="relative h-[560px] animate-pulse overflow-hidden rounded-[2rem] border border-white/10 bg-gray-900/40">
+                            <div className="absolute left-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-gray-700/50"></div>
+                            <div className="absolute left-1/2 top-1/2 h-[450px] w-[450px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-gray-700/30"></div>
+                            <div className="absolute left-[20%] top-[30%] h-16 w-16 rounded-full bg-gray-800/80"></div>
+                            <div className="absolute left-[80%] top-[30%] h-16 w-16 rounded-full bg-gray-800/80"></div>
+                            <div className="absolute left-1/2 top-[20%] h-20 w-20 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gray-700/80"></div>
+                            <div className="absolute bottom-6 left-1/2 w-[320px] -translate-x-1/2 h-32 rounded-xl bg-gray-800/60"></div>
+                        </div>
                     </div>
                 </>
             ) : displayMembers.length === 0 ? null : (

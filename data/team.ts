@@ -16,22 +16,6 @@ export const team: TeamMember[] = [
         linkedin: "https://www.linkedin.com/in/rishnu-lal-n",
         instagram: "https://www.instagram.com/rishnulal__n",
     },
-    {//complete
-        name: "Hussain Huzefa",
-        role: "Co Organizer",
-        image: "/Hussain.jpeg",
-        github: "https://github.com/husainsaifee53",
-        linkedin: "https://www.linkedin.com/in/hussain-huzefa53",
-        instagram: "https://www.instagram.com/husainnn_sf/",
-    },
-    {//comp
-        name: "Devapriya k",
-        role: "CO Organizer",
-        image: "/Devapriya.jpg",
-        github: "https://github.com/",
-        linkedin: "https://www.linkedin.com/in/devapriya -k-8601b6370",
-        instagram: "https://instagram.com/",
-    },
     {//co
         name: "Roshith Krishna",
         role: "Finance Lead",
@@ -57,14 +41,6 @@ export const team: TeamMember[] = [
         instagram: "https://www.instagram.com/_lakshmi_.09",
     },
     {//comple
-        name: "Rida Waseem",
-        role: "Women in Lead",
-        image: "/Rida.jpeg",
-        github: "https://github.com/Rida-007",
-        linkedin: "https://www.linkedin.com/in/rida-waseem-a13389339",
-        instagram: "https://www.instagram.com/rida_waseem_04",
-    },
-    {//comple
         name: "Sayanth P",
         role: "Social Lead",
         image: "/Sayanth.jpg",
@@ -80,14 +56,6 @@ export const team: TeamMember[] = [
         linkedin: "https://www.linkedin.com/in/aswandha-rj-53b023328",
         instagram: "https://instagram.com/",
     },
-    {//comple
-        name: "Muhammad Aswlah",
-        role: "Designer",
-        image: "/ASWLAH.jpg",
-        github: "https://github.com/Aswlah01",
-        linkedin: "https://www.linkedin.com/in/muhammed-aswlah",
-        instagram: "https://www.instagram.com/",
-    },
     {
         name: "Fathima P",
         role: "Designer",
@@ -102,14 +70,6 @@ export const team: TeamMember[] = [
         image: "/SANDRA.jpg",
         github: "https://github.com/sandravtk06-jpg",
         linkedin: "https://www.linkedin.com/in/sandra-sunil-600321336",
-        instagram: "https://instagram.com/",
-    },
-    {
-        name: "Muhammed Sinan A P",
-        role: "content Writer",
-        image: "/SINAN.jpg",
-        github: "https://github.com/Sinaan-ms",
-        linkedin: "https://www.linkedin.com/in/muhammedsinanap",
         instagram: "https://instagram.com/",
     },
 ];
