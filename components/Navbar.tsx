@@ -22,6 +22,7 @@ export function Navbar() {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
     const [logoUrl, setLogoUrl] = useState("/logo.png");
+    const [isHydrated, setIsHydrated] = useState(false);
     const pathname = usePathname();
 
     useEffect(() => {
@@ -35,10 +36,14 @@ export function Navbar() {
         return () => window.removeEventListener("scroll", onScroll);
     }, []);
 
+    useEffect(() => {
+        setIsHydrated(true);
+    }, []);
+
     useEffect(() => { setMobileOpen(false); }, [pathname]);
 
     const isActive = (href: string) =>
-        href === "/" ? pathname === "/" : pathname.startsWith(href);
+        isHydrated && (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
     return (
         <>

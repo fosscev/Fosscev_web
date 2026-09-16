@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import Image from "next/image";
 import { getGalleryPhotos } from "@/app/actions/gallery";
 import { useSiteContent } from "@/lib/useSiteContent";
 
@@ -30,16 +31,13 @@ const Row = ({ items, speed = 20, reverse = false, offset = 0, className = "" }:
             >
                 {displayItems.map((item, i) => (
                     <div key={i} className="w-[320px] h-[220px] rounded-lg overflow-hidden relative group flex-shrink-0 isolate">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <Image
                             src={item.image}
                             alt={item.title}
-                            loading="lazy"
-                            decoding="async"
-                            className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500"
-                            onError={(e) => {
-                                (e.target as HTMLElement).style.display = 'none';
-                            }}
+                            fill
+                            unoptimized={item.image.includes("supabase.co")}
+                            sizes="(max-width: 640px) 100vw, 320px"
+                            className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500"
                         />
 
                         {/* Overlay on hover */}
@@ -66,7 +64,6 @@ export function TiltedScroll() {
     const { content: siteContent } = useSiteContent();
     const sectionContent = siteContent.gallery || { title: "Community\nGallery" };
 
-    // Only render heavy content when section is near viewport
     useEffect(() => {
         const el = sectionRef.current;
         if (!el) return;
@@ -78,19 +75,20 @@ export function TiltedScroll() {
                     observer.disconnect();
                 }
             },
-            { rootMargin: '400px 0px' } // Start loading moderately before visible
+            { rootMargin: '400px 0px' }
         );
 
         observer.observe(el);
         return () => observer.disconnect();
     }, []);
 
+    // Fetch database gallery immediately on mount so photos are ready before user scrolls down
     useEffect(() => {
-        if (!isVisible) return;
-
+        let isMounted = true;
         const fetchDatabaseGallery = async () => {
             try {
                 const result = await getGalleryPhotos();
+                if (!isMounted) return;
                 const formattedItems = Array.isArray(result) ? result : [];
 
                 if (formattedItems.length > 0) {
@@ -109,18 +107,21 @@ export function TiltedScroll() {
             } catch (error) {
                 console.error("Error loading gallery photos:", error);
             } finally {
-                setIsLoading(false);
+                if (isMounted) setIsLoading(false);
             }
         };
 
         fetchDatabaseGallery();
-    }, [isVisible]);
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     return (
         <section ref={sectionRef} className="relative overflow-hidden py-20 flex flex-col justify-center items-center min-h-screen" style={{ contentVisibility: 'auto', containIntrinsicSize: 'auto 100vh' }}>
             <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background z-10 pointer-events-none" />
 
-            {!isVisible || isLoading ? (
+            {isLoading ? (
                 <div className="w-full max-w-none opacity-20">
                     <div className="flex gap-6 mb-8 overflow-hidden">
                         {[...Array(6)].map((_, i) => (

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import Image from "next/image";
 import { useSiteContent } from "@/lib/useSiteContent";
 
 interface TeamMember {
@@ -20,14 +21,14 @@ const MarqueeCard = ({ member }: { member: TeamMember }) => {
       whileHover={{ y: -8, scale: 1.02, boxShadow: "0 0 0 1px rgba(16, 185, 129, 0.25), 0 0 35px rgba(16, 185, 129, 0.22)" }}
       transition={{ type: "spring", stiffness: 220, damping: 20 }}
     >
-      <div className="h-[calc(100%-96px)] w-full overflow-hidden">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
+      <div className="relative h-[calc(100%-96px)] w-full overflow-hidden">
+        <Image
           src={member.image}
           alt={member.name}
-          className="h-full w-full object-cover object-center brightness-100 contrast-110 transition duration-500 ease-out group-hover:scale-105"
-          loading="lazy"
-          decoding="async"
+          fill
+          unoptimized={member.image.includes("supabase.co")}
+          className="object-cover object-center brightness-100 contrast-110 transition duration-500 ease-out group-hover:scale-105"
+          sizes="(max-width: 640px) 46vw, (max-width: 1024px) 31vw, 24vw"
         />
       </div>
 
@@ -111,13 +112,13 @@ export function CoreTeamMarquee() {
   }, [isLoading]);
 
   useEffect(() => {
-    if (!isVisible) return;
-
+    let isMounted = true;
     const fetchTeam = async () => {
       try {
         const response = await fetch("/api/data/team", { cache: "no-store" });
         if (!response.ok) throw new Error("Failed to fetch team data");
         const data = await response.json();
+        if (!isMounted) return;
         const coreTeamMembers = Array.isArray(data?.coreTeam) ? data.coreTeam : [];
         setTeamData(
           coreTeamMembers.map((member: Record<string, any>) => ({
@@ -129,12 +130,15 @@ export function CoreTeamMarquee() {
       } catch (err) {
         console.error("Unexpected error:", err);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     };
 
     fetchTeam();
-  }, [isVisible]);
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const orderedMembers = useMemo(() => {
     if (!teamData.length) return [];

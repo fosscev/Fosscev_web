@@ -71,6 +71,44 @@ export function LoadingScreen() {
         // Randomize quote on mount to keep it fresh
         setQuoteIndex(Math.floor(Math.random() * QUOTES.length));
 
+        // Background prefetch API data and warm Next.js image cache while loading animation is active
+        const prefetchAssets = async () => {
+            try {
+                fetch("/api/data/team")
+                    .then((res) => res.json())
+                    .then((data) => {
+                        const members = data?.coreTeam || [];
+                        members.forEach((m: any) => {
+                            const url = m.image_url || m.image;
+                            if (url && typeof window !== "undefined") {
+                                const img = new window.Image();
+                                img.src = url.includes("supabase.co")
+                                    ? url
+                                    : `/_next/image?url=${encodeURIComponent(url)}&w=384&q=75`;
+                            }
+                        });
+                    })
+                    .catch(() => {});
+
+                const { getGalleryPhotos } = await import("@/app/actions/gallery");
+                const photos = await getGalleryPhotos();
+                if (Array.isArray(photos)) {
+                    photos.forEach((p: any) => {
+                        if (p.image && typeof window !== "undefined") {
+                            const img = new window.Image();
+                            img.src = p.image.includes("supabase.co")
+                                ? p.image
+                                : `/_next/image?url=${encodeURIComponent(p.image)}&w=640&q=75`;
+                        }
+                    });
+                }
+            } catch {
+                // Ignore background prefetch errors
+            }
+        };
+
+        prefetchAssets();
+
         // Simulate progress and ensure we stay long enough to be "interesting"
         // It hides when window load is complete AND minimum time (2.5s) has passed
         let isWindowLoaded = document.readyState === "complete";

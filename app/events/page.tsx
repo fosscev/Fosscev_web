@@ -11,6 +11,7 @@ import { events as localEvents, Event } from "@/data/events";
 import EventsSkeleton from "./loading";
 import useSWR from "swr";
 import { FetchError } from "@/components/FetchError";
+import { getComputedEventStatus } from "@/lib/event-utils";
 
 // Helper to format date string like "10 Feb 2026"
 const formatDate = (dateStr: string) => {
@@ -29,7 +30,7 @@ const mapEvent = (dbEvent: any): Event => ({
     description: dbEvent.description,
     type: dbEvent.type,
     attendees: dbEvent.attendees,
-    status: dbEvent.status,
+    status: getComputedEventStatus(dbEvent),
     image: dbEvent.image_url,
     poster: dbEvent.poster_url || dbEvent.image_url, // Use poster_url, fallback to image_url
     link: dbEvent.link
@@ -196,13 +197,13 @@ export default function EventsPage() {
                                                     </span>
                                                 </div>
 
-                                                {event.status === "Completed" ? (
+                                                {event.status === "Event Concluded" ? (
                                                     <div className="absolute top-3 left-3 z-10">
                                                         <span className="px-2 md:px-3 py-1 bg-black/60 backdrop-blur-md text-gray-400 text-xs font-bold font-mono uppercase rounded-md border border-white/10">
-                                                            Completed
+                                                            Event Concluded
                                                         </span>
                                                     </div>
-                                                ) : (event.status === "Upcoming" || event.status === "Registration Open") && (
+                                                ) : (event.status === "Registration Open" || event.status === "Event Ongoing") && (
                                                     <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-2 md:px-3 py-1 bg-black/60 backdrop-blur-md border border-primary/20 rounded-md">
                                                         <span className="relative flex h-2 w-2">
                                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type TouchEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
 import { ArrowLeft, ArrowRight, Github, Instagram, Linkedin } from "lucide-react";
 import { useSiteContent } from "@/lib/useSiteContent";
 
@@ -237,9 +238,15 @@ export function CoreTeam() {
                 transition={{ duration: 0.85, ease: "easeInOut" }}
             />
             <div className="relative">
-                <div className="relative overflow-hidden rounded-[1.1rem] border border-white/10 bg-slate-900/70">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={member.image} alt={member.name} loading="lazy" decoding="async" className="h-40 w-full object-cover sm:h-52" />
+                <div className="relative h-40 w-full overflow-hidden rounded-[1.1rem] border border-white/10 bg-slate-900/70 sm:h-52">
+                    <Image
+                        src={member.image}
+                        alt={member.name}
+                        fill
+                        unoptimized={member.image.includes("supabase.co")}
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, 300px"
+                    />
                 </div>
                 <div className="mt-4">
                     <p className="text-[0.65rem] font-mono uppercase tracking-[0.35em] text-emerald-400/70">Mission Node</p>
@@ -391,8 +398,14 @@ export function CoreTeam() {
                                                     <div className="absolute top-[-10px] h-0 w-0 border-b-[14px] border-l-[11px] border-r-[11px] border-b-emerald-400/85 border-l-transparent border-r-transparent drop-shadow-[0_0_16px_rgba(16,185,129,0.45)]" />
                                                     <div className="absolute top-[-2px] h-0 w-0 border-b-[11px] border-l-[8px] border-r-[8px] border-b-emerald-300/90 border-l-transparent border-r-transparent" />
                                                     <div className="relative mt-2 h-12 w-12 overflow-hidden rounded-full border border-white/15 bg-slate-900/90 shadow-[0_0_20px_rgba(16,185,129,0.24)]">
-                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                        <img src={member.image} alt={member.name} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+                                                        <Image
+                                                            src={member.image}
+                                                            alt={member.name}
+                                                            fill
+                                                            unoptimized={member.image.includes("supabase.co")}
+                                                            className="object-cover"
+                                                            sizes="48px"
+                                                        />
                                                     </div>
                                                 </div>
                                             </motion.button>

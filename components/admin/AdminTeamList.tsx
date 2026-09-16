@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import ImageUploader from './ImageUploader';
 import { useAdminAuth } from './AdminAuthProvider';
+import Image from 'next/image';
 
 export default function AdminTeamList() {
     const { session } = useAdminAuth();
@@ -125,6 +126,21 @@ export default function AdminTeamList() {
 
     const handleDelete = async (id: string) => {
         if (!confirm('Are you sure you want to delete this member?')) return;
+
+        // Cleanup storage if there's an image
+        const memberToDelete = teamData.find(m => m.id === id);
+        const imageUrl = memberToDelete?.image_url;
+        if (imageUrl && imageUrl.includes('supabase.co')) {
+            try {
+                const url = new URL(imageUrl);
+                const pathParts = url.pathname.split('/');
+                const fileName = pathParts[pathParts.length - 1];
+                await supabase.storage.from('team-images').remove([fileName]);
+            } catch (err) {
+                console.error("Failed to delete team member image from storage:", err);
+            }
+        }
+
         const { error } = await supabase
             .from('team_members')
             .delete()
@@ -162,7 +178,14 @@ export default function AdminTeamList() {
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <div className="flex-shrink-0 h-10 w-10 relative group">
                                             {member.image_url ? (
-                                                <img className="h-10 w-10 rounded-full object-cover" src={member.image_url} alt="" />
+                                                <Image
+                                                    className="rounded-full object-cover"
+                                                    src={member.image_url}
+                                                    alt=""
+                                                    width={40}
+                                                    height={40}
+                                                    sizes="40px"
+                                                />
                                             ) : (
                                                 <div className="h-10 w-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 font-bold">
                                                     {member.name.charAt(0)}

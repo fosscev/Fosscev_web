@@ -58,6 +58,7 @@ const GalleryCard = ({ item }: { item: GalleryItem }) => {
                             src={item.image}
                             alt={item.title}
                             fill
+                            unoptimized={item.image.includes("supabase.co")}
                             className="object-cover"
                             sizes="(max-width: 768px) 400px, 500px"
                             onLoad={() => setIsLoading(false)}
@@ -65,7 +66,6 @@ const GalleryCard = ({ item }: { item: GalleryItem }) => {
                                 setIsLoading(false);
                                 setHasError(true);
                             }}
-                            unoptimized
                         />
                     </motion.div>
                 )}

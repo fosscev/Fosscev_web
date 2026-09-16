@@ -1,4 +1,5 @@
 import { supabase, Event as SupabaseEvent } from '../supabase';
+import { isSupabaseUrl } from '../image-utils';
 
 /**
  * Fetch all events from Supabase
@@ -174,6 +175,20 @@ export async function addEvent(event: Omit<SupabaseEvent, 'id' | 'created_at' | 
  */
 export async function updateEvent(id: string, updates: Partial<SupabaseEvent>) {
     try {
+        let oldPosterUrl: string | null = null;
+        const newPoster = updates.poster_url || updates.image_url;
+        if (newPoster) {
+            const { data: existing } = await supabase
+                .from('events')
+                .select('poster_url, image_url')
+                .eq('id', id)
+                .maybeSingle();
+            const existingPoster = existing?.poster_url || existing?.image_url;
+            if (existingPoster && existingPoster !== newPoster) {
+                oldPosterUrl = existingPoster;
+            }
+        }
+
         const { data, error } = await supabase
             .from('events')
             .update({ ...updates, updated_at: new Date().toISOString() })
@@ -184,6 +199,14 @@ export async function updateEvent(id: string, updates: Partial<SupabaseEvent>) {
         if (error) {
             console.error('Error updating event:', error);
             return { data: null, error };
+        }
+
+        if (oldPosterUrl && isSupabaseUrl(oldPosterUrl)) {
+            try {
+                await deleteEventPoster(oldPosterUrl);
+            } catch (err) {
+                console.warn('Could not delete old event poster during replacement:', err);
+            }
         }
 
         return { data, error: null };
@@ -198,6 +221,12 @@ export async function updateEvent(id: string, updates: Partial<SupabaseEvent>) {
  */
 export async function deleteEvent(id: string) {
     try {
+        const { data: eventItem } = await supabase
+            .from('events')
+            .select('poster_url, image_url')
+            .eq('id', id)
+            .maybeSingle();
+
         const { error } = await supabase
             .from('events')
             .delete()
@@ -206,6 +235,15 @@ export async function deleteEvent(id: string) {
         if (error) {
             console.error('Error deleting event:', error);
             return { success: false, error };
+        }
+
+        const posterUrl = eventItem?.poster_url || eventItem?.image_url;
+        if (posterUrl && isSupabaseUrl(posterUrl)) {
+            try {
+                await deleteEventPoster(posterUrl);
+            } catch (err) {
+                console.warn('Could not delete storage poster for event (might already be missing):', err);
+            }
         }
 
         return { success: true, error: null };
@@ -247,7 +285,7 @@ export async function uploadEventPoster(file: File, eventId?: string): Promise<{
         const { data, error } = await supabase.storage
             .from('event-posters')
             .upload(fileName, file, {
-                cacheControl: '3600',
+                cacheControl: '31536000',
                 upsert: true,
             });
 

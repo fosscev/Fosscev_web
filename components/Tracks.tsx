@@ -6,6 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getEvents } from "@/lib/api/events";
 import { useSiteContent } from "@/lib/useSiteContent";
+import { getComputedEventStatus } from "@/lib/event-utils";
 
 export function Tracks() {
     const [items, setItems] = useState<any[]>([]);
@@ -31,7 +32,7 @@ export function Tracks() {
                         id: event.id,
                         title: event.title,
                         event: `${event.type} ${year}`,
-                        status: event.status,
+                        status: getComputedEventStatus(event),
                         imageUrl: event.poster_url || event.image_url || '/placeholder.jpg',
                         className: classNames[index] || "md:col-span-1 md:row-span-1",
                         isPlaceholder: false
@@ -44,7 +45,7 @@ export function Tracks() {
                         id: `placeholder-${idx}`,
                         title: "Event Coming Soon",
                         event: "Stay Tuned",
-                        status: "Upcoming",
+                        status: "Registration Open",
                         imageUrl: "/placeholder.jpg",
                         className: classNames[idx],
                         isPlaceholder: true
@@ -58,7 +59,7 @@ export function Tracks() {
                     id: `placeholder-${idx}`,
                     title: "Event Coming Soon",
                     event: "Stay Tuned",
-                    status: "Upcoming",
+                    status: "Registration Open",
                     imageUrl: "/placeholder.jpg",
                     className,
                     isPlaceholder: true
@@ -104,13 +105,14 @@ export function Tracks() {
                                         src={item.imageUrl}
                                         alt={item.title}
                                         fill
+                                        unoptimized={item.imageUrl.includes("supabase.co")}
                                         className="object-cover transition-transform duration-1000 ease-out group-hover:scale-[1.03]"
                                         sizes="(max-width: 768px) 100vw, 50vw"
                                     />
                                 </div>
-                                <div className={`absolute inset-0 bg-gradient-to-t ${item.status === 'Upcoming' || item.status === 'Registration Open' ? 'from-primary/20' : 'from-black/90'} via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                                <div className={`absolute inset-0 bg-gradient-to-t ${item.status === 'Registration Open' || item.status === 'Event Ongoing' ? 'from-primary/20' : 'from-black/90'} via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500`}></div>
 
-                                {(item.status === 'Upcoming' || item.status === 'Registration Open') && (
+                                {(item.status === 'Registration Open' || item.status === 'Event Ongoing') && (
                                     <div className="absolute top-4 right-4 z-20">
                                         <div className="relative flex items-center gap-2">
                                             <span className="relative flex h-3 w-3">

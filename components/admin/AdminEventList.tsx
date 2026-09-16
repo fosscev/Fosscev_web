@@ -5,6 +5,8 @@ import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import { Plus, Trash, Edit3 } from 'lucide-react';
 import { useAdminAuth } from './AdminAuthProvider';
+import { getComputedEventStatus } from '@/lib/event-utils';
+import Image from 'next/image';
 
 export default function AdminEventList() {
     const { session } = useAdminAuth();
@@ -35,6 +37,21 @@ export default function AdminEventList() {
 
     const handleDeleteEvent = async (id: string) => {
         if (!confirm('Are you sure you want to delete this event?')) return;
+
+        // Cleanup storage if there's an image
+        const eventToDelete = events.find(e => e.id === id);
+        const imageUrl = eventToDelete?.poster_url || eventToDelete?.image_url;
+        if (imageUrl && imageUrl.includes('supabase.co')) {
+            try {
+                const url = new URL(imageUrl);
+                const pathParts = url.pathname.split('/');
+                const fileName = pathParts[pathParts.length - 1];
+                await supabase.storage.from('event-posters').remove([fileName]);
+            } catch (err) {
+                console.error("Failed to delete event poster from storage:", err);
+            }
+        }
+
         const { error } = await supabase
             .from('events')
             .delete()
@@ -69,13 +86,18 @@ export default function AdminEventList() {
                         <p className="text-sm text-gray-500 text-center">Plan a workshop, hackathon, or meetup.</p>
                     </div>
 
-                    {events.map((event) => (
+                    {events.map((event) => {
+                        const displayStatus = getComputedEventStatus(event);
+                        return (
                         <div key={event.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 transition-all group">
                             <div className="relative h-48 bg-gray-800 overflow-hidden">
                                 {event.poster_url || event.image_url ? (
-                                    <img
+                                    <Image
                                         src={event.poster_url || event.image_url}
                                         alt={event.title}
+                                        fill
+                                        unoptimized={(event.poster_url || event.image_url).includes("supabase.co")}
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                     />
                                 ) : (
@@ -84,11 +106,11 @@ export default function AdminEventList() {
                                     </div>
                                 )}
                                 <div className={`absolute top-2 right-2 px-2.5 py-1 rounded text-xs font-bold border backdrop-blur-md
-                                    ${event.status === 'Draft' ? 'bg-amber-500 text-black border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.3)]' :
-                                        event.status === 'Completed' ? 'bg-gray-800/80 text-white border-white/10' :
-                                        event.status === 'Registration Open' ? 'bg-green-600/80 text-white border-white/10' : 'bg-blue-600/80 text-white border-white/10'}`}
+                                    ${displayStatus === 'Draft' ? 'bg-amber-500 text-black border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.3)]' :
+                                        displayStatus === 'Event Concluded' ? 'bg-gray-800/80 text-white border-white/10' :
+                                        displayStatus === 'Registration Open' ? 'bg-green-600/80 text-white border-white/10' : 'bg-blue-600/80 text-white border-white/10'}`}
                                 >
-                                    {event.status === 'Draft' ? '● Draft' : event.status}
+                                    {displayStatus === 'Draft' ? '● Draft' : displayStatus}
                                 </div>
                             </div>
                             <div className="p-5">
@@ -115,7 +137,7 @@ export default function AdminEventList() {
                                 </div>
                             </div>
                         </div>
-                    ))}
+                    )})}
                 </div>
             )}
         </div>

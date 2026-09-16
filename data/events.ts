@@ -7,11 +7,14 @@ export interface Event {
     description: string;
     type: "Workshop" | "Hackathon" | "Talk" | "Meetup";
     attendees: string;
-    status: "Upcoming" | "Registration Open" | "Completed";
+    status: "Upcoming" | "Registration Open" | "Completed" | "Event Ongoing" | "Event Concluded" | "Draft";
     image?: string;
     poster?: string;
     link?: string;
     dateObj: Date; // For proper date comparison
+    rawDate?: string; // YYYY-MM-DD for status computation
+    start_time?: string | null; // HH:MM (24-hour)
+    end_time?: string | null; // HH:MM (24-hour)
 }
 
 // Real events from FOSS United - College of Engineering Vadakara

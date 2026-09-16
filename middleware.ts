@@ -99,11 +99,25 @@ export async function middleware(request: NextRequest) {
         }
     }
 
-    // 2. Auto-redirect from login page to dashboard if ALREADY authenticated as admin
+    // 2. Only redirect away from login when both halves of the admin session
+    // are valid. A Supabase session without a marker can happen after a marker
+    // expires or cookies are partially cleared; redirecting it caused a loop:
+    // login -> dashboard -> login.
     if (user && isAdminEmail(user.email) && pathname === '/foss-manager') {
-        const redirectUrl = request.nextUrl.clone();
-        redirectUrl.pathname = '/foss-manager/dashboard';
-        return NextResponse.redirect(redirectUrl);
+        const marker = request.cookies.get('foss-admin-marker')?.value;
+        if (marker) {
+            try {
+                const secret = new TextEncoder().encode(process.env.SESSION_MARKER_SECRET || 'development-fallback-secret-key-12345');
+                const { payload } = await jwtVerify(marker, secret, { audience: 'admin' });
+                if (payload.sub === user.id) {
+                    const redirectUrl = request.nextUrl.clone();
+                    redirectUrl.pathname = '/foss-manager/dashboard';
+                    return NextResponse.redirect(redirectUrl);
+                }
+            } catch {
+                // Stay on login so the user can establish a fresh admin session.
+            }
+        }
     }
 
     return response;

@@ -1,4 +1,5 @@
 import { supabase, TeamMember as SupabaseTeamMember } from '../supabase';
+import { isSupabaseUrl } from '../image-utils';
 
 /**
  * Fetch all team members from Supabase
@@ -7,7 +8,7 @@ export async function getTeamMembers(coreTeamOnly: boolean = false) {
     try {
         let query = supabase
             .from('team_members')
-            .select('*')
+            .select('id, name, role, image_url, github, linkedin, instagram, is_core_team, is_faculty_advisor, display_order')
             .order('display_order', { ascending: true });
 
         if (coreTeamOnly) {
@@ -35,7 +36,7 @@ export async function getCoreTeam() {
     try {
         const { data, error } = await supabase
             .from('team_members')
-            .select('*')
+            .select('id, name, role, image_url, github, linkedin, instagram, is_core_team, is_faculty_advisor, display_order')
             .eq('is_core_team', true)
             .is('is_faculty_advisor', false)
             .order('display_order', { ascending: true });
@@ -59,7 +60,7 @@ export async function getSubteam() {
     try {
         const { data, error } = await supabase
             .from('team_members')
-            .select('*')
+            .select('id, name, role, image_url, github, linkedin, instagram, is_core_team, is_faculty_advisor, display_order')
             .eq('is_core_team', false)
             .is('is_faculty_advisor', false)
             .order('display_order', { ascending: true });
@@ -83,7 +84,7 @@ export async function getFacultyAdvisors() {
     try {
         const { data, error } = await supabase
             .from('team_members')
-            .select('*')
+            .select('id, name, role, image_url, github, linkedin, instagram, is_core_team, is_faculty_advisor, display_order')
             .eq('is_faculty_advisor', true)
             .order('display_order', { ascending: true });
 
@@ -127,6 +128,18 @@ export async function addTeamMember(member: Omit<SupabaseTeamMember, 'id' | 'cre
  */
 export async function updateTeamMember(id: string, updates: Partial<SupabaseTeamMember>) {
     try {
+        let oldImageUrl: string | null = null;
+        if (updates.image_url) {
+            const { data: existing } = await supabase
+                .from('team_members')
+                .select('image_url')
+                .eq('id', id)
+                .maybeSingle();
+            if (existing?.image_url && existing.image_url !== updates.image_url) {
+                oldImageUrl = existing.image_url;
+            }
+        }
+
         const { data, error } = await supabase
             .from('team_members')
             .update({ ...updates, updated_at: new Date().toISOString() })
@@ -137,6 +150,14 @@ export async function updateTeamMember(id: string, updates: Partial<SupabaseTeam
         if (error) {
             console.error('Error updating team member:', error);
             return { data: null, error };
+        }
+
+        if (oldImageUrl && isSupabaseUrl(oldImageUrl)) {
+            try {
+                await deleteTeamImage(oldImageUrl);
+            } catch (err) {
+                console.warn('Could not delete old image object during replacement:', err);
+            }
         }
 
         return { data, error: null };
@@ -151,6 +172,12 @@ export async function updateTeamMember(id: string, updates: Partial<SupabaseTeam
  */
 export async function deleteTeamMember(id: string) {
     try {
+        const { data: member } = await supabase
+            .from('team_members')
+            .select('image_url')
+            .eq('id', id)
+            .maybeSingle();
+
         const { error } = await supabase
             .from('team_members')
             .delete()
@@ -159,6 +186,14 @@ export async function deleteTeamMember(id: string) {
         if (error) {
             console.error('Error deleting team member:', error);
             return { success: false, error };
+        }
+
+        if (member?.image_url && isSupabaseUrl(member.image_url)) {
+            try {
+                await deleteTeamImage(member.image_url);
+            } catch (err) {
+                console.warn('Could not delete storage image for team member (might already be missing):', err);
+            }
         }
 
         return { success: true, error: null };
@@ -200,7 +235,7 @@ export async function uploadTeamImage(file: File, memberId?: string): Promise<{ 
         const { data, error } = await supabase.storage
             .from('team-images')
             .upload(fileName, file, {
-                cacheControl: '3600',
+                cacheControl: '31536000',
                 upsert: true,
             });
 

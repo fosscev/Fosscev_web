@@ -5,7 +5,8 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { MapPin, Calendar, Clock, Users, ChevronLeft, Tag, User } from "lucide-react";
 import Image from "next/image";
-import { getUpcomingEvents, getPastEvents } from "@/lib/api/events";
+import { getEventById } from "@/lib/api/events";
+import { getComputedEventStatus } from "@/lib/event-utils";
 import { Event } from "@/data/events";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
@@ -21,20 +22,28 @@ export default function EventDetailPage() {
         async function fetchEvent() {
             setIsLoading(true);
             try {
-                const [upcomingResponse, pastResponse] = await Promise.all([
-                    getUpcomingEvents(),
-                    getPastEvents()
-                ]);
+                const { data: foundEvent } = await getEventById(String(eventId));
 
-                // Combine both responses
-                const allEvents = [
-                    ...(upcomingResponse.data || []),
-                    ...(pastResponse.data || [])
-                ];
-
-                // Find the event using params.id
-                const foundEvent = allEvents.find(e => e.id.toString() === eventId);
-                setEvent(foundEvent || null);
+                if (foundEvent) {
+                    const mappedEvent: Event = {
+                        id: foundEvent.id,
+                        title: foundEvent.title,
+                        date: new Date(foundEvent.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+                        dateObj: new Date(foundEvent.date),
+                        time: foundEvent.time,
+                        location: foundEvent.location,
+                        description: foundEvent.description,
+                        type: foundEvent.type,
+                        attendees: foundEvent.attendees,
+                        status: getComputedEventStatus(foundEvent),
+                        image: foundEvent.image_url,
+                        poster: foundEvent.poster_url || foundEvent.image_url,
+                        link: foundEvent.link
+                    };
+                    setEvent(mappedEvent);
+                } else {
+                    setEvent(null);
+                }
             } catch (error) {
                 console.error("Failed to fetch event:", error);
                 setEvent(null);
@@ -149,7 +158,7 @@ export default function EventDetailPage() {
                                     {event.type}
                                 </span>
                                 <span className={`px-4 py-2 bg-black/60 backdrop-blur-md border rounded-full text-xs font-display font-bold uppercase ${
-                                    event.status === "Completed"
+                                    event.status === "Event Concluded"
                                         ? "border-gray-400 text-gray-400"
                                         : "border-primary/40 text-primary"
                                 }`}>
@@ -279,7 +288,7 @@ export default function EventDetailPage() {
                                     #{event.type.toLowerCase().replace(/\s+/g, '-')}
                                 </span>
                                 <span className={`px-4 py-2 rounded-full text-sm font-display font-bold uppercase border ${
-                                    event.status === "Completed"
+                                    event.status === "Event Concluded"
                                         ? "bg-gray-900 border-gray-700 text-gray-400"
                                         : "bg-primary/10 border-primary/30 text-primary"
                                 }`}>

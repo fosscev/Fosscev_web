@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { Trash2, Plus, X } from 'lucide-react';
 import ImageUploader from './ImageUploader';
+import Image from 'next/image';
 
 export default function AdminGalleryList() {
     const [photos, setPhotos] = useState<any[]>([]);
@@ -131,7 +132,14 @@ export default function AdminGalleryList() {
                     {photos.map((photo) => (
                         <div key={photo.name} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden group">
                             <div className="aspect-video relative">
-                                <img src={photo.url} alt={photo.title} className="w-full h-full object-cover" />
+                                <Image
+                                    src={photo.url}
+                                    alt={photo.title}
+                                    fill
+                                    unoptimized={photo.url.includes("supabase.co")}
+                                    sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                                    className="object-cover"
+                                />
                                 <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                     <button
                                         onClick={() => handleDelete(photo.name)}

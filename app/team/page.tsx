@@ -224,7 +224,8 @@ const TeamMemberCard = ({
                         src={member.image}
                         alt={member.name}
                         fill
-                        className="object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2"
+                        unoptimized={member.image.includes("supabase.co")}
+                        className="object-cover transition-all duration-700 group-hover:scale-110"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                         priority={index < 4}
                     />

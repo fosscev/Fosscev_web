@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { isEventActive } from '@/lib/event-utils';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -13,70 +14,51 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabaseServer = createClient(supabaseUrl, supabaseAnonKey);
 
 export async function getServerEvents() {
-    const today = new Date().toISOString().split('T')[0];
-
-    const upcomingResponse = await supabaseServer
+    const response = await supabaseServer
         .from('events')
         .select('*')
         .neq('status', 'Draft')
-        .gte('date', today)
-        .order('date', { ascending: true });
-
-    const pastResponse = await supabaseServer
-        .from('events')
-        .select('*')
-        .neq('status', 'Draft')
-        .lt('date', today)
         .order('date', { ascending: false });
 
-    return {
-        upcoming: upcomingResponse.data || [],
-        past: pastResponse.data || [],
-        error: upcomingResponse.error || pastResponse.error || null
-    };
+    if (response.error) {
+        return { upcoming: [], past: [], error: response.error };
+    }
+
+    const all = response.data || [];
+
+    // Split events using the time-aware status engine.
+    // Events remain "upcoming" until their end time (not just midnight).
+    const upcoming = all
+        .filter(e => isEventActive(e))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());  // ascending
+
+    const past = all
+        .filter(e => !isEventActive(e))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());  // descending
+
+    return { upcoming, past, error: null };
 }
 
 export async function getServerTeam() {
     const coreTeamResponse = await supabaseServer
         .from('team_members')
-        .select('*')
+        .select('id, name, role, image_url, github, linkedin, instagram, is_core_team, is_faculty_advisor, display_order')
         .eq('is_core_team', true)
         .is('is_faculty_advisor', false);
 
     const subTeamResponse = await supabaseServer
         .from('team_members')
-        .select('*')
+        .select('id, name, role, image_url, github, linkedin, instagram, is_core_team, is_faculty_advisor, display_order')
         .eq('is_core_team', false)
         .is('is_faculty_advisor', false);
 
     const facultyResponse = await supabaseServer
         .from('team_members')
-        .select('*')
+        .select('id, name, role, image_url, github, linkedin, instagram, is_core_team, is_faculty_advisor, display_order')
         .eq('is_faculty_advisor', true);
 
-    const allMembers = [
-        ...(coreTeamResponse.data || []),
-        ...(subTeamResponse.data || [])
-    ];
-
-    const desiredOrder = [
-        "Rishnu Lal N",
-        "Roshith Krishna",
-        "Sayanth P",
-        "Anvar Sadath",
-        "Lakshmi Reji Suresh",
-        "Ashwandha RJ",
-        "Sandra Sunil T",
-        "Muhammad Shabaz",
-        "Muhammad Aswlah",
-        "Fathima P",
-        "Hemanth Sudhan C",
-        "Ananthanarayanan M"
-    ];
-
-    const finalCore = desiredOrder
-        .map((name) => allMembers.find((member) => member.name === name))
-        .filter(Boolean)
+    const finalCore = [...(coreTeamResponse.data || [])]
+        .sort((a, b) => a.display_order - b.display_order)
         .map((member) => {
             if (member.name === 'Muhammad Shabaz') {
                 return {
@@ -87,11 +69,8 @@ export async function getServerTeam() {
             return member;
         });
 
-    const finalSub = (subTeamResponse.data || []).filter(
-        (member) =>
-            member.name !== 'Hemanth Sudhan C' &&
-            member.name !== 'Ananthanarayanan M'
-    );
+    const finalSub = [...(subTeamResponse.data || [])]
+        .sort((a, b) => a.display_order - b.display_order);
 
     return {
         coreTeam: finalCore,

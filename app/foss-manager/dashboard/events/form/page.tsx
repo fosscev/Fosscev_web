@@ -16,7 +16,8 @@ const eventFormSchema = z.object({
     description: z.coerce.string().min(1, 'Description is required'),
     type: z.coerce.string().optional().nullable(),
     attendees: z.coerce.string().optional().nullable(),
-    status: z.coerce.string().optional().nullable(),
+    start_time: z.coerce.string().optional().nullable(),
+    end_time: z.coerce.string().optional().nullable(),
     poster_url: z.coerce.string().optional().nullable(),
     link: z.coerce.string().optional().nullable(),
 });
@@ -42,7 +43,9 @@ export default function EventFormPage() {
         description: '',
         type: 'Workshop',
         attendees: '0+',
-        status: 'Upcoming',
+        status: 'Published',
+        start_time: '',
+        end_time: '',
         poster_url: '',
         link: ''
     });
@@ -80,7 +83,9 @@ export default function EventFormPage() {
                         description: data.description || '',
                         type: data.type || 'Workshop',
                         attendees: data.attendees || '0+',
-                        status: data.status || 'Upcoming',
+                        status: data.status === 'Draft' ? 'Draft' : 'Published',
+                        start_time: data.start_time ? String(data.start_time).slice(0, 5) : '',
+                        end_time: data.end_time ? String(data.end_time).slice(0, 5) : '',
                         poster_url: data.poster_url || data.image_url || '',
                         link: data.link || ''
                     });
@@ -134,8 +139,17 @@ export default function EventFormPage() {
                 finalPosterUrl = urlData.publicUrl;
             }
 
-            const targetStatus = overrideStatus || formData.status;
-            const payload = { ...formData, status: targetStatus, poster_url: finalPosterUrl };
+            const isDraft = overrideStatus === 'Draft' || (!overrideStatus && formData.status === 'Draft');
+            const { start_time, end_time, ...eventFields } = formData;
+            // Existing rows use legacy non-Draft values. They are intentionally
+            // ignored by public status rendering; only Draft is a manual state.
+            const payload = {
+                ...eventFields,
+                status: isDraft ? 'Draft' : 'Upcoming',
+                start_time: start_time || null,
+                end_time: end_time || null,
+                poster_url: finalPosterUrl,
+            };
 
             if (isEditing) {
                 const { error } = await supabase
@@ -237,6 +251,26 @@ export default function EventFormPage() {
                     </div>
 
                     <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Start Time <span className="text-xs text-gray-600">(optional)</span></label>
+                        <input
+                            type="time"
+                            className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none"
+                            value={formData.start_time}
+                            onChange={(e) => setFormData((prev: any) => ({ ...prev, start_time: e.target.value }))}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">End Time <span className="text-xs text-gray-600">(optional)</span></label>
+                        <input
+                            type="time"
+                            className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none"
+                            value={formData.end_time}
+                            onChange={(e) => setFormData((prev: any) => ({ ...prev, end_time: e.target.value }))}
+                        />
+                    </div>
+
+                    <div>
                         <label className="block text-sm font-medium text-gray-400 mb-1">Location</label>
                         <input
                             type="text"
@@ -276,15 +310,13 @@ export default function EventFormPage() {
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">Status</label>
+                        <label className="block text-sm font-medium text-gray-400 mb-1">Visibility</label>
                         <select
                             className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none"
                             value={formData.status}
                             onChange={(e) => setFormData((prev: any) => ({ ...prev, status: e.target.value as any }))}
                         >
-                            <option value="Upcoming">Upcoming</option>
-                            <option value="Registration Open">Registration Open</option>
-                            <option value="Completed">Completed</option>
+                            <option value="Published">Published</option>
                             <option value="Draft">Draft (Hidden from Public)</option>
                         </select>
                     </div>

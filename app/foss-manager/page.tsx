@@ -4,14 +4,17 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { AdminAuthProvider, useAdminAuth } from '@/components/admin/AdminAuthProvider';
+import { Eye, EyeOff } from 'lucide-react';
 
 function AdminLoginForm() {
     const router = useRouter();
     const { user, authLoading } = useAdminAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [resetMessage, setResetMessage] = useState<string | null>(null);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
@@ -44,6 +47,32 @@ function AdminLoginForm() {
             router.refresh();
         } catch (err) {
             setError('An unexpected error occurred. Please try again.');
+            setLoading(false);
+        }
+    };
+
+    const handlePasswordReset = async () => {
+        setLoading(true);
+        setError(null);
+        setResetMessage(null);
+
+        try {
+            const response = await fetch('/api/admin/auth/reset-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email }),
+            });
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                setError(data.error || 'Unable to process the request. Please try again later.');
+            } else {
+                // This message is intentionally identical for unknown addresses.
+                setResetMessage('If that address is authorised, a password-reset link has been sent. Check your inbox and spam folder.');
+            }
+        } catch {
+            setError('Unable to process the request. Please try again later.');
+        } finally {
             setLoading(false);
         }
     };
@@ -141,29 +170,51 @@ function AdminLoginForm() {
                         <label htmlFor="admin-password" className="block text-xs font-semibold text-gray-300 font-mono uppercase tracking-widest mb-1.5">
                             Password
                         </label>
-                        <input
-                            id="admin-password"
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            placeholder="••••••••"
-                            required
-                            autoComplete="current-password"
-                            suppressHydrationWarning
-                            className="w-full px-4 py-3 rounded-xl text-base text-gray-100 placeholder-gray-600 font-mono focus:outline-none transition-all"
-                            style={{
-                                background: 'rgba(0,230,118,0.03)',
-                                border: '1px solid rgba(0,230,118,0.08)',
-                            }}
-                            onFocus={e => {
-                                e.target.style.border = '1px solid rgba(0,230,118,0.25)';
-                                e.target.style.background = 'rgba(0,230,118,0.05)';
-                            }}
-                            onBlur={e => {
-                                e.target.style.border = '1px solid rgba(0,230,118,0.08)';
-                                e.target.style.background = 'rgba(0,230,118,0.03)';
-                            }}
-                        />
+                        <div className="relative">
+                            <input
+                                id="admin-password"
+                                type={showPassword ? 'text' : 'password'}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                                required
+                                autoComplete="current-password"
+                                suppressHydrationWarning
+                                className="w-full px-4 py-3 pr-12 rounded-xl text-base text-gray-100 placeholder-gray-600 font-mono focus:outline-none transition-all"
+                                style={{
+                                    background: 'rgba(0,230,118,0.03)',
+                                    border: '1px solid rgba(0,230,118,0.08)',
+                                }}
+                                onFocus={e => {
+                                    e.target.style.border = '1px solid rgba(0,230,118,0.25)';
+                                    e.target.style.background = 'rgba(0,230,118,0.05)';
+                                }}
+                                onBlur={e => {
+                                    e.target.style.border = '1px solid rgba(0,230,118,0.08)';
+                                    e.target.style.background = 'rgba(0,230,118,0.03)';
+                                }}
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword((visible) => !visible)}
+                                className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-gray-400 transition-colors hover:text-[#00e676] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00e676] focus-visible:ring-inset rounded-r-xl"
+                                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                                aria-pressed={showPassword}
+                            >
+                                {showPassword ? <EyeOff className="h-5 w-5" aria-hidden="true" /> : <Eye className="h-5 w-5" aria-hidden="true" />}
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="-mt-2 flex justify-end">
+                        <button
+                            type="button"
+                            onClick={handlePasswordReset}
+                            disabled={loading || !email.trim()}
+                            className="text-xs font-mono text-[#00e676]/80 transition-colors hover:text-[#00e676] disabled:cursor-not-allowed disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00e676] rounded"
+                        >
+                            Forgot password?
+                        </button>
                     </div>
 
                     {/* Error Message */}
@@ -173,6 +224,12 @@ function AdminLoginForm() {
                             style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}
                         >
                             <p className="text-sm text-red-400 font-mono">{error}</p>
+                        </div>
+                    )}
+
+                    {resetMessage && (
+                        <div className="px-4 py-3 rounded-xl" role="status" style={{ background: 'rgba(0,230,118,0.08)', border: '1px solid rgba(0,230,118,0.2)' }}>
+                            <p className="text-sm text-[#00e676] font-mono">{resetMessage}</p>
                         </div>
                     )}
 

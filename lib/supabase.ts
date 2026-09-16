@@ -74,6 +74,8 @@ export interface Event {
     type: 'Workshop' | 'Hackathon' | 'Talk' | 'Meetup';
     attendees: string;
     status: 'Upcoming' | 'Registration Open' | 'Completed' | 'Draft';
+    start_time?: string | null;
+    end_time?: string | null;
     image_url?: string | null;
     poster_url?: string | null;
     link?: string | null;
