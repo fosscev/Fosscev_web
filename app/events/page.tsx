@@ -12,6 +12,7 @@ import EventsSkeleton from "./loading";
 import useSWR from "swr";
 import { FetchError } from "@/components/FetchError";
 import { getComputedEventStatus } from "@/lib/event-utils";
+import { getSupabaseImageUrl } from "@/lib/image-utils";
 
 // Helper to format date string like "10 Feb 2026"
 const formatDate = (dateStr: string) => {
@@ -31,8 +32,8 @@ const mapEvent = (dbEvent: any): Event => ({
     type: dbEvent.type,
     attendees: dbEvent.attendees,
     status: getComputedEventStatus(dbEvent),
-    image: dbEvent.image_url,
-    poster: dbEvent.poster_url || dbEvent.image_url, // Use poster_url, fallback to image_url
+    image: getSupabaseImageUrl(dbEvent.image_url),
+    poster: getSupabaseImageUrl(dbEvent.poster_url || dbEvent.image_url),
     link: dbEvent.link
 });
 

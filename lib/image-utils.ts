@@ -32,17 +32,31 @@ export function extractStoragePath(url: string | null | undefined): string | nul
 }
 
 /**
- * Normalizes an image URL, ensuring it can be used safely in the application.
- * Currently just returns the URL directly (acting as a pass-through for existing full URLs).
- * Can be expanded in the future to support Supabase image transformations if upgraded to Pro plan.
+ * Converts public Supabase object URLs to the Storage image-render endpoint.
+ *
+ * The Next.js server-side optimizer rejects this Supabase host in DNS64
+ * environments because it resolves through a private-address representation.
+ * Browser-direct delivery avoids that failure. The browser calls this endpoint
+ * directly (Next image proxy is disabled), so legacy JPEG/PNG objects are
+ * delivered as resized WebP files too.
  */
 export function getSupabaseImageUrl(
     pathOrUrl: string | null | undefined,
-    fallbackUrl: string = '/placeholder-user.svg'
+    fallbackUrl: string = '/placeholder-user.svg',
+    options: { width?: number; quality?: number } = {}
 ): string {
     if (!pathOrUrl) return fallbackUrl;
 
-    // If it's already a full URL (Supabase or external), return it as is for now.
-    // In the future, if we store relative paths instead of full URLs, we can build the full URL here.
-    return pathOrUrl;
+    if (!isSupabaseUrl(pathOrUrl)) return pathOrUrl;
+
+    try {
+        const url = new URL(pathOrUrl);
+        url.pathname = url.pathname.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
+        url.searchParams.set('width', String(options.width ?? 1200));
+        url.searchParams.set('quality', String(options.quality ?? 75));
+        url.searchParams.set('format', 'webp');
+        return url.toString();
+    } catch {
+        return fallbackUrl;
+    }
 }

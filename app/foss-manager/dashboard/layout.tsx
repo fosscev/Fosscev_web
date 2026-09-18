@@ -76,10 +76,13 @@ function AdminLayoutContent({
     }
 
     return (
-        <div className="min-h-screen bg-gray-900 text-white">
-            <nav className="border-b border-gray-800 bg-gray-950 p-4">
-                <div className="container mx-auto flex items-center justify-between">
-                    <h1 className="text-xl font-bold text-primary">FOSS Manager</h1>
+        <div className="min-h-screen bg-[#080b0a] text-white">
+            <nav className="sticky top-0 z-30 border-b border-white/10 bg-gray-950/90 px-4 py-3 backdrop-blur-xl sm:px-6">
+                <div className="mx-auto flex max-w-7xl items-center justify-between gap-3">
+                    <div>
+                        <h1 className="text-base font-bold text-primary sm:text-xl">FOSS Manager</h1>
+                        <p className="hidden text-xs text-gray-500 sm:block">Community control center</p>
+                    </div>
                     <button
                         onClick={async () => {
                             if (isSigningOutRef.current) return;
@@ -93,13 +96,13 @@ function AdminLayoutContent({
                                 isSigningOutRef.current = false;
                             }
                         }}
-                        className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                        className="rounded-lg px-3 py-2 text-sm text-gray-300 transition-colors hover:bg-white/5 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
                         Sign Out
                     </button>
                 </div>
             </nav>
-            <main className="container mx-auto p-4">{children}</main>
+            <main className="mx-auto w-full max-w-7xl p-4 sm:p-6 lg:p-8">{children}</main>
         </div>
     );
 }

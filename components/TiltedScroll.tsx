@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import Image from "next/image";
+import { getSupabaseImageUrl } from "@/lib/image-utils";
 import { getGalleryPhotos } from "@/app/actions/gallery";
 import { useSiteContent } from "@/lib/useSiteContent";
 
@@ -32,10 +33,9 @@ const Row = ({ items, speed = 20, reverse = false, offset = 0, className = "" }:
                 {displayItems.map((item, i) => (
                     <div key={i} className="w-[320px] h-[220px] rounded-lg overflow-hidden relative group flex-shrink-0 isolate">
                         <Image
-                            src={item.image}
+                            src={getSupabaseImageUrl(item.image, '/placeholder.jpg', { width: 1200 })}
                             alt={item.title}
                             fill
-                            unoptimized={item.image.includes("supabase.co")}
                             sizes="(max-width: 640px) 100vw, 320px"
                             className="object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-500"
                         />

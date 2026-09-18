@@ -9,6 +9,7 @@ import { Github, Linkedin, Instagram } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { SOCIAL_LINKS } from "@/lib/constants";
+import { getSupabaseImageUrl } from "@/lib/image-utils";
 import { TeamSkeleton } from "@/components/skeletons/TeamSkeleton";
 import useSWR from "swr";
 import { FetchError } from "@/components/FetchError";
@@ -46,11 +47,10 @@ const normalizeImageUrl = (url: any) => {
     if (!url) return placeholder;
 
     try {
-        // If it's a valid absolute URL, return as-is
-        // new URL will throw for invalid/relative values
+        // If it's a valid absolute URL, convert Supabase storage URLs to optimized WebP render URLs
         // eslint-disable-next-line no-new
         new URL(url);
-        return url;
+        return getSupabaseImageUrl(url, placeholder, { width: 800 });
     } catch (e) {
         // Not an absolute URL — return placeholder
         return placeholder;
@@ -61,7 +61,7 @@ const normalizeImageUrl = (url: any) => {
 const mapTeamMember = (member: any) => ({
     name: member.name,
     role: member.role,
-    image: normalizeImageUrl(member.image_url), // Use validated image_url from DB
+    image: normalizeImageUrl(member.image_url),
     github: member.github,
     linkedin: member.linkedin,
     instagram: member.instagram,
@@ -224,8 +224,7 @@ const TeamMemberCard = ({
                         src={member.image}
                         alt={member.name}
                         fill
-                        unoptimized={member.image.includes("supabase.co")}
-                        className="object-cover transition-all duration-700 group-hover:scale-110"
+                        className="object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                         priority={index < 4}
                     />

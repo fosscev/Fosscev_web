@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
 import { useRef, useState, useEffect } from "react";
 import Image from "next/image";
 import { supabase } from "@/lib/supabase";
+import { getSupabaseImageUrl } from "@/lib/image-utils";
 
 interface GalleryItem {
     id: string | number;
@@ -58,7 +59,6 @@ const GalleryCard = ({ item }: { item: GalleryItem }) => {
                             src={item.image}
                             alt={item.title}
                             fill
-                            unoptimized={item.image.includes("supabase.co")}
                             className="object-cover"
                             sizes="(max-width: 768px) 400px, 500px"
                             onLoad={() => setIsLoading(false)}
@@ -113,7 +113,7 @@ export function Gallery() {
                             id: file.id || String(idx),
                             title: file.name.split('.')[0].replace(/_/g, ' '),
                             event: "Community Gallery",
-                            image: urlData.publicUrl
+                            image: getSupabaseImageUrl(urlData.publicUrl, '/placeholder.jpg', { width: 1200 })
                         };
                     });
                     setImages(formatted);

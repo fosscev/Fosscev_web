@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { ArrowLeft, ArrowRight, Github, Instagram, Linkedin } from "lucide-react";
 import { useSiteContent } from "@/lib/useSiteContent";
+import { getSupabaseImageUrl } from "@/lib/image-utils";
 
 interface TeamMember {
     name: string;
@@ -14,21 +15,6 @@ interface TeamMember {
     linkedin?: string;
     instagram?: string;
 }
-
-const memberOrder = [
-    "Rishnu Lal N",
-    "Roshith Krishna",
-    "Sayanth P",
-    "Anvar Sadath",
-    "Lakshmi Reji Suresh",
-    "Ashwandha RJ",
-    "Sandra Sunil T",
-    "Muhammad Shabaz",
-    "Muhammad Aswlah",
-    "Fathima P",
-    "Hemanth Sudhan C",
-    "Ananthanarayanan M",
-] as const;
 
 export function CoreTeam() {
     const [teamData, setTeamData] = useState<TeamMember[]>([]);
@@ -46,13 +32,10 @@ export function CoreTeam() {
     const orderedMembers = useMemo(() => {
         if (!teamData.length) return [] as TeamMember[];
 
-        const memberMap = new Map(teamData.map((member) => [member.name, member]));
-        return memberOrder
-            .map((name) => memberMap.get(name))
-            .filter((member): member is TeamMember => Boolean(member));
+        return teamData;
     }, [teamData]);
 
-    const displayMembers = useMemo(() => orderedMembers.slice(0, memberOrder.length), [orderedMembers]);
+    const displayMembers = orderedMembers;
     const loopMembers = useMemo(() => {
         if (!displayMembers.length) return [] as TeamMember[];
         return [...displayMembers, ...displayMembers, ...displayMembers];
@@ -113,7 +96,7 @@ export function CoreTeam() {
                 const formattedData = coreTeamMembers.map((member: Record<string, any>) => ({
                     name: member.name || "",
                     role: member.role || "",
-                    image: member.image_url || member.image || "/placeholder.jpg",
+                    image: getSupabaseImageUrl(member.image_url || member.image, "/placeholder.jpg", { width: 900 }),
                     github: member.github || undefined,
                     linkedin: member.linkedin || undefined,
                     instagram: member.instagram || undefined,
@@ -243,7 +226,6 @@ export function CoreTeam() {
                         src={member.image}
                         alt={member.name}
                         fill
-                        unoptimized={member.image.includes("supabase.co")}
                         className="object-cover"
                         sizes="(max-width: 640px) 100vw, 300px"
                     />
@@ -402,7 +384,6 @@ export function CoreTeam() {
                                                             src={member.image}
                                                             alt={member.name}
                                                             fill
-                                                            unoptimized={member.image.includes("supabase.co")}
                                                             className="object-cover"
                                                             sizes="48px"
                                                         />

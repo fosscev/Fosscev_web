@@ -3,6 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   transpilePackages: ["three", "@react-three/fiber", "@react-three/drei", "@react-three/postprocessing", "postprocessing"],
   images: {
+    // Supabase URLs resolve via DNS64 on this deployment network. Let the
+    // browser request them directly rather than routing through Next's proxy.
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',

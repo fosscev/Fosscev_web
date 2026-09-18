@@ -7,6 +7,7 @@ import { Plus, Trash, Edit3 } from 'lucide-react';
 import { useAdminAuth } from './AdminAuthProvider';
 import { getComputedEventStatus } from '@/lib/event-utils';
 import Image from 'next/image';
+import { getSupabaseImageUrl } from '@/lib/image-utils';
 
 export default function AdminEventList() {
     const { session } = useAdminAuth();
@@ -93,10 +94,9 @@ export default function AdminEventList() {
                             <div className="relative h-48 bg-gray-800 overflow-hidden">
                                 {event.poster_url || event.image_url ? (
                                     <Image
-                                        src={event.poster_url || event.image_url}
+                                        src={getSupabaseImageUrl(event.poster_url || event.image_url, '/placeholder.jpg', { width: 900 })}
                                         alt={event.title}
                                         fill
-                                        unoptimized={(event.poster_url || event.image_url).includes("supabase.co")}
                                         sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                     />

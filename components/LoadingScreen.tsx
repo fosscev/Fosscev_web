@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { getSupabaseImageUrl, isSupabaseUrl } from "@/lib/image-utils";
 
 const QUOTES = [
     "Talk is cheap. Show me the code. — Linus Torvalds",
@@ -71,7 +72,9 @@ export function LoadingScreen() {
         // Randomize quote on mount to keep it fresh
         setQuoteIndex(Math.floor(Math.random() * QUOTES.length));
 
-        // Background prefetch API data and warm Next.js image cache while loading animation is active
+        // Prefetch the exact WebP URLs rendered by the page. Fetching the raw
+        // storage object here would make browsers download it again as WebP
+        // once the visible image mounts.
         const prefetchAssets = async () => {
             try {
                 fetch("/api/data/team")
@@ -79,12 +82,10 @@ export function LoadingScreen() {
                     .then((data) => {
                         const members = data?.coreTeam || [];
                         members.forEach((m: any) => {
-                            const url = m.image_url || m.image;
-                            if (url && typeof window !== "undefined") {
+                            const sourceUrl = m.image_url || m.image;
+                            if (sourceUrl && isSupabaseUrl(sourceUrl) && typeof window !== "undefined") {
                                 const img = new window.Image();
-                                img.src = url.includes("supabase.co")
-                                    ? url
-                                    : `/_next/image?url=${encodeURIComponent(url)}&w=384&q=75`;
+                                img.src = getSupabaseImageUrl(sourceUrl, "/placeholder.jpg", { width: 900 });
                             }
                         });
                     })
@@ -94,11 +95,9 @@ export function LoadingScreen() {
                 const photos = await getGalleryPhotos();
                 if (Array.isArray(photos)) {
                     photos.forEach((p: any) => {
-                        if (p.image && typeof window !== "undefined") {
+                        if (p.image && isSupabaseUrl(p.image) && typeof window !== "undefined") {
                             const img = new window.Image();
-                            img.src = p.image.includes("supabase.co")
-                                ? p.image
-                                : `/_next/image?url=${encodeURIComponent(p.image)}&w=640&q=75`;
+                            img.src = getSupabaseImageUrl(p.image, "/placeholder.jpg", { width: 1200 });
                         }
                     });
                 }

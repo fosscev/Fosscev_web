@@ -36,7 +36,9 @@ export async function POST(request: NextRequest) {
         if (isRateLimited(`${clientId}:${email}`)) return success;
         if (!isAdminEmail(email)) return success;
 
-        const configuredUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
+        const configuredUrl = process.env.NODE_ENV === 'production'
+            ? 'https://foss.cev.ac.in'
+            : (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin);
         const redirectTo = new URL('/foss-manager/reset-password', configuredUrl).toString();
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,

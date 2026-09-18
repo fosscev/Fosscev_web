@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import { useSiteContent } from "@/lib/useSiteContent";
+import { getSupabaseImageUrl } from "@/lib/image-utils";
 
 interface TeamMember {
   name: string;
@@ -26,7 +27,6 @@ const MarqueeCard = ({ member }: { member: TeamMember }) => {
           src={member.image}
           alt={member.name}
           fill
-          unoptimized={member.image.includes("supabase.co")}
           className="object-cover object-center brightness-100 contrast-110 transition duration-500 ease-out group-hover:scale-105"
           sizes="(max-width: 640px) 46vw, (max-width: 1024px) 31vw, 24vw"
         />
@@ -46,21 +46,6 @@ const MarqueeCard = ({ member }: { member: TeamMember }) => {
     </motion.div>
   );
 };
-
-const memberOrder = [
-  "Rishnu Lal N",
-  "Roshith Krishna",
-  "Sayanth P",
-  "Anvar Sadath",
-  "Lakshmi Reji Suresh",
-  "Ashwandha RJ",
-  "Sandra Sunil T",
-  "Muhammad Shabaz",
-  "Muhammad Aswlah",
-  "Fathima P",
-  "Hemanth Sudhan C",
-  "Ananthanarayanan M",
-] as const;
 
 export function CoreTeamMarquee() {
   const [teamData, setTeamData] = useState<TeamMember[]>([]);
@@ -124,7 +109,7 @@ export function CoreTeamMarquee() {
           coreTeamMembers.map((member: Record<string, any>) => ({
             name: member.name || "",
             role: member.role || "",
-            image: member.image_url || member.image || "/placeholder.jpg",
+            image: getSupabaseImageUrl(member.image_url || member.image, "/placeholder.jpg", { width: 900 }),
           }))
         );
       } catch (err) {
@@ -142,10 +127,7 @@ export function CoreTeamMarquee() {
 
   const orderedMembers = useMemo(() => {
     if (!teamData.length) return [];
-    const memberMap = new Map(teamData.map((member) => [member.name, member]));
-    return memberOrder
-      .map((name) => memberMap.get(name))
-      .filter((member): member is TeamMember => Boolean(member));
+    return teamData;
   }, [teamData]);
 
   const marqueeMembers = useMemo(() => {

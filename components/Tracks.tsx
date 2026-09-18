@@ -7,6 +7,7 @@ import Link from "next/link";
 import { getEvents } from "@/lib/api/events";
 import { useSiteContent } from "@/lib/useSiteContent";
 import { getComputedEventStatus } from "@/lib/event-utils";
+import { getSupabaseImageUrl } from "@/lib/image-utils";
 
 export function Tracks() {
     const [items, setItems] = useState<any[]>([]);
@@ -33,7 +34,7 @@ export function Tracks() {
                         title: event.title,
                         event: `${event.type} ${year}`,
                         status: getComputedEventStatus(event),
-                        imageUrl: event.poster_url || event.image_url || '/placeholder.jpg',
+                        imageUrl: getSupabaseImageUrl(event.poster_url || event.image_url, '/placeholder.jpg', { width: 1200 }),
                         className: classNames[index] || "md:col-span-1 md:row-span-1",
                         isPlaceholder: false
                     };
@@ -105,7 +106,6 @@ export function Tracks() {
                                         src={item.imageUrl}
                                         alt={item.title}
                                         fill
-                                        unoptimized={item.imageUrl.includes("supabase.co")}
                                         className="object-cover transition-transform duration-1000 ease-out group-hover:scale-[1.03]"
                                         sizes="(max-width: 768px) 100vw, 50vw"
                                     />

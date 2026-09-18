@@ -10,6 +10,7 @@ import { getComputedEventStatus } from "@/lib/event-utils";
 import { Event } from "@/data/events";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { getSupabaseImageUrl } from "@/lib/image-utils";
 
 export default function EventDetailPage() {
     const params = useParams();
@@ -36,8 +37,8 @@ export default function EventDetailPage() {
                         type: foundEvent.type,
                         attendees: foundEvent.attendees,
                         status: getComputedEventStatus(foundEvent),
-                        image: foundEvent.image_url,
-                        poster: foundEvent.poster_url || foundEvent.image_url,
+                        image: getSupabaseImageUrl(foundEvent.image_url),
+                        poster: getSupabaseImageUrl(foundEvent.poster_url || foundEvent.image_url),
                         link: foundEvent.link
                     };
                     setEvent(mappedEvent);
@@ -90,7 +91,7 @@ export default function EventDetailPage() {
     }
 
     // Use the same image field logic as event cards: poster_url (with fallback) or image_url
-    const cardImage = (event as any).poster_url || (event as any).image_url || event.poster || event.image;
+    const cardImage = getSupabaseImageUrl((event as any).poster_url || (event as any).image_url || event.poster || event.image);
 
     return (
         <div className="relative min-h-screen bg-background text-white selection:bg-primary selection:text-black">

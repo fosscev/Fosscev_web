@@ -14,77 +14,79 @@ export default function AdminDashboard() {
 
     return (
         <div className="space-y-6">
-            <header className="mb-8">
-                <h2 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+            <header className="rounded-2xl border border-white/10 bg-gradient-to-br from-gray-900 to-gray-950 p-5 shadow-xl sm:p-7">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent sm:text-3xl">
                     Dashboard
                 </h2>
                 <p className="text-gray-400 mt-2">Manage your community content</p>
             </header>
 
-            <div className="flex space-x-4 border-b border-gray-800 pb-1">
+            <div className="-mx-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:px-0">
+            <div className="flex min-w-max gap-1 rounded-xl border border-white/10 bg-gray-950/70 p-1.5">
                 <button
                     onClick={() => setActiveTab('events')}
-                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'events'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-gray-400 hover:text-white'
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:px-4 ${activeTab === 'events'
+                        ? 'bg-primary/15 text-primary shadow-sm'
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
                         }`}
                 >
                     Events
                 </button>
                 <button
                     onClick={() => setActiveTab('team')}
-                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'team'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-gray-400 hover:text-white'
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:px-4 ${activeTab === 'team'
+                        ? 'bg-primary/15 text-primary shadow-sm'
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
                         }`}
                 >
                     Team Members
                 </button>
                 <button
                     onClick={() => setActiveTab('registrations')}
-                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'registrations'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-gray-400 hover:text-white'
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:px-4 ${activeTab === 'registrations'
+                        ? 'bg-primary/15 text-primary shadow-sm'
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
                         }`}
                 >
                     Registrations
                 </button>
                 <button
                     onClick={() => setActiveTab('content')}
-                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'content'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-gray-400 hover:text-white'
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:px-4 ${activeTab === 'content'
+                        ? 'bg-primary/15 text-primary shadow-sm'
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
                         }`}
                 >
                     Site Content
                 </button>
                 <button
                     onClick={() => setActiveTab('gallery')}
-                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'gallery'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-gray-400 hover:text-white'
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:px-4 ${activeTab === 'gallery'
+                        ? 'bg-primary/15 text-primary shadow-sm'
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
                         }`}
                 >
                     Gallery
                 </button>
                 <button
                     onClick={() => setActiveTab('finances')}
-                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'finances'
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-gray-400 hover:text-white'
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:px-4 ${activeTab === 'finances'
+                        ? 'bg-primary/15 text-primary shadow-sm'
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
                         }`}
                 >
                     Finances
                 </button>
                 <button
                     onClick={() => setActiveTab('picks')}
-                    className={`px-4 py-2 font-medium transition-colors border-b-2 ${activeTab === 'picks'
-                        ? 'border-[#D85A30] text-[#D85A30]'
-                        : 'border-transparent text-gray-400 hover:text-white'
+                    className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors sm:px-4 ${activeTab === 'picks'
+                        ? 'bg-[#D85A30]/15 text-[#D85A30] shadow-sm'
+                        : 'text-gray-400 hover:bg-white/5 hover:text-white'
                         }`}
                 >
                     Picks
                 </button>
+            </div>
             </div>
 
             <div className="mt-8">

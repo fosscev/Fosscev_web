@@ -151,18 +151,21 @@ export default function EventFormPage() {
                 poster_url: finalPosterUrl,
             };
 
-            if (isEditing) {
-                const { error } = await supabase
-                    .from('events')
-                    .update(payload)
-                    .eq('id', eventId);
-                if (error) throw error;
-            } else {
-                const { error } = await supabase
-                    .from('events')
-                    .insert([payload]);
-                if (error) throw error;
+            const save = (data: any) => isEditing
+                ? supabase.from('events').update(data).eq('id', eventId)
+                : supabase.from('events').insert([data]);
+
+            let { error } = await save(payload);
+            // Keep publishing available during a rolling deployment where the
+            // nullable columns have not reached PostgREST's schema cache yet.
+            // The retry intentionally omits the optional times rather than
+            // inventing event boundaries.
+            if (error?.message.includes("start_time") || error?.message.includes("end_time")) {
+                const { start_time: _startTime, end_time: _endTime, ...legacyPayload } = payload;
+                ({ error } = await save(legacyPayload));
             }
+
+            if (error) throw error;
 
             router.push('/foss-manager/dashboard');
         } catch (error: any) {

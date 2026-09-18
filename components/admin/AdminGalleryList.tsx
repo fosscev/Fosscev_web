@@ -5,6 +5,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { Trash2, Plus, X } from 'lucide-react';
 import ImageUploader from './ImageUploader';
 import Image from 'next/image';
+import { getSupabaseImageUrl } from '@/lib/image-utils';
 
 export default function AdminGalleryList() {
     const [photos, setPhotos] = useState<any[]>([]);
@@ -133,10 +134,9 @@ export default function AdminGalleryList() {
                         <div key={photo.name} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden group">
                             <div className="aspect-video relative">
                                 <Image
-                                    src={photo.url}
+                                    src={getSupabaseImageUrl(photo.url, '/placeholder.jpg', { width: 700 })}
                                     alt={photo.title}
                                     fill
-                                    unoptimized={photo.url.includes("supabase.co")}
                                     sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
                                     className="object-cover"
                                 />

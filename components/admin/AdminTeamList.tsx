@@ -13,6 +13,7 @@ import {
 import ImageUploader from './ImageUploader';
 import { useAdminAuth } from './AdminAuthProvider';
 import Image from 'next/image';
+import { getSupabaseImageUrl } from '@/lib/image-utils';
 
 export default function AdminTeamList() {
     const { session } = useAdminAuth();
@@ -29,8 +30,21 @@ export default function AdminTeamList() {
         is_core_team: false,
         is_faculty_advisor: false,
         image_url: '',
+        github: '',
+        linkedin: '',
+        instagram: '',
         display_order: 0
     });
+
+    const socialLinkOrNull = (value: string, label: string) => {
+        const link = value.trim();
+        if (!link) return null;
+        const url = new URL(link);
+        if (url.protocol !== 'https:' && url.protocol !== 'http:') {
+            throw new Error(`${label} must be a valid http(s) URL.`);
+        }
+        return url.toString();
+    };
 
     const handleAddMember = async () => {
         setIsSubmitting(true);
@@ -54,9 +68,16 @@ export default function AdminTeamList() {
                 finalImageUrl = urlData.publicUrl;
             }
 
+            const { github, linkedin, instagram, ...memberFields } = addForm;
             const { error } = await supabase
                 .from('team_members')
-                .insert([{ ...addForm, image_url: finalImageUrl }]);
+                .insert([{
+                    ...memberFields,
+                    image_url: finalImageUrl,
+                    github: socialLinkOrNull(github, 'GitHub URL'),
+                    linkedin: socialLinkOrNull(linkedin, 'LinkedIn URL'),
+                    instagram: socialLinkOrNull(instagram, 'Instagram URL'),
+                }]);
 
             if (error) {
                 alert('Error adding member: ' + error.message);
@@ -72,6 +93,9 @@ export default function AdminTeamList() {
                     is_core_team: false,
                     is_faculty_advisor: false,
                     image_url: '',
+                    github: '',
+                    linkedin: '',
+                    instagram: '',
                     display_order: 0
                 });
             }
@@ -180,7 +204,7 @@ export default function AdminTeamList() {
                                             {member.image_url ? (
                                                 <Image
                                                     className="rounded-full object-cover"
-                                                    src={member.image_url}
+                                                    src={getSupabaseImageUrl(member.image_url, '/placeholder-user.svg', { width: 96 })}
                                                     alt=""
                                                     width={40}
                                                     height={40}
@@ -313,6 +337,21 @@ export default function AdminTeamList() {
                                 />
                             </div>
 
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">GitHub <span className="text-gray-600">(optional)</span></label>
+                                    <input type="url" inputMode="url" className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none" value={addForm.github} onChange={(e) => setAddForm(prev => ({ ...prev, github: e.target.value }))} placeholder="https://github.com/..." />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">LinkedIn <span className="text-gray-600">(optional)</span></label>
+                                    <input type="url" inputMode="url" className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none" value={addForm.linkedin} onChange={(e) => setAddForm(prev => ({ ...prev, linkedin: e.target.value }))} placeholder="https://linkedin.com/..." />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Instagram <span className="text-gray-600">(optional)</span></label>
+                                    <input type="url" inputMode="url" className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none" value={addForm.instagram} onChange={(e) => setAddForm(prev => ({ ...prev, instagram: e.target.value }))} placeholder="https://instagram.com/..." />
+                                </div>
+                            </div>
+
 
 
                             <div>
@@ -364,6 +403,9 @@ export default function AdminTeamList() {
                         is_core_team: false,
                         is_faculty_advisor: false,
                         image_url: '',
+                        github: '',
+                        linkedin: '',
+                        instagram: '',
                         display_order: teamData.length + 1
                     });
                     setIsAdding(true);
