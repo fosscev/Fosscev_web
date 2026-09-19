@@ -7,34 +7,48 @@ import {
     Plus,
     Trash,
     Edit3,
-    Check,
-    X
+    Check
 } from 'lucide-react';
 import ImageUploader from './ImageUploader';
 import { useAdminAuth } from './AdminAuthProvider';
 import Image from 'next/image';
 import { getSupabaseImageUrl } from '@/lib/image-utils';
 
+type TeamMemberFormState = {
+    name: string;
+    role: string;
+    is_core_team: boolean;
+    is_faculty_advisor: boolean;
+    image_url: string;
+    github: string;
+    linkedin: string;
+    instagram: string;
+    display_order: number;
+};
+
+const createDefaultMemberForm = (displayOrder: number = 0): TeamMemberFormState => ({
+    name: '',
+    role: '',
+    is_core_team: false,
+    is_faculty_advisor: false,
+    image_url: '',
+    github: '',
+    linkedin: '',
+    instagram: '',
+    display_order: displayOrder
+});
+
 export default function AdminTeamList() {
     const { session } = useAdminAuth();
-    const [teamData, setTeamData] = useState<any[]>([]);
+    const [teamData, setTeamData] = useState<TeamMember[]>([]);
     const [isEditing, setIsEditing] = useState<string | null>(null);
-    const [editForm, setEditForm] = useState<any>({});
+    const [editForm, setEditForm] = useState<TeamMemberFormState>(createDefaultMemberForm());
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [addForm, setAddForm] = useState({
-        name: '',
-        role: '',
-        is_core_team: false,
-        is_faculty_advisor: false,
-        image_url: '',
-        github: '',
-        linkedin: '',
-        instagram: '',
-        display_order: 0
-    });
+    const [editSelectedFile, setEditSelectedFile] = useState<File | null>(null);
+    const [addForm, setAddForm] = useState<TeamMemberFormState>(createDefaultMemberForm());
 
     const socialLinkOrNull = (value: string, label: string) => {
         const link = value.trim();
@@ -87,20 +101,10 @@ export default function AdminTeamList() {
                 loadData();
                 setIsAdding(false);
                 setSelectedFile(null);
-                setAddForm({
-                    name: '',
-                    role: '',
-                    is_core_team: false,
-                    is_faculty_advisor: false,
-                    image_url: '',
-                    github: '',
-                    linkedin: '',
-                    instagram: '',
-                    display_order: 0
-                });
+                setAddForm(createDefaultMemberForm());
             }
-        } catch (error: any) {
-            alert('Error: ' + error.message);
+        } catch (error: unknown) {
+            alert('Error: ' + (error instanceof Error ? error.message : 'Something went wrong'));
         } finally {
             setIsSubmitting(false);
         }
@@ -127,24 +131,69 @@ export default function AdminTeamList() {
         }
     }, [session]);
 
-    const handleEdit = (id: string, member: any) => {
+    const handleEdit = (id: string, member: TeamMember) => {
         setIsEditing(id);
-        setEditForm({ ...member });
+        setEditSelectedFile(null);
+        setEditForm({
+            name: member.name,
+            role: member.role,
+            is_core_team: member.is_core_team,
+            is_faculty_advisor: !!member.is_faculty_advisor,
+            image_url: member.image_url || '',
+            github: member.github || '',
+            linkedin: member.linkedin || '',
+            instagram: member.instagram || '',
+            display_order: member.display_order
+        });
     };
 
     const handleSave = async (id: string) => {
-        const { error } = await supabase
-            .from('team_members')
-            .update(editForm)
-            .eq('id', id);
+        setIsSubmitting(true);
+        let finalImageUrl = editForm.image_url || '';
 
-        if (error) {
-            alert('Error updating member: ' + error.message);
-        } else {
-            await fetch('/api/revalidate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: '/team' }) });
-            await fetch('/api/revalidate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: '/api/data/team' }) });
-            loadData();
-            setIsEditing(null);
+        try {
+            if (editSelectedFile) {
+                const fileExt = editSelectedFile.name.split('.').pop();
+                const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+                if (!session) {
+                    alert('Session expired. Please log in again.');
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                const { data, error: uploadError } = await supabase.storage.from('team-images').upload(fileName, editSelectedFile);
+                if (uploadError) throw uploadError;
+
+                const { data: urlData } = supabase.storage.from('team-images').getPublicUrl(data.path);
+                finalImageUrl = urlData.publicUrl;
+            }
+
+            const { github, linkedin, instagram, ...memberFields } = editForm;
+            const { error } = await supabase
+                .from('team_members')
+                .update({
+                    ...memberFields,
+                    image_url: finalImageUrl,
+                    github: socialLinkOrNull(github, 'GitHub URL'),
+                    linkedin: socialLinkOrNull(linkedin, 'LinkedIn URL'),
+                    instagram: socialLinkOrNull(instagram, 'Instagram URL'),
+                })
+                .eq('id', id);
+
+            if (error) {
+                alert('Error updating member: ' + error.message);
+            } else {
+                await fetch('/api/revalidate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: '/team' }) });
+                await fetch('/api/revalidate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: '/api/data/team' }) });
+                loadData();
+                setIsEditing(null);
+                setEditSelectedFile(null);
+            }
+        } catch (error: unknown) {
+            alert('Error: ' + (error instanceof Error ? error.message : 'Something went wrong'));
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -218,81 +267,131 @@ export default function AdminTeamList() {
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {isEditing === member.id ? (
-                                            <input
-                                                type="text"
-                                                className="bg-gray-800 text-white rounded px-2 py-1 w-full border border-gray-700 focus:border-primary outline-none"
-                                                value={editForm.name}
-                                                onChange={(e) => setEditForm((prev: any) => ({ ...prev, name: e.target.value }))}
-                                            />
-                                        ) : (
-                                            <div className="text-sm font-medium text-white">{member.name}</div>
-                                        )}
+                                        <div className="text-sm font-medium text-white">{member.name}</div>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {isEditing === member.id ? (
-                                            <input
-                                                type="text"
-                                                className="bg-gray-800 text-white rounded px-2 py-1 w-full border border-gray-700 focus:border-primary outline-none"
-                                                value={editForm.role}
-                                                onChange={(e) => setEditForm((prev: any) => ({ ...prev, role: e.target.value }))}
-                                            />
-                                        ) : (
-                                            <div className="text-sm text-gray-400">{member.role}</div>
-                                        )}
+                                        <div className="text-sm text-gray-400">{member.role}</div>
                                     </td>
 
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        {isEditing === member.id ? (
-                                            <select
-                                                className="bg-gray-800 text-white rounded px-2 py-1 w-full border border-gray-700"
-                                                value={editForm.is_faculty_advisor ? 'faculty' : (editForm.is_core_team ? 'core' : 'sub')}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    setEditForm((prev: any) => ({
-                                                        ...prev,
-                                                        is_core_team: val === 'core',
-                                                        is_faculty_advisor: val === 'faculty'
-                                                    }));
-                                                }}
-                                            >
-                                                <option value="faculty">Faculty Advisor</option>
-                                                <option value="core">Core Team</option>
-                                                <option value="sub">Sub Team</option>
-                                            </select>
-                                        ) : (
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${member.is_faculty_advisor ? 'bg-purple-100 text-purple-800' :
-                                                    member.is_core_team ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                                }`}>
-                                                {member.is_faculty_advisor ? 'Faculty Advisor' : member.is_core_team ? 'Core Team' : 'Sub Team'}
-                                            </span>
-                                        )}
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${member.is_faculty_advisor ? 'bg-purple-100 text-purple-800' :
+                                                member.is_core_team ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                            }`}>
+                                            {member.is_faculty_advisor ? 'Faculty Advisor' : member.is_core_team ? 'Core Team' : 'Sub Team'}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        {isEditing === member.id ? (
-                                            <div className="flex space-x-2">
-                                                <button onClick={() => handleSave(member.id)} className="text-green-400 hover:text-green-300">
-                                                    <Check size={18} />
-                                                </button>
-                                                <button onClick={() => setIsEditing(null)} className="text-gray-400 hover:text-gray-300">
-                                                    <X size={18} />
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex space-x-3">
-                                                <button onClick={() => handleEdit(member.id, member)} className="text-blue-400 hover:text-blue-300 transition-colors">
-                                                    <Edit3 size={18} />
-                                                </button>
-                                                <button onClick={() => handleDelete(member.id)} className="text-red-400 hover:text-red-300 transition-colors">
-                                                    <Trash size={18} />
-                                                </button>
-                                            </div>
-                                        )}
+                                        <div className="flex space-x-3">
+                                            <button onClick={() => member.id && handleEdit(member.id, member)} className="text-blue-400 hover:text-blue-300 transition-colors disabled:text-blue-900 disabled:cursor-not-allowed" disabled={!member.id}>
+                                                <Edit3 size={18} />
+                                            </button>
+                                            <button onClick={() => member.id && handleDelete(member.id)} className="text-red-400 hover:text-red-300 transition-colors disabled:text-red-900 disabled:cursor-not-allowed" disabled={!member.id}>
+                                                <Trash size={18} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+                </div>
+            )}
+            {/* Edit Member Modal */}
+            {isEditing && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 w-full max-w-md space-y-4">
+                        <h3 className="text-xl font-bold text-white">Edit Team Member</h3>
+
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Image</label>
+                                <ImageUploader
+                                    key={`${isEditing}-${editForm.image_url || 'none'}`}
+                                    onFileSelect={setEditSelectedFile}
+                                    maxFileSize={2 * 1024 * 1024}
+                                    initialPreview={editForm.image_url || null}
+                                />
+                                {editSelectedFile && (
+                                    <div className="mt-2 text-sm text-green-400 flex items-center gap-2">
+                                        <Check size={14} /> Image selected for upload
+                                    </div>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Name</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none"
+                                    value={editForm.name || ''}
+                                    onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                                    placeholder="Enter full name"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Role</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none"
+                                    value={editForm.role || ''}
+                                    onChange={(e) => setEditForm((prev) => ({ ...prev, role: e.target.value }))}
+                                    placeholder="e.g. Core Organizer"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">GitHub <span className="text-gray-600">(optional)</span></label>
+                                    <input type="url" inputMode="url" className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none" value={editForm.github || ''} onChange={(e) => setEditForm((prev) => ({ ...prev, github: e.target.value }))} placeholder="https://github.com/..." />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">LinkedIn <span className="text-gray-600">(optional)</span></label>
+                                    <input type="url" inputMode="url" className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none" value={editForm.linkedin || ''} onChange={(e) => setEditForm((prev) => ({ ...prev, linkedin: e.target.value }))} placeholder="https://linkedin.com/..." />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-400 mb-1">Instagram <span className="text-gray-600">(optional)</span></label>
+                                    <input type="url" inputMode="url" className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none" value={editForm.instagram || ''} onChange={(e) => setEditForm((prev) => ({ ...prev, instagram: e.target.value }))} placeholder="https://instagram.com/..." />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-400 mb-1">Category</label>
+                                <select
+                                    className="w-full bg-gray-800 text-white rounded px-3 py-2 border border-gray-700 focus:border-primary outline-none"
+                                    value={editForm.is_faculty_advisor ? 'faculty' : (editForm.is_core_team ? 'core' : 'sub')}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setEditForm((prev) => ({
+                                            ...prev,
+                                            is_core_team: val === 'core',
+                                            is_faculty_advisor: val === 'faculty'
+                                        }));
+                                    }}
+                                >
+                                    <option value="sub">Sub Team</option>
+                                    <option value="core">Core Team</option>
+                                    <option value="faculty">Faculty Advisor</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 pt-4 border-t border-gray-800 mt-6">
+                            <button
+                                onClick={() => { setIsEditing(null); setEditSelectedFile(null); }}
+                                className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => isEditing && handleSave(isEditing)}
+                                className="px-4 py-2 bg-primary text-black font-bold rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!editForm.name || !editForm.role || isSubmitting}
+                            >
+                                {isSubmitting ? 'Saving...' : 'Update Member'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
             {/* Add Member Modal */}
@@ -398,14 +497,7 @@ export default function AdminTeamList() {
                 className="mt-4 px-4 py-2 bg-primary text-black font-bold rounded-lg flex items-center gap-2 hover:bg-primary/90 transition-all shadow-lg shadow-primary/20"
                 onClick={() => {
                     setAddForm({
-                        name: '',
-                        role: '',
-                        is_core_team: false,
-                        is_faculty_advisor: false,
-                        image_url: '',
-                        github: '',
-                        linkedin: '',
-                        instagram: '',
+                        ...createDefaultMemberForm(),
                         display_order: teamData.length + 1
                     });
                     setIsAdding(true);
@@ -416,4 +508,3 @@ export default function AdminTeamList() {
         </div>
     );
 }
-
