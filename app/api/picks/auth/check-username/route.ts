@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/picks-db';
 import { checkRateLimit } from '@/lib/rate-limit';
+import { getTrustedClientIp } from '@/lib/client-ip';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
     try {
-        const ip = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
+        const ip = getTrustedClientIp(request.headers);
         const rateCheck = await checkRateLimit(ip, 'signin');
         if (!rateCheck.allowed) {
             return NextResponse.json({ error: 'Too many requests' }, { status: 429 });

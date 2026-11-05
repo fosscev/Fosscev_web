@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { memo, useState, useEffect } from 'react';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import type { TeamMember } from '@/lib/supabase';
 import {
@@ -14,6 +14,27 @@ import ImageUploader from './ImageUploader';
 import { useAdminAuth } from './AdminAuthProvider';
 import Image from 'next/image';
 import { getSupabaseImageUrl } from '@/lib/image-utils';
+
+const TeamMemberAvatar = memo(function TeamMemberAvatar({ member, size = 40 }: { member: any; size?: number }) {
+    return (
+        <div className="relative shrink-0 overflow-hidden rounded-full bg-gray-800" style={{ width: size, height: size }}>
+            {member.image_url ? (
+                <Image
+                    className="rounded-full bg-gray-800 object-cover object-top"
+                    src={getSupabaseImageUrl(member.image_url, '/placeholder-user.svg', { width: 96, height: 96, resize: 'cover' })}
+                    alt={`${member.name} profile`}
+                    width={size}
+                    height={size}
+                    sizes={`${size}px`}
+                />
+            ) : (
+                <div className="flex h-full w-full items-center justify-center rounded-full text-gray-400 font-bold">
+                    {member.name.charAt(0)}
+                </div>
+            )}
+        </div>
+    );
+});
 
 export default function AdminTeamList() {
     const { session } = useAdminAuth();
@@ -133,9 +154,20 @@ export default function AdminTeamList() {
     };
 
     const handleSave = async (id: string) => {
+        let socialFields;
+        try {
+            socialFields = {
+                github: socialLinkOrNull(editForm.github || '', 'GitHub URL'),
+                linkedin: socialLinkOrNull(editForm.linkedin || '', 'LinkedIn URL'),
+                instagram: socialLinkOrNull(editForm.instagram || '', 'Instagram URL'),
+            };
+        } catch (error: any) {
+            alert(error.message);
+            return;
+        }
         const { error } = await supabase
             .from('team_members')
-            .update(editForm)
+            .update({ ...editForm, ...socialFields })
             .eq('id', id);
 
         if (error) {
@@ -185,14 +217,79 @@ export default function AdminTeamList() {
             {isLoading ? (
                 <div className="flex justify-center p-8">Loading...</div>
             ) : (
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-800">
+                <>
+                <div className="grid grid-cols-1 gap-3 md:hidden">
+                    {teamData.map((member) => (
+                        <article key={`mobile-${member.id}`} className="rounded-2xl border border-white/10 bg-gray-900/70 p-4 shadow-lg">
+                            <div className="flex items-start gap-3">
+                                <TeamMemberAvatar member={member} size={56} />
+                                <div className="min-w-0 flex-1">
+                                    {isEditing === member.id ? (
+                                        <div className="space-y-2">
+                                            <input aria-label="Member name" className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-primary focus:outline-none" value={editForm.name || ''} onChange={(e) => setEditForm((prev: any) => ({ ...prev, name: e.target.value }))} />
+                                            <input aria-label="Member role" className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-primary focus:outline-none" value={editForm.role || ''} onChange={(e) => setEditForm((prev: any) => ({ ...prev, role: e.target.value }))} />
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <h4 className="break-words text-base font-semibold leading-snug text-white">{member.name}</h4>
+                                            <p className="mt-1 break-words text-sm text-gray-400">{member.role}</p>
+                                        </>
+                                    )}
+                                    {isEditing !== member.id && (
+                                        <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold ${member.is_faculty_advisor ? 'bg-purple-500/15 text-purple-300' : member.is_core_team ? 'bg-primary/10 text-primary' : 'bg-white/5 text-gray-400'}`}>
+                                            {member.is_faculty_advisor ? 'Faculty Advisor' : member.is_core_team ? 'Core Team' : 'Sub Team'}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {isEditing === member.id ? (
+                                <div className="mt-4 space-y-3 border-t border-white/10 pt-4">
+                                    <select aria-label="Member category" className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white" value={editForm.is_faculty_advisor ? 'faculty' : editForm.is_core_team ? 'core' : 'sub'} onChange={(e) => { const val = e.target.value; setEditForm((prev: any) => ({ ...prev, is_core_team: val === 'core', is_faculty_advisor: val === 'faculty' })); }}>
+                                        <option value="faculty">Faculty Advisor</option><option value="core">Core Team</option><option value="sub">Sub Team</option>
+                                    </select>
+                                    <input aria-label="GitHub profile URL" type="url" inputMode="url" className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white" value={editForm.github || ''} onChange={(e) => setEditForm((prev: any) => ({ ...prev, github: e.target.value }))} placeholder="GitHub URL (optional)" />
+                                    <input aria-label="LinkedIn profile URL" type="url" inputMode="url" className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white" value={editForm.linkedin || ''} onChange={(e) => setEditForm((prev: any) => ({ ...prev, linkedin: e.target.value }))} placeholder="LinkedIn URL (optional)" />
+                                    <input aria-label="Instagram profile URL" type="url" inputMode="url" className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white" value={editForm.instagram || ''} onChange={(e) => setEditForm((prev: any) => ({ ...prev, instagram: e.target.value }))} placeholder="Instagram URL (optional)" />
+                                </div>
+                            ) : (
+                                <div className="mt-4 grid gap-2 border-t border-white/10 pt-3">
+                                    {([['GitHub', member.github], ['LinkedIn', member.linkedin], ['Instagram', member.instagram]] as const).map(([label, url]) => (
+                                        <div key={label} className="grid min-w-0 grid-cols-[72px_minmax(0,1fr)] items-center gap-2 text-xs">
+                                            <span className="font-mono text-gray-500">{label}</span>
+                                            {url ? <a href={url} target="_blank" rel="noopener noreferrer" className="truncate text-primary/90 underline decoration-primary/20 underline-offset-2">{url}</a> : <span className="text-gray-600">Not added</span>}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <div className="mt-4 flex gap-2 border-t border-white/10 pt-3">
+                                {isEditing === member.id ? (
+                                    <>
+                                        <button onClick={() => handleSave(member.id)} className="flex-1 rounded-lg bg-primary px-3 py-2.5 text-sm font-semibold text-black">Save member</button>
+                                        <button onClick={() => setIsEditing(null)} className="rounded-lg border border-white/10 px-3 py-2.5 text-sm text-gray-300">Cancel</button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => handleEdit(member.id, member)} className="flex-1 rounded-lg border border-primary/20 bg-primary/10 px-3 py-2.5 text-sm font-medium text-primary">Edit profile</button>
+                                        <button onClick={() => handleDelete(member.id)} aria-label={`Delete ${member.name}`} className="rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2.5 text-red-300"><Trash size={17} /></button>
+                                    </>
+                                )}
+                            </div>
+                        </article>
+                    ))}
+                </div>
+                <div className="hidden overflow-x-auto md:block">
+                    <table className="min-w-[1050px] w-full divide-y divide-gray-800">
                         <thead className="bg-gray-900">
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider"></th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Role</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Category</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">GitHub</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">LinkedIn</th>
+                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Instagram</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -200,22 +297,7 @@ export default function AdminTeamList() {
                             {teamData.map((member) => (
                                 <tr key={member.id} className="hover:bg-gray-900/50 transition-colors">
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex-shrink-0 h-10 w-10 relative group">
-                                            {member.image_url ? (
-                                                <Image
-                                                    className="rounded-full object-cover"
-                                                    src={getSupabaseImageUrl(member.image_url, '/placeholder-user.svg', { width: 96 })}
-                                                    alt=""
-                                                    width={40}
-                                                    height={40}
-                                                    sizes="40px"
-                                                />
-                                            ) : (
-                                                <div className="h-10 w-10 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 font-bold">
-                                                    {member.name.charAt(0)}
-                                                </div>
-                                            )}
-                                        </div>
+                                        <TeamMemberAvatar member={member} />
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         {isEditing === member.id ? (
@@ -268,6 +350,21 @@ export default function AdminTeamList() {
                                             </span>
                                         )}
                                     </td>
+                                    <td className="px-4 py-4 min-w-48">
+                                        {isEditing === member.id ? (
+                                            <input type="url" inputMode="url" aria-label={`GitHub URL for ${member.name}`} className="w-full min-w-40 bg-gray-800 text-white rounded px-2 py-1 border border-gray-700 focus:border-primary outline-none" value={editForm.github || ''} onChange={(e) => setEditForm((prev: any) => ({ ...prev, github: e.target.value }))} placeholder="https://github.com/..." />
+                                        ) : <span className="text-sm text-gray-400">{member.github || '—'}</span>}
+                                    </td>
+                                    <td className="px-4 py-4 min-w-48">
+                                        {isEditing === member.id ? (
+                                            <input type="url" inputMode="url" aria-label={`LinkedIn URL for ${member.name}`} className="w-full min-w-40 bg-gray-800 text-white rounded px-2 py-1 border border-gray-700 focus:border-primary outline-none" value={editForm.linkedin || ''} onChange={(e) => setEditForm((prev: any) => ({ ...prev, linkedin: e.target.value }))} placeholder="https://linkedin.com/in/..." />
+                                        ) : <span className="text-sm text-gray-400">{member.linkedin || '—'}</span>}
+                                    </td>
+                                    <td className="px-4 py-4 min-w-48">
+                                        {isEditing === member.id ? (
+                                            <input type="url" inputMode="url" aria-label={`Instagram URL for ${member.name}`} className="w-full min-w-40 bg-gray-800 text-white rounded px-2 py-1 border border-gray-700 focus:border-primary outline-none" value={editForm.instagram || ''} onChange={(e) => setEditForm((prev: any) => ({ ...prev, instagram: e.target.value }))} placeholder="https://instagram.com/..." />
+                                        ) : <span className="text-sm text-gray-400">{member.instagram || '—'}</span>}
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         {isEditing === member.id ? (
                                             <div className="flex space-x-2">
@@ -294,11 +391,12 @@ export default function AdminTeamList() {
                         </tbody>
                     </table>
                 </div>
+                </>
             )}
             {/* Add Member Modal */}
             {isAdding && (
                 <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-                    <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 w-full max-w-md space-y-4">
+                    <div className="max-h-[90dvh] w-full max-w-md space-y-4 overflow-y-auto rounded-lg border border-gray-800 bg-gray-900 p-5 sm:p-6">
                         <h3 className="text-xl font-bold text-white">Add New Team Member</h3>
 
                         <div className="space-y-4">

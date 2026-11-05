@@ -6,26 +6,12 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminEmail } from '@/lib/admin-config';
-import { getServiceRoleClient, getServerSupabaseClient } from '@/lib/registrations/server';
+import { getServiceRoleClient } from '@/lib/registrations/server';
+import { verifyAdminRequest } from '@/lib/admin-api-auth';
 import type { FormSchema } from '@/lib/registrations/types';
 
-async function verifyAdmin(): Promise<string | null> {
-  try {
-    const supabase = await getServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user && isAdminEmail(user.email)) {
-      return user.email!;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-export async function GET() {
-  const admin = await verifyAdmin();
-  if (!admin) {
+export async function GET(request: NextRequest) {
+  if (!await verifyAdminRequest(request)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -45,8 +31,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const admin = await verifyAdmin();
-  if (!admin) {
+  if (!await verifyAdminRequest(request)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
@@ -121,8 +106,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const admin = await verifyAdmin();
-  if (!admin) {
+  if (!await verifyAdminRequest(request)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

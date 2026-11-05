@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import { memo, useState, useRef } from 'react';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { Upload, X, Link as LinkIcon, AlertCircle } from 'lucide-react';
 import NextImage from 'next/image';
@@ -55,7 +55,7 @@ const compressImage = (file: File, maxMB: number = 1): Promise<File> => {
     });
 };
 
-export default function ImageUploader({
+function ImageUploader({
     maxFileSize,
     onFileSelect,
     initialPreview = null,
@@ -111,7 +111,7 @@ export default function ImageUploader({
     return (
         <div className="flex flex-col items-center gap-4 border-2 border-dashed border-gray-700 rounded-lg p-6 bg-gray-900/50 hover:bg-gray-900/80 transition-colors">
             {preview ? (
-                <div className="relative w-full aspect-video rounded-lg overflow-hidden bg-gray-800">
+                <div className="relative w-full max-h-[70vh] aspect-[3/4] rounded-lg overflow-hidden bg-gray-800">
                     <NextImage
                         src={preview}
                         alt="Preview"
@@ -146,3 +146,5 @@ export default function ImageUploader({
         </div>
     );
 }
+
+export default memo(ImageUploader);

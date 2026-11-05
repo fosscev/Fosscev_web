@@ -11,11 +11,13 @@
 /out/
 
 # production
-/build
+/build z
 
 # misc
 .DS_Store
 *.pem
+*.mjs
+/migrations
 
 # debug
 npm-debug.log*

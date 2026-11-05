@@ -20,11 +20,14 @@ interface SecurityEvent {
  * In a real production app, this would route to Pino, Winston, or Datadog.
  */
 export function logSecurityEvent(event: SecurityEvent) {
+  const { ip, email, ...safeFields } = event;
   const logEntry = {
     timestamp: new Date().toISOString(),
     level: 'WARN',
     category: 'SECURITY',
-    ...event
+    ...safeFields,
+    clientAddressPresent: Boolean(ip),
+    accountAddressPresent: Boolean(email),
   };
 
   // Convert to JSON for structured logging systems

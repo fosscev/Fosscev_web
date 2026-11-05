@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { createPicksUser, getPicksUserByAuthId, updatePicksUsername } from '@/lib/picks-db';
 import { logSecurityEvent } from '@/lib/security-logger';
+import { getTrustedClientIp } from '@/lib/client-ip';
 
 export async function POST(request: NextRequest) {
     try {
@@ -24,9 +25,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Rate limit sign-in attempts
-        const ip = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
-        const rateCheck = await checkRateLimit(ip, 'signin');
-        if (!rateCheck.allowed) {
+        const ip = getTrustedClientIp(request.headers);
+        const [ipLimit, accountLimit] = await Promise.all([
+            checkRateLimit(`picks-signin-ip:${ip}`, 'signin'),
+            checkRateLimit(`picks-signin-email:${String(email).trim().toLowerCase()}`, 'signin'),
+        ]);
+        if (!ipLimit.allowed || !accountLimit.allowed) {
             logSecurityEvent({
                 type: 'AUTH_RATE_LIMIT_EXCEEDED',
                 ip,

@@ -1,8 +1,12 @@
+import { getAdminSessionSecret } from '@/lib/admin-session-secret';
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { SignJWT } from 'jose';
+import { hasSameOrigin } from '@/lib/request-security';
+import { isAdminEmail } from '@/lib/admin-config';
 
 export async function POST(request: NextRequest) {
+    if (!hasSameOrigin(request)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const response = NextResponse.json({ message: 'Marker refreshed' });
 
     const supabaseAdmin = createServerClient(
@@ -21,14 +25,15 @@ export async function POST(request: NextRequest) {
         }
     );
 
-    const { data: { session }, error } = await supabaseAdmin.auth.getSession();
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser();
+    const { data: { session } } = await supabaseAdmin.auth.getSession();
 
-    if (error || !session) {
+    if (userError || !user || !isAdminEmail(user.email) || !session || session.user.id !== user.id) {
         return NextResponse.json({ error: 'No active session' }, { status: 401 });
     }
 
     // Re-issue the marker with the new expiration time
-    const secret = new TextEncoder().encode(process.env.SESSION_MARKER_SECRET || 'development-fallback-secret-key-12345');
+    const secret = getAdminSessionSecret();
     const marker = await new SignJWT({ aud: 'admin', sub: session.user.id })
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()

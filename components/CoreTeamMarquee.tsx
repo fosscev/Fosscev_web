@@ -18,16 +18,16 @@ interface TeamMember {
 const MarqueeCard = ({ member }: { member: TeamMember }) => {
   return (
     <motion.div
-      className="group relative flex h-[420px] w-full flex-col overflow-hidden rounded-[24px] border border-emerald-400/25 bg-black/30 shadow-[0_0_40px_rgba(2,8,23,0.45)] backdrop-blur-xl"
+      className="group relative flex w-full flex-col overflow-hidden rounded-[24px] border border-emerald-400/25 bg-black/30 shadow-[0_0_40px_rgba(2,8,23,0.45)] backdrop-blur-xl"
       whileHover={{ y: -8, scale: 1.02, boxShadow: "0 0 0 1px rgba(16, 185, 129, 0.25), 0 0 35px rgba(16, 185, 129, 0.22)" }}
       transition={{ type: "spring", stiffness: 220, damping: 20 }}
     >
-      <div className="relative h-[calc(100%-96px)] w-full overflow-hidden">
+      <div className="relative aspect-[4/5] w-full overflow-hidden bg-slate-950/70">
         <Image
           src={member.image}
           alt={member.name}
           fill
-          className="object-cover object-center brightness-100 contrast-110 transition duration-500 ease-out group-hover:scale-105"
+          className="object-cover object-top brightness-100 contrast-110"
           sizes="(max-width: 640px) 46vw, (max-width: 1024px) 31vw, 24vw"
         />
       </div>
@@ -73,7 +73,7 @@ export function CoreTeamMarquee() {
         setIsVisible(true);
         observer.disconnect();
       }
-    }, { rootMargin: "400px 0px" });
+    }, { rootMargin: "0px" });
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
@@ -100,7 +100,7 @@ export function CoreTeamMarquee() {
     let isMounted = true;
     const fetchTeam = async () => {
       try {
-        const response = await fetch("/api/data/team", { cache: "no-store" });
+        const response = await fetch("/api/data/team");
         if (!response.ok) throw new Error("Failed to fetch team data");
         const data = await response.json();
         if (!isMounted) return;
@@ -109,7 +109,7 @@ export function CoreTeamMarquee() {
           coreTeamMembers.map((member: Record<string, any>) => ({
             name: member.name || "",
             role: member.role || "",
-            image: getSupabaseImageUrl(member.image_url || member.image, "/placeholder.jpg", { width: 900 }),
+            image: getSupabaseImageUrl(member.image_url || member.image, "/placeholder.jpg", { width: 900, height: 1125, quality: 85, resize: 'cover' }),
           }))
         );
       } catch (err) {
@@ -135,7 +135,7 @@ export function CoreTeamMarquee() {
   }, [orderedMembers]);
 
   useEffect(() => {
-    if (shouldReduceMotion || !cardWidth || !orderedMembers.length) {
+    if (!isVisible || shouldReduceMotion || !cardWidth || !orderedMembers.length) {
       setMarqueeOffset(0);
       progressRef.current = 0;
       startTimeRef.current = null;
@@ -169,7 +169,7 @@ export function CoreTeamMarquee() {
         window.cancelAnimationFrame(rafId);
       }
     };
-  }, [cardWidth, isFocused, isHovering, orderedMembers.length, shouldReduceMotion]);
+  }, [cardWidth, isFocused, isHovering, isVisible, orderedMembers.length, shouldReduceMotion]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -197,8 +197,8 @@ export function CoreTeamMarquee() {
               key={i}
               className="mr-3 flex-shrink-0 w-[46vw] px-1 sm:mr-4 sm:w-[31vw] sm:px-2 lg:mr-6 lg:w-[24vw] lg:px-3"
             >
-              <div className="flex h-[420px] w-full flex-col overflow-hidden rounded-[24px] border border-emerald-400/10 bg-gray-900/40 animate-pulse">
-                <div className="h-[calc(100%-96px)] w-full bg-gray-800/60"></div>
+              <div className="flex w-full flex-col overflow-hidden rounded-[24px] border border-emerald-400/10 bg-gray-900/40 animate-pulse">
+                <div className="aspect-[4/5] w-full bg-gray-800/60"></div>
                 <div className="flex h-[96px] flex-col items-center justify-center px-4 py-4 text-center">
                   <div className="mb-3 h-4 w-32 rounded bg-gray-700"></div>
                   <div className="h-3 w-20 rounded bg-emerald-900/50"></div>

@@ -9,10 +9,10 @@ import { Github, Linkedin, Instagram } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { SOCIAL_LINKS } from "@/lib/constants";
-import { getSupabaseImageUrl } from "@/lib/image-utils";
 import { TeamSkeleton } from "@/components/skeletons/TeamSkeleton";
 import useSWR from "swr";
 import { FetchError } from "@/components/FetchError";
+import { getSupabaseImageUrl } from "@/lib/image-utils";
 
 interface CardPosition {
     x: number;
@@ -50,7 +50,7 @@ const normalizeImageUrl = (url: any) => {
         // If it's a valid absolute URL, convert Supabase storage URLs to optimized WebP render URLs
         // eslint-disable-next-line no-new
         new URL(url);
-        return getSupabaseImageUrl(url, placeholder, { width: 800 });
+        return getSupabaseImageUrl(url, placeholder, { width: 800, height: 1000, quality: 85, resize: 'cover' });
     } catch (e) {
         // Not an absolute URL — return placeholder
         return placeholder;
@@ -204,7 +204,7 @@ const TeamMemberCard = ({
                 zIndex: isHovered ? 50 : 1,
             }}
         >
-            <div className="relative bg-surface border border-white/10 rounded-xl overflow-hidden hover:border-primary transition-all duration-500 hover:shadow-[0_0_40px_rgba(0,230,118,0.3)]">
+            <div className="relative flex flex-row bg-surface border border-white/10 rounded-xl overflow-hidden hover:border-primary transition-all duration-500 hover:shadow-[0_0_40px_rgba(0,230,118,0.3)] sm:block">
                 {/* Animated gradient background on hover */}
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/0 via-primary/5 to-primary/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
@@ -219,12 +219,12 @@ const TeamMemberCard = ({
                 />
 
                 {/* Profile Image Container */}
-                <div className="relative aspect-square overflow-hidden bg-surface-highlight">
+                <div className="relative h-36 w-28 shrink-0 overflow-hidden bg-surface-highlight sm:aspect-[4/5] sm:h-auto sm:w-full">
                     <Image
                         src={member.image}
                         alt={member.name}
                         fill
-                        className="object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-2"
+                        className="object-cover object-top transition-all duration-500"
                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
                         priority={index < 4}
                     />
@@ -243,22 +243,22 @@ const TeamMemberCard = ({
                 </div>
 
                 {/* Info Section */}
-                <div className="relative p-6 bg-surface/90 backdrop-blur-sm border-t border-white/5">
+                <div className="relative flex min-w-0 flex-1 flex-col justify-center border-l border-white/5 bg-surface/90 p-3 backdrop-blur-sm sm:block sm:border-l-0 sm:border-t sm:p-6">
                     {/* Name */}
-                    <h3 className="text-xl font-display font-bold text-white mb-1 group-hover:text-primary transition-colors duration-300">
+                    <h3 className="break-words text-base font-display font-bold leading-snug text-white mb-1 group-hover:text-primary transition-colors duration-300 sm:text-xl">
                         {member.name}
                     </h3>
 
                     {/* Designation */}
-                    <p className="text-primary/80 text-sm font-mono uppercase tracking-wider mb-4 group-hover:text-primary transition-colors duration-300">
+                    <p className="text-primary/80 text-[10px] font-mono uppercase tracking-wider mb-2 group-hover:text-primary transition-colors duration-300 sm:mb-4 sm:text-sm">
                         {member.role}
                     </p>
 
                     {/* Divider */}
-                    <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent mb-4 group-hover:via-primary/60 transition-all duration-300" />
+                    <div className="h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent mb-2 group-hover:via-primary/60 transition-all duration-300 sm:mb-4" />
 
                     {/* Social Links */}
-                    <div className="flex gap-3 justify-center">
+                    <div className="flex justify-start gap-2 sm:justify-center sm:gap-3">
                         {member.github && (
                             <a
                                 href={member.github}

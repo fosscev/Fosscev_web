@@ -8,9 +8,9 @@
  */
 export function isSupabaseUrl(url: string | null | undefined): boolean {
     if (!url) return false;
-    return url.includes('supabase.co/storage/v1/object/public/');
+    return url.includes('supabase.co/storage/v1/object/public/')
+        || url.includes('supabase.co/storage/v1/render/image/public/');
 }
-
 /**
  * Extracts the relative path from a full Supabase Storage public URL.
  * Example: "https://<project>.supabase.co/storage/v1/object/public/team-images/abc.webp"
@@ -43,7 +43,7 @@ export function extractStoragePath(url: string | null | undefined): string | nul
 export function getSupabaseImageUrl(
     pathOrUrl: string | null | undefined,
     fallbackUrl: string = '/placeholder-user.svg',
-    options: { width?: number; quality?: number } = {}
+    options: { width?: number; height?: number; quality?: number; resize?: 'contain' | 'cover' } = {}
 ): string {
     if (!pathOrUrl) return fallbackUrl;
 
@@ -52,7 +52,10 @@ export function getSupabaseImageUrl(
     try {
         const url = new URL(pathOrUrl);
         url.pathname = url.pathname.replace('/storage/v1/object/public/', '/storage/v1/render/image/public/');
-        url.searchParams.set('width', String(options.width ?? 1200));
+        const width = options.width ?? 1200;
+        url.searchParams.set('width', String(width));
+        url.searchParams.set('height', String(options.height ?? width));
+        url.searchParams.set('resize', options.resize ?? 'contain');
         url.searchParams.set('quality', String(options.quality ?? 75));
         url.searchParams.set('format', 'webp');
         return url.toString();

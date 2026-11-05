@@ -40,22 +40,18 @@ export async function getServerEvents() {
 }
 
 export async function getServerTeam() {
-    const coreTeamResponse = await supabaseServer
+    const [coreTeamResponse, subTeamResponse, facultyResponse] = await Promise.all([supabaseServer
         .from('team_members')
         .select('id, name, role, image_url, github, linkedin, instagram, is_core_team, is_faculty_advisor, display_order')
         .eq('is_core_team', true)
-        .is('is_faculty_advisor', false);
-
-    const subTeamResponse = await supabaseServer
+        .is('is_faculty_advisor', false), supabaseServer
         .from('team_members')
         .select('id, name, role, image_url, github, linkedin, instagram, is_core_team, is_faculty_advisor, display_order')
         .eq('is_core_team', false)
-        .is('is_faculty_advisor', false);
-
-    const facultyResponse = await supabaseServer
+        .is('is_faculty_advisor', false), supabaseServer
         .from('team_members')
         .select('id, name, role, image_url, github, linkedin, instagram, is_core_team, is_faculty_advisor, display_order')
-        .eq('is_faculty_advisor', true);
+        .eq('is_faculty_advisor', true)]);
 
     const finalCore = [...(coreTeamResponse.data || [])]
         .sort((a, b) => a.display_order - b.display_order)

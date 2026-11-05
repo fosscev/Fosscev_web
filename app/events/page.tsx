@@ -32,8 +32,8 @@ const mapEvent = (dbEvent: any): Event => ({
     type: dbEvent.type,
     attendees: dbEvent.attendees,
     status: getComputedEventStatus(dbEvent),
-    image: getSupabaseImageUrl(dbEvent.image_url),
-    poster: getSupabaseImageUrl(dbEvent.poster_url || dbEvent.image_url),
+    image: getSupabaseImageUrl(dbEvent.image_url, '/placeholder.jpg', { width: 900, height: 1200, quality: 85 }),
+    poster: getSupabaseImageUrl(dbEvent.poster_url || dbEvent.image_url, '/placeholder.jpg', { width: 900, height: 1200, quality: 85 }),
     link: dbEvent.link
 });
 
@@ -150,7 +150,7 @@ export default function EventsPage() {
 
                     {/* Events Grid - Dark Pinboard Style */}
                     <div className="max-w-7xl mx-auto px-4 mb-16">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+                        <div className="grid grid-cols-1 gap-3 sm:gap-6 md:grid-cols-2 lg:grid-cols-4 md:gap-8">
                             {displayEvents.map((event: Event, index: number) => {
                                 const cardImage = getEventCardImage(event);
 
@@ -173,17 +173,17 @@ export default function EventsPage() {
                                         className="cursor-pointer group relative transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_50px_rgba(0,230,118,0.15)] focus:outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary/70"
                                     >
                                         {/* Modern Glass Card */}
-                                        <div className="bg-surface/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/5 transition-all duration-500 h-full flex flex-col hover:border-primary/40 hover:bg-surface/60 hover:shadow-2xl">
+                                        <div className="bg-surface/40 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/5 transition-all duration-500 h-full flex flex-col max-sm:flex-row hover:border-primary/40 hover:bg-surface/60 hover:shadow-2xl">
 
                                             {/* Event Poster Image */}
-                                            <div className="h-48 md:h-56 bg-gradient-to-br from-primary/5 to-transparent relative overflow-hidden shrink-0">
+                                            <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden bg-black/40 max-sm:w-24 sm:aspect-[3/4]">
                                                 {/* Display poster/image if available */}
                                                 {cardImage ? (
                                                     <Image
                                                         src={cardImage}
                                                         alt={event.title}
                                                         fill
-                                                        className="object-cover transition-transform duration-500 group-hover:scale-110"
+                                                        className="object-contain"
                                                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                                     />
                                                 ) : null}
@@ -192,20 +192,20 @@ export default function EventsPage() {
                                                 <div className={`absolute inset-0 bg-gradient-to-br from-black/40 to-black/60 group-hover:from-black/20 group-hover:to-black/40 transition-all duration-300 ${cardImage ? 'bg-black/30' : ''}`}></div>
 
                                                 {/* Event Type Badge */}
-                                                <div className="absolute top-3 right-3 z-10">
+                                                <div className="absolute top-3 right-3 z-10 max-sm:hidden">
                                                     <span className="px-2 md:px-3 py-1 bg-black/80 backdrop-blur-sm text-primary text-xs font-bold font-display uppercase rounded-md shadow-lg border border-primary/30">
                                                         {event.type}
                                                     </span>
                                                 </div>
 
                                                 {event.status === "Event Concluded" ? (
-                                                    <div className="absolute top-3 left-3 z-10">
+                                                    <div className="absolute top-3 left-3 z-10 max-sm:hidden">
                                                         <span className="px-2 md:px-3 py-1 bg-black/60 backdrop-blur-md text-gray-400 text-xs font-bold font-mono uppercase rounded-md border border-white/10">
                                                             Event Concluded
                                                         </span>
                                                     </div>
                                                 ) : (event.status === "Registration Open" || event.status === "Event Ongoing") && (
-                                                    <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-2 md:px-3 py-1 bg-black/60 backdrop-blur-md border border-primary/20 rounded-md">
+                                                    <div className="absolute top-3 left-3 z-10 flex items-center gap-2 px-2 md:px-3 py-1 bg-black/60 backdrop-blur-md border border-primary/20 rounded-md max-sm:hidden">
                                                         <span className="relative flex h-2 w-2">
                                                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                                                             <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
@@ -229,43 +229,47 @@ export default function EventsPage() {
                                             </div>
 
                                             {/* Minimal info section */}
-                                            <div className="p-4 md:p-6 border-t border-white/5 flex flex-col flex-1">
-                                                <h3 className="text-xl md:text-2xl font-display font-medium text-white mb-4 line-clamp-2 md:min-h-[4rem] group-hover:text-primary transition-colors tracking-tight">
+                                            <div className="min-w-0 flex flex-1 flex-col p-3 md:border-t md:border-white/5 md:p-6 max-sm:p-3">
+                                                <div className="mb-2 flex flex-wrap items-center gap-1.5 sm:hidden">
+                                                    <span className="rounded bg-primary/10 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-primary">{event.type}</span>
+                                                    <span className={`rounded px-2 py-1 text-[9px] font-bold uppercase tracking-wide ${event.status === 'Event Concluded' ? 'bg-white/5 text-gray-400' : 'bg-primary/10 text-primary'}`}>{event.status}</span>
+                                                </div>
+                                                <h3 className="mb-2 line-clamp-2 text-base font-display font-medium tracking-tight text-white transition-colors group-hover:text-primary sm:mb-4 sm:text-xl md:min-h-[4rem] md:text-2xl">
                                                     {event.title}
                                                 </h3>
 
-                                                <div className="space-y-1.5 md:space-y-2">
+                                                <div className="space-y-1 md:space-y-2">
                                                     <div className="flex items-center gap-2 text-xs md:text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
-                                                        <Calendar className="w-3 md:w-4 h-3 md:h-4 text-primary flex-shrink-0" />
+                                                        <Calendar className="h-3 w-3 flex-shrink-0 text-primary md:h-4 md:w-4" />
                                                         <span className="font-mono">{event.date}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2 text-xs md:text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
-                                                        <Clock className="w-3 md:w-4 h-3 md:h-4 text-primary flex-shrink-0" />
+                                                        <Clock className="h-3 w-3 flex-shrink-0 text-primary md:h-4 md:w-4" />
                                                         <span className="font-mono">{event.time}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2 text-xs md:text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
-                                                        <MapPin className="w-3 md:w-4 h-3 md:h-4 text-primary flex-shrink-0" />
+                                                        <MapPin className="h-3 w-3 flex-shrink-0 text-primary md:h-4 md:w-4" />
                                                         <span className="line-clamp-1 font-mono text-xs">{event.location}</span>
                                                     </div>
                                                     <div className="flex items-center gap-2 text-xs md:text-sm text-gray-400 group-hover:text-gray-300 transition-colors">
-                                                        <Users className="w-3 md:w-4 h-3 md:h-4 text-primary flex-shrink-0" />
+                                                        <Users className="h-3 w-3 flex-shrink-0 text-primary md:h-4 md:w-4" />
                                                         <span className="font-mono">{event.attendees}</span>
                                                     </div>
                                                 </div>
 
                                                 {/* Description snippet */}
-                                                <div className="mt-3 md:mt-4 pt-2 md:pt-3 border-t border-white/5">
-                                                    <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
+                                                <div className="mt-2 border-t border-white/5 pt-2 md:mt-4 md:pt-3">
+                                                    <p className="line-clamp-2 text-[10px] leading-relaxed text-gray-500 sm:text-xs">
                                                         {event.description}
                                                     </p>
                                                 </div>
                                             </div>
 
                                             {/* Neon tape effect on corners (visible on hover) */}
-                                            <div className="absolute top-0 right-0 w-16 md:w-20 h-6 md:h-8 bg-gradient-to-br from-primary/20 to-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rotate-45 translate-x-4 md:translate-x-6 -translate-y-2 md:-translate-y-3 shadow-lg backdrop-blur-sm border border-primary/20"></div>
+                                            <div className="absolute right-0 top-0 hidden h-6 w-16 -translate-y-2 translate-x-4 rotate-45 border border-primary/20 bg-gradient-to-br from-primary/20 to-primary/10 opacity-0 shadow-lg backdrop-blur-sm transition-opacity duration-300 group-hover:opacity-100 md:block md:h-8 md:w-20 md:-translate-y-3 md:translate-x-6"></div>
                                                         </div>
 
-                                        <div className="absolute inset-x-6 bottom-6 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 pointer-events-none">
+                                        <div className="pointer-events-none absolute inset-x-6 bottom-6 hidden translate-y-2 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100 sm:block">
                                             <span className="inline-flex items-center gap-2 rounded-full bg-black/70 px-3 py-1 text-xs text-primary font-mono uppercase tracking-[0.18em] border border-primary/30 backdrop-blur-sm shadow-[0_0_20px_rgba(0,230,118,0.12)]">
                                                 Click to view details <ArrowRight className="w-3 h-3" />
                                             </span>

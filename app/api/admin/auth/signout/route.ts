@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
+import { hasSameOrigin } from '@/lib/request-security';
 
 export async function POST(request: NextRequest) {
+    if (!hasSameOrigin(request)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const response = NextResponse.json({ message: 'Signed out successfully' });
 
     const supabaseAdmin = createServerClient(
@@ -26,6 +28,7 @@ export async function POST(request: NextRequest) {
     // Explicitly clear the jose JWT marker cookie for both the new and old paths
     response.cookies.set('foss-admin-marker', '', { path: '/', maxAge: 0 });
     response.cookies.set('foss-admin-marker', '', { path: '/foss-manager', maxAge: 0 });
+    response.cookies.set('foss-admin-otp', '', { path: '/api/admin/auth', maxAge: 0 });
 
     // Also explicitly clear the supabase token for the old path, just in case
     response.cookies.set('sb-admin-auth-token', '', { path: '/foss-manager', maxAge: 0 });

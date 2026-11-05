@@ -1,25 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { isAdminEmail } from '@/lib/admin-config';
+import { checkRateLimit } from '@/lib/rate-limit';
+import { getTrustedClientIp } from '@/lib/client-ip';
+import { hasSameOrigin } from '@/lib/request-security';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const RESET_WINDOW_MS = 15 * 60 * 1000;
-const RESET_LIMIT = 3;
-const attempts = new Map<string, { count: number; expiresAt: number }>();
-
-function isRateLimited(key: string) {
-    const now = Date.now();
-    const attempt = attempts.get(key);
-    if (!attempt || attempt.expiresAt <= now) {
-        attempts.set(key, { count: 1, expiresAt: now + RESET_WINDOW_MS });
-        return false;
-    }
-
-    attempt.count += 1;
-    return attempt.count > RESET_LIMIT;
-}
 
 export async function POST(request: NextRequest) {
+    if (!hasSameOrigin(request)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     // Always return this message for a syntactically valid request so an
     // attacker cannot discover which addresses are administrator accounts.
     const success = NextResponse.json({ message: 'If the address is authorised, a reset link will be sent.' });
@@ -27,13 +16,14 @@ export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
         const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
-        if (!EMAIL_PATTERN.test(email)) {
+        if (email.length > 254 || !EMAIL_PATTERN.test(email)) {
             return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
         }
 
-        const forwardedFor = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-        const clientId = forwardedFor || request.headers.get('x-real-ip') || 'unknown';
-        if (isRateLimited(`${clientId}:${email}`)) return success;
+        const clientId = getTrustedClientIp(request.headers);
+        const ipRateCheck = await checkRateLimit(`admin-reset-ip:${clientId}`, 'reset-password');
+        const emailRateCheck = await checkRateLimit(`admin-reset-email:${email}`, 'reset-password');
+        if (!ipRateCheck.allowed || !emailRateCheck.allowed) return success;
         if (!isAdminEmail(email)) return success;
 
         const configuredUrl = process.env.NODE_ENV === 'production'
@@ -42,11 +32,18 @@ export async function POST(request: NextRequest) {
         const redirectTo = new URL('/foss-manager/reset-password', configuredUrl).toString();
         const supabase = createClient(
             process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
         );
 
         const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-        if (error) console.error('Admin password reset request failed:', error.message);
+        if (error) {
+            console.error('Admin password reset request failed:', {
+                code: error.code,
+                status: error.status,
+                message: error.message,
+            });
+        }
 
         return success;
     } catch (error) {

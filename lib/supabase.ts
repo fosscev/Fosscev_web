@@ -16,22 +16,12 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // correctly shared between client and server (middleware/proxy).
 export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     cookieOptions: { name: 'sb-picks-auth-token' },
-    auth: {
-        lock: async (key, acquireTimeout, fn) => {
-            return fn();
-        }
-    }
 });
 
 // Create a separate client for the Admin Panel so sessions don't bleed between Picks and Admin
 export const supabaseAdmin = createBrowserClient(supabaseUrl, supabaseAnonKey, {
     isSingleton: false,
     cookieOptions: { name: 'sb-admin-auth-token', path: '/', sameSite: 'strict' },
-    auth: {
-        lock: async (key, acquireTimeout, fn) => {
-            return fn();
-        }
-    }
 });
 
 if (typeof window !== 'undefined') {
@@ -39,10 +29,17 @@ if (typeof window !== 'undefined') {
     // Only clear session for token refresh failures, not for general auth errors during sign-in
     window.addEventListener('unhandledrejection', (event) => {
         const reason = event.reason;
-        if (reason && reason.name === 'AuthRetryableFetchError') {
-            console.warn('Caught unhandled Supabase Auth refresh error, clearing stale session...');
+        const errorMessage = reason instanceof Error ? reason.message : String(reason ?? '');
+        if (/invalid refresh token|refresh token not found/i.test(errorMessage)) {
             event.preventDefault();
-            supabase.auth.signOut().catch(() => { });
+            if (window.location.pathname.startsWith('/foss-manager')) {
+                console.warn('Clearing an expired admin session after a failed token refresh.');
+                supabaseAdmin.auth.signOut({ scope: 'local' }).catch(() => { });
+                fetch('/api/admin/auth/signout', { method: 'POST' }).catch(() => { });
+            } else {
+                console.warn('Clearing an expired session after a failed token refresh.');
+                supabase.auth.signOut({ scope: 'local' }).catch(() => { });
+            }
         }
     });
 }

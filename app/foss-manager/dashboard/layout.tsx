@@ -24,7 +24,7 @@ function AdminLayoutContent({
 
         const resetTimer = () => {
             clearTimeout(logoutTimer);
-            // Auto logout after 15 minutes of inactivity (900000 ms)
+            // Auto logout after one hour of inactivity.
             logoutTimer = setTimeout(async () => {
                 if (isSigningOutRef.current) return;
                 isSigningOutRef.current = true;
@@ -36,7 +36,7 @@ function AdminLayoutContent({
                 } finally {
                     isSigningOutRef.current = false;
                 }
-            }, 15 * 60 * 1000);
+            }, 60 * 60 * 1000);
         };
 
         resetTimer();
@@ -45,15 +45,17 @@ function AdminLayoutContent({
             resetTimer();
         };
 
-        window.addEventListener('mousemove', updateActivity, { passive: true });
+        window.addEventListener('pointerdown', updateActivity, { passive: true });
         window.addEventListener('keydown', updateActivity, { passive: true });
-        window.addEventListener('click', updateActivity, { passive: true });
+        window.addEventListener('touchstart', updateActivity, { passive: true });
+        window.addEventListener('scroll', updateActivity, { passive: true });
 
         return () => {
             clearTimeout(logoutTimer);
-            window.removeEventListener('mousemove', updateActivity);
+            window.removeEventListener('pointerdown', updateActivity);
             window.removeEventListener('keydown', updateActivity);
-            window.removeEventListener('click', updateActivity);
+            window.removeEventListener('touchstart', updateActivity);
+            window.removeEventListener('scroll', updateActivity);
         };
     }, [router, signOut]);
 

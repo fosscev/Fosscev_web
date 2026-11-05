@@ -4,13 +4,15 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabaseAdmin as supabase } from '@/lib/supabase';
 import { AdminAuthProvider, useAdminAuth } from '@/components/admin/AdminAuthProvider';
-import { Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, MailCheck } from 'lucide-react';
 
 function AdminLoginForm() {
     const router = useRouter();
     const { user, authLoading } = useAdminAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [otp, setOtp] = useState('');
+    const [step, setStep] = useState<'password' | 'otp'>('password');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -42,11 +44,36 @@ function AdminLoginForm() {
                 return;
             }
 
-            // Success — navigate to dashboard
-            router.push('/foss-manager/dashboard');
-            router.refresh();
+            setStep('otp');
+            setPassword('');
+            setResetMessage('A one-time verification code was sent to your admin email.');
         } catch (err) {
             setError('An unexpected error occurred. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleVerifyOtp = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        setError(null);
+        try {
+            const response = await fetch('/api/admin/auth/verify-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, token: otp }),
+            });
+            const data = await response.json().catch(() => ({}));
+            if (!response.ok) {
+                setError(data.error || 'The verification code could not be accepted.');
+                return;
+            }
+            router.push('/foss-manager/dashboard');
+            router.refresh();
+        } catch {
+            setError('Unable to verify the code. Please try again.');
+        } finally {
             setLoading(false);
         }
     };
@@ -128,15 +155,20 @@ function AdminLoginForm() {
                         </svg>
                     </div>
                     <h1 className="text-2xl font-bold text-white font-mono mb-1">
-                        Admin Access
+                        {step === 'password' ? 'Admin Access' : 'Verify Sign In'}
                     </h1>
                     <p className="text-sm text-gray-500 font-mono">
-                        <span className="text-[#00e676]/40">//</span> authorized personnel only
+                        <span className="text-[#00e676]/40">//</span> {step === 'password' ? 'authorized personnel only' : 'second-step email verification'}
                     </p>
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleLogin} className="space-y-5 relative z-10">
+                <form onSubmit={step === 'password' ? handleLogin : handleVerifyOtp} className="space-y-5 relative z-10">
+                    {step === 'otp' && (
+                        <button type="button" onClick={() => { setStep('password'); setOtp(''); setError(null); setResetMessage(null); }} className="mb-1 inline-flex items-center gap-2 text-xs font-mono text-gray-400 transition hover:text-[#00e676]">
+                            <ArrowLeft className="h-4 w-4" /> Back to password
+                        </button>
+                    )}
                     <div>
                         <label htmlFor="admin-email" className="block text-xs font-semibold text-gray-300 font-mono uppercase tracking-widest mb-1.5">
                             Email Address
@@ -145,6 +177,7 @@ function AdminLoginForm() {
                             id="admin-email"
                             type="email"
                             value={email}
+                            readOnly={step === 'otp'}
                             onChange={(e) => setEmail(e.target.value)}
                             placeholder="admin@fosscev.org"
                             required
@@ -166,7 +199,7 @@ function AdminLoginForm() {
                         />
                     </div>
 
-                    <div>
+                    {step === 'password' ? <div>
                         <label htmlFor="admin-password" className="block text-xs font-semibold text-gray-300 font-mono uppercase tracking-widest mb-1.5">
                             Password
                         </label>
@@ -204,9 +237,18 @@ function AdminLoginForm() {
                                 {showPassword ? <EyeOff className="h-5 w-5" aria-hidden="true" /> : <Eye className="h-5 w-5" aria-hidden="true" />}
                             </button>
                         </div>
-                    </div>
+                    </div> : (
+                        <div>
+                            <label htmlFor="admin-otp" className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-gray-300 font-mono">Email verification code</label>
+                            <div className="relative">
+                                <MailCheck className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#00e676]/70" aria-hidden="true" />
+                                <input id="admin-otp" type="text" value={otp} onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 8))} placeholder="Enter the code from your email" required autoComplete="one-time-code" inputMode="numeric" maxLength={8} autoFocus className="w-full rounded-xl border border-[#00e676]/15 bg-[#00e676]/[0.03] py-3 pl-12 pr-4 text-center font-mono text-xl tracking-[0.35em] text-white placeholder:tracking-normal placeholder:text-sm placeholder:text-gray-600 focus:border-[#00e676]/40 focus:outline-none" />
+                            </div>
+                            <p className="mt-2 text-xs leading-5 text-gray-500">The code is short lived. If it expires, return to the password step and sign in again.</p>
+                        </div>
+                    )}
 
-                    <div className="-mt-2 flex justify-end">
+                    {step === 'password' && <div className="-mt-2 flex justify-end">
                         <button
                             type="button"
                             onClick={handlePasswordReset}
@@ -215,7 +257,7 @@ function AdminLoginForm() {
                         >
                             Forgot password?
                         </button>
-                    </div>
+                    </div>}
 
                     {/* Error Message */}
                     {error && (
@@ -258,7 +300,7 @@ function AdminLoginForm() {
                                 Authenticating...
                             </>
                         ) : (
-                            'Sign In →'
+                            step === 'password' ? 'Continue to verification →' : 'Verify & Sign In →'
                         )}
                     </button>
                 </form>
@@ -269,12 +311,6 @@ function AdminLoginForm() {
                     style={{ borderTop: '1px solid rgba(0,230,118,0.06)' }}
                 >
                     <div className="flex items-start gap-2">
-                        <svg className="w-3 h-3 text-[#00e676]/60 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                        </svg>
-                        <p className="text-xs text-gray-600 leading-relaxed font-mono">
-                            Encrypted session · Admin whitelist · 15-min inactivity timeout
-                        </p>
                     </div>
                 </div>
             </div>

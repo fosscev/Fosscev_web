@@ -8,7 +8,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useAdminAuth } from '@/components/admin/AdminAuthProvider';
-import { escapeHtml } from '@/lib/registrations/validation';
 import type {
   Registration,
   FormSchema,
@@ -40,10 +39,12 @@ export default function AdminRegistrationsList() {
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc');
+  const [showFormFolders, setShowFormFolders] = useState(true);
 
   // Data
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [schemas, setSchemas] = useState<FormSchema[]>([]);
+  const [schemasLoading, setSchemasLoading] = useState(true);
   const [schemaMap, setSchemaMap] = useState<Map<string, FormSchema>>(new Map());
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -72,6 +73,8 @@ export default function AdminRegistrationsList() {
         }
       } catch (err) {
         console.error('Failed to fetch schemas:', err);
+      } finally {
+        setSchemasLoading(false);
       }
     }
     fetchSchemas();
@@ -79,6 +82,7 @@ export default function AdminRegistrationsList() {
 
   // Fetch registrations
   const fetchRegistrations = useCallback(async () => {
+    if (showFormFolders) return;
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -100,7 +104,7 @@ export default function AdminRegistrationsList() {
     } finally {
       setLoading(false);
     }
-  }, [formTypeFilter, statusFilter, searchQuery, page, sortOrder]);
+  }, [formTypeFilter, statusFilter, searchQuery, page, sortOrder, showFormFolders]);
 
   useEffect(() => {
     fetchRegistrations();
@@ -157,12 +161,10 @@ export default function AdminRegistrationsList() {
     }
   };
 
-  /**
-   * Safely render a data value — defense in depth against stored XSS.
-   */
+  /** Render as a React text child so React escapes user-submitted content. */
   const safeRender = (val: unknown): string => {
     if (val == null) return 'N/A';
-    return escapeHtml(String(val));
+    return String(val);
   };
 
   /**
@@ -224,8 +226,54 @@ export default function AdminRegistrationsList() {
         />
       ) : (
         <>
+          {showFormFolders ? (
+            <section className="space-y-5">
+              <div className="flex flex-wrap items-end justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Response folders</h3>
+                  <p className="mt-1 text-sm text-gray-500">Choose a form to view its submissions separately.</p>
+                </div>
+                <button
+                  onClick={() => { setFormTypeFilter(''); setPage(1); setShowFormFolders(false); }}
+                  className="rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-mono text-gray-300 transition hover:border-[#00e676]/30 hover:text-[#00e676]"
+                >
+                  View all responses
+                </button>
+              </div>
+              {schemasLoading ? (
+                <div className="rounded-xl border border-white/10 bg-gray-900/50 p-8 text-center text-sm text-gray-500">Loading forms…</div>
+              ) : schemas.length === 0 ? (
+                <div className="rounded-xl border border-white/10 bg-gray-900/50 p-8 text-center text-sm text-gray-500">No registration forms have been created yet.</div>
+              ) : (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {schemas.map((schema) => (
+                    <button
+                      key={schema.form_type}
+                      onClick={() => { setFormTypeFilter(schema.form_type); setStatusFilter(''); setSearchQuery(''); setPage(1); setShowFormFolders(false); }}
+                      className="group flex min-h-28 items-start gap-4 rounded-2xl border border-white/10 bg-gray-900/60 p-5 text-left transition hover:-translate-y-0.5 hover:border-[#00e676]/35 hover:bg-[#00e676]/[0.04]"
+                    >
+                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#00e676]/20 bg-[#00e676]/10 text-xl text-[#00e676]">▰</span>
+                      <span className="min-w-0">
+                        <span className="block truncate font-semibold text-white group-hover:text-[#00e676]">{schema.title}</span>
+                        <span className="mt-1 block truncate font-mono text-xs text-gray-500">{schema.form_type}</span>
+                        {schema.description && <span className="mt-2 line-clamp-2 block text-xs text-gray-500">{schema.description}</span>}
+                        <span className="mt-3 block text-xs font-mono text-[#00e676]/80">Open folder →</span>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : (
+          <>
           {/* Filters row */}
           <div className="flex flex-wrap gap-3">
+            <button
+              onClick={() => { setFormTypeFilter(''); setPage(1); setShowFormFolders(true); setSelectedReg(null); }}
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm font-mono text-gray-300 transition hover:border-[#00e676]/30 hover:text-[#00e676]"
+            >
+              <span aria-hidden="true">←</span> Form folders
+            </button>
             <select
               value={formTypeFilter}
               onChange={(e) => { setFormTypeFilter(e.target.value); setPage(1); }}
@@ -397,6 +445,8 @@ export default function AdminRegistrationsList() {
               safeRender={safeRender}
             />
           )}
+          </>
+          )}
         </>
       )}
     </div>
@@ -531,8 +581,7 @@ function DetailPanel({
                   <p className="text-xs text-gray-500 font-mono mb-1">{fieldDef.label}</p>
                   <p
                     className="text-sm text-gray-200 font-body whitespace-pre-wrap break-words"
-                    dangerouslySetInnerHTML={{ __html: safeRender(val) }}
-                  />
+                  >{safeRender(val)}</p>
                 </div>
               );
             })
@@ -543,8 +592,7 @@ function DetailPanel({
                 <p className="text-xs text-gray-500 font-mono mb-1">{key}</p>
                 <p
                   className="text-sm text-gray-200 font-body whitespace-pre-wrap break-words"
-                  dangerouslySetInnerHTML={{ __html: safeRender(val) }}
-                />
+                >{safeRender(val)}</p>
               </div>
             ))
           )}

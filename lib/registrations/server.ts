@@ -6,6 +6,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { createHmac } from 'node:crypto';
+import { getAdminSessionSecret } from '@/lib/admin-session-secret';
+import { getTrustedClientIp } from '@/lib/client-ip';
 
 /**
  * Create a Supabase client with service_role privileges.
@@ -70,35 +73,13 @@ export async function getServerSupabaseClient() {
  * a bot/abuse deterrent, not a precise per-person limit.
  */
 export async function hashIp(ip: string): Promise<string> {
-  const salt = process.env.IP_HASH_SALT || 'default-salt-change-me';
-  const encoder = new TextEncoder();
-  const data = encoder.encode(salt + ip);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+  return createHmac('sha256', getAdminSessionSecret()).update(ip).digest('hex');
 }
 
 /**
- * Extract client IP from request headers.
- * Checks x-forwarded-for first (set by reverse proxies/CDNs), then x-real-ip.
- * Returns '0.0.0.0' as a fallback if no IP header is found.
+ * Extract client IP from a deployment-trusted edge header.
+ * Untrusted forwarded headers are ignored.
  */
 export function getClientIp(headers: Headers): string {
-  const vercelForwarded = headers.get('x-vercel-forwarded-for');
-  if (vercelForwarded) {
-    return vercelForwarded.trim();
-  }
-
-  const forwarded = headers.get('x-forwarded-for');
-  if (forwarded) {
-    // x-forwarded-for can be a comma-separated list; take the first (client) IP
-    return forwarded.split(',')[0].trim();
-  }
-
-  const realIp = headers.get('x-real-ip');
-  if (realIp) {
-    return realIp.trim();
-  }
-
-  return '0.0.0.0';
+  return getTrustedClientIp(headers);
 }

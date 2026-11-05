@@ -9,10 +9,9 @@ export async function GET() {
             return NextResponse.json({ error: 'Failed to fetch team data' }, { status: 500 });
         }
 
-        // Return fresh data (no caching) so server-side changes are reflected immediately
         return NextResponse.json(data, {
             headers: {
-                'Cache-Control': 'no-store',
+                'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
             },
         });
     } catch (error) {

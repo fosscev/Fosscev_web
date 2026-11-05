@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit, isAllowedEmailDomain } from '@/lib/rate-limit';
 import { logSecurityEvent } from '@/lib/security-logger';
+import { getTrustedClientIp } from '@/lib/client-ip';
 
 async function checkHIBP(password: string): Promise<boolean> {
     const encoder = new TextEncoder();
@@ -66,9 +67,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Rate limit check
-        const ip = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
-        const rateCheck = await checkRateLimit(ip, 'signup-otp');
-        if (!rateCheck.allowed) {
+        const ip = getTrustedClientIp(request.headers);
+        const [ipLimit, emailLimit] = await Promise.all([
+            checkRateLimit(`picks-signup-ip:${ip}`, 'signup-otp'),
+            checkRateLimit(`picks-signup-email:${String(email).trim().toLowerCase()}`, 'signup-otp'),
+        ]);
+        if (!ipLimit.allowed || !emailLimit.allowed) {
             logSecurityEvent({
                 type: 'AUTH_RATE_LIMIT_EXCEEDED',
                 ip,

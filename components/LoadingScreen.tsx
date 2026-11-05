@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { getSupabaseImageUrl, isSupabaseUrl } from "@/lib/image-utils";
 
 const QUOTES = [
     "Talk is cheap. Show me the code. — Linus Torvalds",
@@ -72,55 +71,19 @@ export function LoadingScreen() {
         // Randomize quote on mount to keep it fresh
         setQuoteIndex(Math.floor(Math.random() * QUOTES.length));
 
-        // Prefetch the exact WebP URLs rendered by the page. Fetching the raw
-        // storage object here would make browsers download it again as WebP
-        // once the visible image mounts.
-        const prefetchAssets = async () => {
-            try {
-                fetch("/api/data/team")
-                    .then((res) => res.json())
-                    .then((data) => {
-                        const members = data?.coreTeam || [];
-                        members.forEach((m: any) => {
-                            const sourceUrl = m.image_url || m.image;
-                            if (sourceUrl && isSupabaseUrl(sourceUrl) && typeof window !== "undefined") {
-                                const img = new window.Image();
-                                img.src = getSupabaseImageUrl(sourceUrl, "/placeholder.jpg", { width: 900 });
-                            }
-                        });
-                    })
-                    .catch(() => {});
-
-                const { getGalleryPhotos } = await import("@/app/actions/gallery");
-                const photos = await getGalleryPhotos();
-                if (Array.isArray(photos)) {
-                    photos.forEach((p: any) => {
-                        if (p.image && isSupabaseUrl(p.image) && typeof window !== "undefined") {
-                            const img = new window.Image();
-                            img.src = getSupabaseImageUrl(p.image, "/placeholder.jpg", { width: 1200 });
-                        }
-                    });
-                }
-            } catch {
-                // Ignore background prefetch errors
-            }
-        };
-
-        prefetchAssets();
-
-        // Simulate progress and ensure we stay long enough to be "interesting"
-        // It hides when window load is complete AND minimum time (2.5s) has passed
-        let isWindowLoaded = document.readyState === "complete";
+        // Keep the branded transition brief and wait for the document markup,
+        // not every image and background request on the page.
+        let isDocumentReady = document.readyState !== "loading";
         
         const handleLoad = () => {
-            isWindowLoaded = true;
+            isDocumentReady = true;
         };
         
-        if (!isWindowLoaded) {
-            window.addEventListener("load", handleLoad);
+        if (!isDocumentReady) {
+            document.addEventListener("DOMContentLoaded", handleLoad);
         }
 
-        const minTime = 2500; // minimum 2.5s to read quote
+        const minTime = 500;
         const startTime = Date.now();
         
         const updateProgress = setInterval(() => {
@@ -129,7 +92,7 @@ export function LoadingScreen() {
             // Progress goes up to 90% based on time
             let newProgress = Math.min(90, (elapsed / minTime) * 90);
             
-            if (isWindowLoaded && elapsed >= minTime) {
+            if (isDocumentReady && elapsed >= minTime) {
                 newProgress = 100;
                 clearInterval(updateProgress);
                 setTimeout(() => setIsLoading(false), 400); // Small pause at 100%
@@ -139,7 +102,7 @@ export function LoadingScreen() {
         }, 50);
 
         return () => {
-            window.removeEventListener("load", handleLoad);
+            document.removeEventListener("DOMContentLoaded", handleLoad);
             clearInterval(updateProgress);
         };
     }, []);

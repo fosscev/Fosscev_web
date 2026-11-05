@@ -96,7 +96,7 @@ export function CoreTeam() {
                 const formattedData = coreTeamMembers.map((member: Record<string, any>) => ({
                     name: member.name || "",
                     role: member.role || "",
-                    image: getSupabaseImageUrl(member.image_url || member.image, "/placeholder.jpg", { width: 900 }),
+                    image: getSupabaseImageUrl(member.image_url || member.image, "/placeholder.jpg", { width: 900, height: 1125, quality: 85, resize: 'cover' }),
                     github: member.github || undefined,
                     linkedin: member.linkedin || undefined,
                     instagram: member.instagram || undefined,
@@ -221,12 +221,12 @@ export function CoreTeam() {
                 transition={{ duration: 0.85, ease: "easeInOut" }}
             />
             <div className="relative">
-                <div className="relative h-40 w-full overflow-hidden rounded-[1.1rem] border border-white/10 bg-slate-900/70 sm:h-52">
+                <div className="relative aspect-[4/5] w-full overflow-hidden rounded-[1.1rem] border border-white/10 bg-slate-900/70">
                     <Image
                         src={member.image}
                         alt={member.name}
                         fill
-                        className="object-cover"
+                        className="object-cover object-top"
                         sizes="(max-width: 640px) 100vw, 300px"
                     />
                 </div>

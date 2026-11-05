@@ -7,27 +7,14 @@
 // =============================================================================
 
 import { NextRequest, NextResponse } from 'next/server';
-import { isAdminEmail } from '@/lib/admin-config';
-import { getServiceRoleClient, getServerSupabaseClient } from '@/lib/registrations/server';
+import { getServiceRoleClient } from '@/lib/registrations/server';
+import { verifyAdminRequest } from '@/lib/admin-api-auth';
 import { escapeHtml } from '@/lib/registrations/validation';
 import { REGISTRATION_STATUSES } from '@/lib/registrations/types';
 import type { FormSchema, Registration, RegistrationStatus } from '@/lib/registrations/types';
 import Papa from 'papaparse';
 
 const BATCH_SIZE = 500;
-
-async function verifyAdmin(): Promise<string | null> {
-  try {
-    const supabase = await getServerSupabaseClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user && isAdminEmail(user.email)) {
-      return user.email!;
-    }
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Fetch a batch of registrations with the given filters.
@@ -140,8 +127,7 @@ function registrationToMarkdown(
 }
 
 export async function GET(request: NextRequest) {
-  const admin = await verifyAdmin();
-  if (!admin) {
+  if (!await verifyAdminRequest(request)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

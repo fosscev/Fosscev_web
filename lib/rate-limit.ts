@@ -1,4 +1,6 @@
 import { getServiceClient } from '@/lib/picks-db';
+import { createHmac } from 'node:crypto';
+import { getAdminSessionSecret } from '@/lib/admin-session-secret';
 
 interface RateLimitConfig {
     windowMs: number;   // Time window in milliseconds
@@ -8,6 +10,8 @@ interface RateLimitConfig {
 export const RATE_LIMITS: Record<string, RateLimitConfig> = {
     'signup-otp': { windowMs: 600000, maxRequests: 3 },       // 3 per 10 min
     'verify-otp': { windowMs: 1800000, maxRequests: 5 },      // 5 per 30 min (lockout)
+    'recover-token': { windowMs: 900000, maxRequests: 5 },    // 5 recovery-token exchanges per 15 min
+    'reset-password': { windowMs: 900000, maxRequests: 3 },   // 3 reset requests per 15 min
     'signin': { windowMs: 300000, maxRequests: 10 },           // 10 per 5 min
     'create-post': { windowMs: 3600000, maxRequests: 5 },      // 5 per hour
     'create-comment': { windowMs: 300000, maxRequests: 10 },   // 10 per 5 min
@@ -19,27 +23,32 @@ export async function checkRateLimit(
     action: string
 ): Promise<{ allowed: boolean; retryAfterMs: number }> {
     const config = RATE_LIMITS[action];
-    if (!config) return { allowed: true, retryAfterMs: 0 };
+    if (!config) {
+        console.error(`Unknown rate-limit action: ${action}`);
+        return { allowed: false, retryAfterMs: 60000 };
+    }
 
     try {
+        const identifierHash = createHmac('sha256', getAdminSessionSecret())
+            .update(identifier)
+            .digest('hex');
         const serviceClient = getServiceClient();
         const { data, error } = await serviceClient.rpc('check_rate_limit', {
-            p_identifier: identifier,
+            p_identifier: identifierHash,
             p_action: action,
             p_max_requests: config.maxRequests,
             p_window_seconds: Math.floor(config.windowMs / 1000)
         });
 
         if (error) {
-            console.error('Rate limit RPC error:', error);
-            // Fall open if DB fails
-            return { allowed: true, retryAfterMs: 0 };
+            console.error('Rate limit RPC error; rejecting request:', error.code, error.message);
+            return { allowed: false, retryAfterMs: config.windowMs };
         }
 
         return { allowed: !!data, retryAfterMs: data ? 0 : config.windowMs };
     } catch (err) {
-        console.error('Rate limit exception:', err);
-        return { allowed: true, retryAfterMs: 0 };
+        console.error('Rate limit exception; rejecting request:', err);
+        return { allowed: false, retryAfterMs: config.windowMs };
     }
 }
 

@@ -1,6 +1,8 @@
+import { getAdminSessionSecret } from '@/lib/admin-session-secret';
 import { NextRequest, NextResponse } from 'next/server';
 import { getServiceClient } from '@/lib/picks-db';
 import { jwtVerify } from 'jose';
+import { hasSameOrigin } from '@/lib/request-security';
 
 // Helper to check admin auth via Supabase service role with detailed errors
 async function checkAdmin(request: NextRequest): Promise<{ allowed: boolean; reason?: string }> {
@@ -31,7 +33,7 @@ async function checkAdmin(request: NextRequest): Promise<{ allowed: boolean; rea
     }
 
     try {
-        const secret = new TextEncoder().encode(process.env.SESSION_MARKER_SECRET || 'development-fallback-secret-key-12345');
+        const secret = getAdminSessionSecret();
         const { payload } = await jwtVerify(marker, secret, { audience: 'admin' });
         
         if (payload.sub !== user.id) {
@@ -106,6 +108,7 @@ export async function GET(request: NextRequest) {
 
 // PATCH /api/picks/admin/posts — Remove/restore/flag a post
 export async function PATCH(request: NextRequest) {
+    if (!hasSameOrigin(request)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     const adminCheck = await checkAdmin(request);
     if (!adminCheck.allowed) {
         return NextResponse.json({ error: 'Unauthorized', reason: adminCheck.reason }, { status: 403 });

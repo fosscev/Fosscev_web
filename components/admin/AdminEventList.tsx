@@ -74,31 +74,31 @@ export default function AdminEventList() {
             {isLoading ? (
                 <div className="flex justify-center p-8 text-primary">Loading...</div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 gap-3 sm:gap-5 md:grid-cols-2 xl:grid-cols-3">
                     {/* Add New Card */}
                     <div
                         onClick={() => router.push('/foss-manager/dashboard/events/form')}
-                        className="bg-gray-900/50 border-2 border-dashed border-gray-800 rounded-xl p-6 flex flex-col items-center justify-center min-h-[300px] hover:border-primary/50 hover:bg-gray-900/80 transition-all cursor-pointer group"
+                        className="group flex min-h-24 items-center gap-4 rounded-xl border-2 border-dashed border-gray-800 bg-gray-900/50 p-4 text-left transition-all hover:border-primary/50 hover:bg-gray-900/80 md:min-h-[300px] md:flex-col md:justify-center md:p-6 md:text-center"
                     >
-                        <div className="w-16 h-16 rounded-full bg-gray-800 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                            <Plus className="w-8 h-8 text-gray-400 group-hover:text-primary" />
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-gray-800 transition-colors group-hover:bg-primary/20 md:mb-4 md:h-16 md:w-16">
+                            <Plus className="h-6 w-6 text-gray-400 group-hover:text-primary md:h-8 md:w-8" />
                         </div>
-                        <h4 className="text-lg font-bold text-gray-400 group-hover:text-white mb-2">Create New Event</h4>
-                        <p className="text-sm text-gray-500 text-center">Plan a workshop, hackathon, or meetup.</p>
+                        <div><h4 className="text-base font-bold text-gray-300 group-hover:text-white md:mb-2 md:text-lg">Create New Event</h4>
+                        <p className="mt-1 text-xs text-gray-500 md:mt-0 md:text-sm">Plan a workshop, hackathon, or meetup.</p></div>
                     </div>
 
                     {events.map((event) => {
                         const displayStatus = getComputedEventStatus(event);
                         return (
-                        <div key={event.id} className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden hover:border-gray-700 transition-all group">
-                            <div className="relative h-48 bg-gray-800 overflow-hidden">
+                        <div key={event.id} className="group flex overflow-hidden rounded-xl border border-gray-800 bg-gray-900 transition hover:border-gray-700 md:flex-col">
+                            <div className="relative aspect-[3/4] w-28 shrink-0 overflow-hidden bg-gray-800 sm:w-36 md:aspect-[3/4] md:w-full">
                                 {event.poster_url || event.image_url ? (
                                     <Image
-                                        src={getSupabaseImageUrl(event.poster_url || event.image_url, '/placeholder.jpg', { width: 900 })}
+                                        src={getSupabaseImageUrl(event.poster_url || event.image_url, '/placeholder.jpg', { width: 900, height: 1200, quality: 85 })}
                                         alt={event.title}
                                         fill
                                         sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                        className="w-full h-full object-contain bg-black/30"
                                     />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-600">
@@ -113,13 +113,13 @@ export default function AdminEventList() {
                                     {displayStatus === 'Draft' ? '● Draft' : displayStatus}
                                 </div>
                             </div>
-                            <div className="p-5">
-                                <div className="flex justify-between items-start mb-2">
+                            <div className="flex min-w-0 flex-1 flex-col p-3 sm:p-4 md:p-5">
+                                <div className="mb-2 flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
                                     <span className="text-xs font-mono text-primary uppercase tracking-wider">{event.type}</span>
                                     <span className="text-xs text-gray-500">{new Date(event.date).toLocaleDateString()}</span>
                                 </div>
-                                <h4 className="text-lg font-bold text-white mb-2 line-clamp-1">{event.title}</h4>
-                                <p className="text-sm text-gray-400 mb-4 line-clamp-2">{event.description}</p>
+                                <h4 className="mb-1 text-base font-bold leading-snug text-white line-clamp-2 sm:text-lg">{event.title}</h4>
+                                <p className="mb-3 text-xs leading-5 text-gray-400 line-clamp-2 sm:text-sm md:mb-4">{event.description}</p>
 
                                 <div className="flex gap-2 mt-auto pt-4 border-t border-gray-800">
                                     <button

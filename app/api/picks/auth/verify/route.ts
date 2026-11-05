@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit } from '@/lib/rate-limit';
 import { createPicksUser, getPicksUserByAuthId, updatePicksUsername } from '@/lib/picks-db';
+import { getTrustedClientIp } from '@/lib/client-ip';
 
 export async function POST(request: NextRequest) {
     try {
@@ -15,9 +16,12 @@ export async function POST(request: NextRequest) {
         }
 
         // Rate limit to prevent brute-force OTP guessing
-        const ip = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for')?.split(',')[0] || 'unknown';
-        const rateCheck = await checkRateLimit(`${ip}:${email}`, 'verify-otp');
-        if (!rateCheck.allowed) {
+        const ip = getTrustedClientIp(request.headers);
+        const [ipLimit, emailLimit] = await Promise.all([
+            checkRateLimit(`picks-verify-ip:${ip}`, 'verify-otp'),
+            checkRateLimit(`picks-verify-email:${String(email).trim().toLowerCase()}`, 'verify-otp'),
+        ]);
+        if (!ipLimit.allowed || !emailLimit.allowed) {
             return NextResponse.json(
                 { error: `Too many verification attempts. Account locked for ${Math.ceil(rateCheck.retryAfterMs / 60000)} minutes.` },
                 { status: 429 }

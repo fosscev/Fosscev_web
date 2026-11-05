@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { getEvents } from "@/lib/api/events";
 import { useSiteContent } from "@/lib/useSiteContent";
 import { getComputedEventStatus } from "@/lib/event-utils";
 import { getSupabaseImageUrl } from "@/lib/image-utils";
@@ -17,7 +16,14 @@ export function Tracks() {
 
     useEffect(() => {
         const loadPhotos = async () => {
-            const { data, error } = await getEvents();
+            let data: any[] = [];
+            try {
+                const response = await fetch('/api/data/events');
+                const payload = response.ok ? await response.json() : null;
+                data = [...(payload?.upcoming || []), ...(payload?.past || [])];
+            } catch (error) {
+                console.error('Failed to load event cards:', error);
+            }
 
             const classNames = [
                 "md:col-span-2 md:row-span-2",
@@ -26,7 +32,7 @@ export function Tracks() {
                 "md:col-span-1 md:row-span-1"
             ];
 
-            if (data && data.length > 0) {
+            if (data.length > 0) {
                 const formattedItems = data.slice(0, 4).map((event, index) => {
                     const year = event.date ? new Date(event.date).getFullYear() : "2025";
                     return {
@@ -34,7 +40,7 @@ export function Tracks() {
                         title: event.title,
                         event: `${event.type} ${year}`,
                         status: getComputedEventStatus(event),
-                        imageUrl: getSupabaseImageUrl(event.poster_url || event.image_url, '/placeholder.jpg', { width: 1200 }),
+                        imageUrl: getSupabaseImageUrl(event.poster_url || event.image_url, '/placeholder.jpg', { width: 1200, height: 1600, quality: 85 }),
                         className: classNames[index] || "md:col-span-1 md:row-span-1",
                         isPlaceholder: false
                     };
@@ -97,23 +103,23 @@ export function Tracks() {
                     <div className="md:col-span-1 md:row-span-1 bg-gray-800/50 rounded-2xl animate-pulse"></div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 md:gap-6 md:auto-rows-[300px]">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                     {items.map((item, i) => {
                         const cardContent = (
-                            <div className="h-full w-full relative">
-                                <div className="absolute inset-0 bg-white/[0.02]">
+                            <div className="flex h-full w-full flex-col">
+                                <div className="relative aspect-[3/4] w-full shrink-0 bg-black/40">
+                                    <div className="absolute inset-0 bg-white/[0.02]">
                                     <Image
                                         src={item.imageUrl}
                                         alt={item.title}
                                         fill
-                                        className="object-cover transition-transform duration-1000 ease-out group-hover:scale-[1.03]"
+                                        className="object-contain"
                                         sizes="(max-width: 768px) 100vw, 50vw"
                                     />
-                                </div>
-                                <div className={`absolute inset-0 bg-gradient-to-t ${item.status === 'Registration Open' || item.status === 'Event Ongoing' ? 'from-primary/20' : 'from-black/90'} via-black/20 to-transparent opacity-80 group-hover:opacity-100 transition-opacity duration-500`}></div>
+                                    </div>
 
-                                {(item.status === 'Registration Open' || item.status === 'Event Ongoing') && (
-                                    <div className="absolute top-4 right-4 z-20">
+                                    {(item.status === 'Registration Open' || item.status === 'Event Ongoing') && (
+                                    <div className="absolute left-3 top-3 z-20">
                                         <div className="relative flex items-center gap-2">
                                             <span className="relative flex h-3 w-3">
                                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
@@ -124,21 +130,22 @@ export function Tracks() {
                                             </span>
                                         </div>
                                     </div>
-                                )}
+                                    )}
+                                </div>
 
-                                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6 md:p-8 translate-y-4 group-hover:translate-y-0 transition-transform duration-500 ease-out z-20">
-                                    <h3 className="text-xl sm:text-2xl md:text-3xl font-display font-bold text-white tracking-tight mb-2 drop-shadow-md">{item.title}</h3>
-                                    <p className="text-gray-300 font-mono text-xs md:text-sm tracking-wider uppercase drop-shadow">{item.event}</p>
+                                <div className="flex flex-1 flex-col justify-center border-t border-white/10 bg-surface/60 p-4 sm:p-5">
+                                    <h3 className="text-lg sm:text-xl font-display font-bold text-white tracking-tight">{item.title}</h3>
+                                    <p className="mt-2 text-gray-400 font-mono text-xs tracking-wider uppercase">{item.event}</p>
                                 </div>
                             </div>
                         );
 
                         return item.isPlaceholder ? (
-                            <div key={i} className={`relative rounded-2xl overflow-hidden group ${item.className} max-md:h-[300px] block cursor-default`}>
+                            <div key={i} className={`relative rounded-2xl overflow-hidden group block cursor-default`}>
                                 {cardContent}
                             </div>
                         ) : (
-                            <Link key={i} href={`/events/${item.id}`} className={`relative rounded-2xl overflow-hidden group ${item.className} max-md:h-[300px] block cursor-pointer`}>
+                            <Link key={i} href={`/events/${item.id}`} className="relative rounded-2xl overflow-hidden group block cursor-pointer">
                                 {cardContent}
                             </Link>
                         );
