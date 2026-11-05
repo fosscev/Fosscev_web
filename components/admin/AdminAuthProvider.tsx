@@ -30,49 +30,57 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     const [authLoading, setAuthLoading] = useState(true);
 
     useEffect(() => {
-        let subscription: any;
-
-        const checkAuth = async () => {
-            try {
-                // Initialize session state on mount
-                const { data: { session: currentSession } } = await supabase.auth.getSession();
-                
-                // Set up listener for auth state changes
-                const { data } = supabase.auth.onAuthStateChange(
-                    async (event, currentSession) => {
-                        setSession(currentSession);
-                        setUser(currentSession?.user ?? null);
-                        setAccessToken(currentSession?.access_token || null);
-                        setAuthLoading(false);
-
-                        // If Supabase silently refreshes the token, we MUST explicitly refresh our marker cookie!
-                        if (event === 'TOKEN_REFRESHED') {
-                            try {
-                                await fetch('/api/admin/auth/refresh-marker', { method: 'POST' });
-                            } catch (e) {
-                                console.error('Failed to refresh admin marker cookie', e);
-                            }
-                        }
-                    }
-                );
-                subscription = data.subscription;
-
-                setSession(currentSession);
-                setUser(currentSession?.user ?? null);
-                setAccessToken(currentSession?.access_token || null);
-            } catch (error) {
-                console.error("Auth check failed:", error);
-            } finally {
-                setAuthLoading(false);
-            }
+        let active = true;
+        const applySession = (currentSession: any | null) => {
+            if (!active) return;
+            setSession(currentSession);
+            setUser(currentSession?.user ?? null);
+            setAccessToken(currentSession?.access_token || null);
+            setAuthLoading(false);
         };
 
-        checkAuth();
+        // Register before restoring storage so INITIAL_SESSION and refresh
+        // events cannot be missed while getSession is waiting on stale cookies.
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event, currentSession) => {
+            applySession(currentSession);
+
+            // Keep the auth callback synchronous. Awaiting network work here can
+            // hold Supabase's auth lock and stall later session operations.
+            if (event === 'TOKEN_REFRESHED') {
+                void fetch('/api/admin/auth/refresh-marker', { method: 'POST' })
+                    .catch((error) => console.error('Failed to refresh admin marker cookie', error));
+            }
+        });
+
+        // Always release the login screen if session restoration hangs due to a
+        // network failure or a stale refresh token.
+        const initializationTimeout = window.setTimeout(() => {
+            if (active) setAuthLoading(false);
+        }, 5000);
+
+        void supabase.auth.getSession()
+            .then(({ data: { session: currentSession }, error }) => {
+                if (!active) return;
+                if (error) {
+                    console.warn('Could not restore the admin session; showing sign-in.', error.message);
+                    applySession(null);
+                    void supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+                    void fetch('/api/admin/auth/signout', { method: 'POST' }).catch(() => undefined);
+                    return;
+                }
+                applySession(currentSession);
+            })
+            .catch((error) => {
+                if (!active) return;
+                console.warn('Admin session initialization failed; showing sign-in.', error);
+                applySession(null);
+            })
+            .finally(() => window.clearTimeout(initializationTimeout));
 
         return () => {
-            if (subscription) {
-                subscription.unsubscribe();
-            }
+            active = false;
+            window.clearTimeout(initializationTimeout);
+            subscription.unsubscribe();
         };
     }, []);
 
