@@ -21,10 +21,21 @@ export async function POST(request: NextRequest) {
         }
 
         const clientId = getTrustedClientIp(request.headers);
-        const ipRateCheck = await checkRateLimit(`admin-reset-ip:${clientId}`, 'reset-password');
+        const ipRateCheck = clientId === 'unknown'
+            ? { allowed: true, retryAfterMs: 0 }
+            : await checkRateLimit(`admin-reset-ip:${clientId}`, 'reset-password');
         const emailRateCheck = await checkRateLimit(`admin-reset-email:${email}`, 'reset-password');
-        if (!ipRateCheck.allowed || !emailRateCheck.allowed) return success;
-        if (!isAdminEmail(email)) return success;
+        if (!ipRateCheck.allowed || !emailRateCheck.allowed) {
+            console.warn('Reset email request throttled:', {
+                ipLimitReached: !ipRateCheck.allowed,
+                emailLimitReached: !emailRateCheck.allowed,
+            });
+            return success;
+        }
+        if (!isAdminEmail(email)) {
+            console.warn('Reset email request ignored because the address is not allowlisted.');
+            return success;
+        }
 
         const configuredUrl = process.env.NODE_ENV === 'production'
             ? 'https://foss.cev.ac.in'

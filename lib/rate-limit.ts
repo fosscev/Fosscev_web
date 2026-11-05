@@ -9,9 +9,11 @@ interface RateLimitConfig {
 
 export const RATE_LIMITS: Record<string, RateLimitConfig> = {
     'signup-otp': { windowMs: 600000, maxRequests: 3 },       // 3 per 10 min
-    'verify-otp': { windowMs: 1800000, maxRequests: 5 },      // 5 per 30 min (lockout)
+    'verify-otp': { windowMs: 1800000, maxRequests: 5 },      // 5 per 30 min for Picks verification
+    'admin-verify-otp': { windowMs: 600000, maxRequests: 5 }, // 5 admin code attempts per 10 min
+    'admin-signin': { windowMs: 600000, maxRequests: 10 },   // 10 admin password attempts per 10 min
     'recover-token': { windowMs: 900000, maxRequests: 5 },    // 5 recovery-token exchanges per 15 min
-    'reset-password': { windowMs: 900000, maxRequests: 3 },   // 3 reset requests per 15 min
+    'reset-password': { windowMs: 600000, maxRequests: 3 },   // 3 reset requests per 10 min
     'signin': { windowMs: 300000, maxRequests: 10 },           // 10 per 5 min
     'create-post': { windowMs: 3600000, maxRequests: 5 },      // 5 per hour
     'create-comment': { windowMs: 300000, maxRequests: 10 },   // 10 per 5 min

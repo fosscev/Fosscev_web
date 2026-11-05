@@ -24,8 +24,10 @@ export async function POST(request: NextRequest) {
         }
 
         const ip = getTrustedClientIp(request.headers);
-        const ipRateCheck = await checkRateLimit(`admin-signin-ip:${ip}`, 'signin');
-        const emailRateCheck = await checkRateLimit(`admin-signin-email:${email}`, 'signin');
+        const ipRateCheck = ip === 'unknown'
+            ? { allowed: true, retryAfterMs: 0 }
+            : await checkRateLimit(`admin-signin-ip:${ip}`, 'admin-signin');
+        const emailRateCheck = await checkRateLimit(`admin-signin-email:${email}`, 'admin-signin');
         if (!ipRateCheck.allowed || !emailRateCheck.allowed) {
             return NextResponse.json({ error: 'Too many sign-in attempts. Please wait a few minutes and try again.' }, { status: 429 });
         }

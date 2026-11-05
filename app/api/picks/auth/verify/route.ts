@@ -22,8 +22,9 @@ export async function POST(request: NextRequest) {
             checkRateLimit(`picks-verify-email:${String(email).trim().toLowerCase()}`, 'verify-otp'),
         ]);
         if (!ipLimit.allowed || !emailLimit.allowed) {
+            const retryAfterMs = Math.max(ipLimit.retryAfterMs, emailLimit.retryAfterMs);
             return NextResponse.json(
-                { error: `Too many verification attempts. Account locked for ${Math.ceil(rateCheck.retryAfterMs / 60000)} minutes.` },
+                { error: `Too many verification attempts. Account locked for ${Math.ceil(retryAfterMs / 60000)} minutes.` },
                 { status: 429 }
             );
         }

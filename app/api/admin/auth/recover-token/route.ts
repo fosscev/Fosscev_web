@@ -14,7 +14,9 @@ export async function POST(request: NextRequest) {
         }
 
         const ip = getTrustedClientIp(request.headers);
-        const rateCheck = await checkRateLimit(ip, 'recover-token');
+        const rateCheck = ip === 'unknown'
+            ? { allowed: true, retryAfterMs: 0 }
+            : await checkRateLimit(ip, 'recover-token');
         if (!rateCheck.allowed) {
             return NextResponse.json({ error: 'Too many attempts. Request a new reset link later.' }, { status: 429 });
         }

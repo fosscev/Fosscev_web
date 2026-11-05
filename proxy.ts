@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 import { isAdminEmail } from './lib/admin-config';
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const pathname = request.nextUrl.pathname;
     const isAdminPage = pathname.startsWith('/foss-manager');
     const isAdminApi = pathname.startsWith('/api/registrations')

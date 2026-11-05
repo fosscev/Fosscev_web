@@ -36,8 +36,10 @@ export async function POST(request: NextRequest) {
         }
 
         const ip = getTrustedClientIp(request.headers);
-        const ipRateCheck = await checkRateLimit(`admin-otp-ip:${ip}`, 'verify-otp');
-        const emailRateCheck = await checkRateLimit(`admin-otp-email:${email}`, 'verify-otp');
+        const ipRateCheck = ip === 'unknown'
+            ? { allowed: true, retryAfterMs: 0 }
+            : await checkRateLimit(`admin-otp-ip:${ip}`, 'admin-verify-otp');
+        const emailRateCheck = await checkRateLimit(`admin-otp-email:${email}`, 'admin-verify-otp');
         if (!ipRateCheck.allowed || !emailRateCheck.allowed) {
             return NextResponse.json({ error: 'Too many verification attempts. Request a new code later.' }, { status: 429 });
         }
